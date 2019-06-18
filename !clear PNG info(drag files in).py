@@ -8,7 +8,6 @@ def progress(arg):
     f = Image.open(arg) # open image
     f.save(arg)
     f = open(arg,'ab')
-    f.write(bytes('\r\nThe massage below is write in UTF-8!!\r\n翻译/嵌字：花飴\r\ntranslating/editing:Anemone|HanaAme','utf-8'))
     f.close()
 
 for arg in sys.argv:
