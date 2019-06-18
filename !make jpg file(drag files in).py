@@ -15,7 +15,6 @@ def progress(arg):
     else:
         png.save(arg, "JPEG", quality=80)
     f = open(arg,'ab')
-    f.write(bytes('\r\nThe massage below is written with UTF-8!!\r\n翻译/嵌字：花飴\r\ntranslating/editing:Anemone|HanaAme\r\n此版本为压缩过的jpg格式图片，仅供在http://67.218.132.205在线试阅','utf-8'))
     f.close()
 
 for arg in sys.argv:
