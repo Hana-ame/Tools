@@ -27,7 +27,7 @@ def download(href:str) -> str:
             l = re.findall(r'<img id="img" src="([^"]+)"',txt)
         print(l)
         # for i in l:
-        url = l[0].replace('&amp;','&') 
+        url = l[-1].replace('&amp;','&') 
         print(url)
         curl(url)
         l = re.findall(r'<a id="next" onclick="[^"]*?" href="([^"]*?)">',txt)
