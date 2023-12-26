@@ -1,5 +1,5 @@
+// @ 2023-12-21
 // azure-go @ 2023-12-21
-// trival @ 2023-12-21
 
 package myfetch
 

@@ -1,5 +1,14 @@
 // azure-go @ 2023-12-21
 
+package tools
+
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/Hana-ame/orderedmap"
+)
+
 // this function receive json request.
 func readJsonFromFile(fn string) (*orderedmap.OrderedMap, error) {
 	jsonFile, err := os.Open(fn)
@@ -10,4 +19,3 @@ func readJsonFromFile(fn string) (*orderedmap.OrderedMap, error) {
 	err = json.NewDecoder(jsonFile).Decode(&o)
 	return o, err
 }
-
