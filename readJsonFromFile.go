@@ -10,7 +10,7 @@ import (
 )
 
 // this function receive json request.
-func readJsonFromFile(fn string) (*orderedmap.OrderedMap, error) {
+func ReadJsonFromFile(fn string) (*orderedmap.OrderedMap, error) {
 	jsonFile, err := os.Open(fn)
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func hash(s string, SALT string) string {
+func Hash(s string, SALT string) string {
 	hash := sha256.Sum256([]byte(s + SALT))
 	hashString := fmt.Sprintf("%x", hash[:2])
 	return hashString
