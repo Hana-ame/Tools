@@ -4,6 +4,7 @@ package myfetch
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -12,7 +13,7 @@ import (
 	"github.com/Hana-ame/orderedmap"
 )
 
-func NewReader(s any) io.Reader {
+func BuildPlainReader(s any) io.Reader {
 	switch v := s.(type) {
 	case string:
 		return strings.NewReader(v)
@@ -22,6 +23,7 @@ func NewReader(s any) io.Reader {
 	return nil
 }
 
+// convert
 type URLEncodedForm struct {
 	data any
 	// Reader() (io.Reader, error)
@@ -64,6 +66,12 @@ func (f *URLEncodedForm) Reader() (io.Reader, error) {
 }
 
 // Apply application/x-www-form-urlencoded
-func URLEncodedFormReader(data any) (io.Reader, error) {
+func BuildURLEncodedFormReader(data any) (io.Reader, error) {
 	return (&URLEncodedForm{data: data}).Reader()
+}
+
+func BuildJsonReader(data any) (io.Reader, error) {
+	b := new(bytes.Buffer)
+	err := json.NewEncoder(b).Encode(data)
+	return b, err
 }
