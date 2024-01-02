@@ -15,7 +15,7 @@ func (cs *clients) pick() *http.Client {
 	if len(cs.clients) == 0 {
 		return http.DefaultClient
 	} else {
-		return cs.clients[len(cs.clients)%int(cs.cnt)]
+		return cs.clients[int(cs.cnt)%len(cs.clients)]
 	}
 }
 
