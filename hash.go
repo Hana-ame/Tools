@@ -1,3 +1,4 @@
+// antenna @ 2024-01-05
 // azure-go @ 2023-12-21
 
 package tools
@@ -9,6 +10,6 @@ import (
 
 func Hash(s string, SALT string) string {
 	hash := sha256.Sum256([]byte(s + SALT))
-	hashString := fmt.Sprintf("%x", hash[:2])
+	hashString := fmt.Sprintf("%x", hash)
 	return hashString
 }
