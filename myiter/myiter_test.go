@@ -26,6 +26,19 @@ func TestX(t *testing.T) {
 	fmt.Println(i)
 }
 
+func TestS(t *testing.T) {
+	o := []int{1, 2, 3, 4, 5}
+	iter := NewIter(o)
+	i := 0
+	f := func(k, v any) bool {
+		fmt.Println(k, v)
+		i += v.(int)
+		return false
+	}
+	iter.Iter(f)
+	fmt.Println(i)
+}
+
 /*
 	it don't support types. that's really silly.
 */
