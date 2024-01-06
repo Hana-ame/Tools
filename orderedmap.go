@@ -1,5 +1,11 @@
 package tools
 
+import (
+	"reflect"
+
+	"github.com/Hana-ame/orderedmap"
+)
+
 // return &s
 func ParsePointerToString(s any, ok bool) string {
 	if !ok {
@@ -34,4 +40,23 @@ func ParseSliceToStringSlice(s any, ok bool) []string {
 		return ss
 	}
 	return nil
+}
+
+func GetOrDefault(o *orderedmap.OrderedMap, key string, def any) any {
+	v, ok := o.Get(key)
+	if !ok {
+		return def
+	}
+	if reflect.TypeOf(v) == reflect.TypeOf(def) {
+		return v
+	}
+	return def
+
+}
+
+func Default(val, def any) any {
+	if reflect.TypeOf(val) == reflect.TypeOf(def) {
+		return val
+	}
+	return def
 }
