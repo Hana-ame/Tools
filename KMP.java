@@ -1,4 +1,3 @@
-
 public class KMP {
   String s;
   int len; // s的长度
