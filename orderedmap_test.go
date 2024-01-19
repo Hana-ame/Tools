@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Hana-ame/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 )
 
 func TestXxx(t *testing.T) {
@@ -38,4 +38,13 @@ func TestDef(t *testing.T) {
 	m.Set("123", 321)
 	o = Default(*m, orderedmap.New())
 	fmt.Printf("%+v\n", o)
+}
+
+func TestOrderedmap(t *testing.T) {
+	o := orderedmap.New()
+	o.Set("application", o)
+	fmt.Println(o)
+	// var oa *orderedmap.OrderedMap
+	oa := o.GetOrDefault("application", orderedmap.New()).(*orderedmap.OrderedMap)
+	fmt.Println(oa)
 }

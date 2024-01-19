@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Hana-ame/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 )
 
 func BuildPlainReader(s any) io.Reader {
