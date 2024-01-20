@@ -15,7 +15,7 @@ class Utils {
         StringBuilder sb = new StringBuilder();
         for (int i=0; i<n; i++) {
             char ch = s.charAt(i);
-            if (".$|()[{^?*+\\".indexOf(ch) != -1) {
+            if (".$|()[]{}^?*+\\".indexOf(ch) != -1) {
                 sb.append('\\');
             }
             sb.append(ch);
