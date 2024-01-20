@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Utils {
@@ -20,7 +22,16 @@ class Utils {
         }
         return sb.toString();
     }
-    
+
+    // Arrays.asList
+    public static ArrayList<Integer> asList(int[] arr) {
+        ArrayList<Integer> list = new ArrayList<>(arr.length);
+        for (int i : arr)
+            list.add(i);
+        return list;
+    }
+
+
     // print
     public static void printList(List<?> a) {
         for (Object o : a) {
