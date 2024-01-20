@@ -1,3 +1,8 @@
+// 滚动比较String，使用KMP算法
+// 使用方法：
+//   KMP kmp = new KMP(String pattern)
+//   bool isEqual = kmp.next(char c)
+//     代表加入这个char之后匹配成功
 public class KMP {
   String s;
   int len; // s的长度
@@ -5,8 +10,8 @@ public class KMP {
   int pe; // 全都正确的时候的下一个指针
   int ps; // 已经有的前缀数量
   
-  KMP (String _s) {
-    s = _s;
+  KMP (String pattern) {
+    s = pattern;
     ps = 0;
     len = s.length();
   
