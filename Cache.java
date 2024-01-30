@@ -15,8 +15,12 @@ class Cache<T> {
     return runOrCached(function, function);
   }
 
+  public boolean containsKey(Object keyObject) {
+    return m.containsKey(keyObject);
+  }
+
   public T runOrCached(Object keyObject, Function<T> function) {
-    if (m.containsKey(keyObject)) {
+    if (containsKey(keyObject)) {
       return m.get(keyObject);
     }
     T result = function.run();
