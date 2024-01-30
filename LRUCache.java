@@ -1,7 +1,7 @@
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class LRUCache<K, V> extends LinkedHashMap<K, V> {
+class LRUCache<K, V> extends LinkedHashMap<K, V> {
 
   private int capacity; // 缓存容量
   // private LinkedHashMap<K, V> cache; // 缓存数据结构

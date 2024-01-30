@@ -73,3 +73,30 @@ class Functionc implements Function<Integer> {
 }
 
 ```
+
+# defaultmap
+
+```java
+
+class DefaultHashMap<K, V> extends HashMap<K, V> {
+  final Function<V> defaultFunction;
+
+  DefaultHashMap(Function<V> function) {
+    super();
+    defaultFunction = function;
+  }
+
+  @Override
+  public V get(Object key) {
+    V v = null;
+    return (v = super.get(key)) == null ? defaultFunction.run() : v ;
+  }
+}
+
+@FunctionalInterface // java 1.8
+interface Function<T> {
+  // public abstract String hashString();
+  public abstract T run();  
+}
+
+```

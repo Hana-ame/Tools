@@ -1,6 +1,6 @@
 import java.util.HashMap;
 
-public class DefaultHashMap<K, V> extends HashMap<K, V> {
+class DefaultHashMap<K, V> extends HashMap<K, V> {
   final Function<V> defaultFunction;
 
   DefaultHashMap(Function<V> function) {
@@ -13,14 +13,6 @@ public class DefaultHashMap<K, V> extends HashMap<K, V> {
     V v = null;
     return (v = super.get(key)) == null ? defaultFunction.run() : v ;
   }
-
-  // @Override
-  // public V put(K key, V value){
-  //   if (!containsKey(key)) {
-  //     put(key, get(key));
-  //   }
-  //   return super.put(key, value);
-  // }
   
   public static void main(String[] args) {
     DefaultHashMap<Integer, Integer> m = new DefaultHashMap<>(()->{return 1;}); 
