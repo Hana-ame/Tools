@@ -1,3 +1,5 @@
+package com.example.tools;
+
 // import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,9 +8,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// import com.example.tools.*;
+
 class Solution {
   public int[] distinctDifferenceArray(int[] nums) {
-      DefaultHashMap<Integer, Integer> dm = new DefaultHashMap<>(()->{return Integer.valueOf(0);}) {
+      DefaultHashMap<Integer, Integer> dm = new DefaultHashMap<Integer, Integer>(()->{return Integer.valueOf(0);}) {
           @Override
           protected boolean removeValue(Integer v) {
               return v == 0;

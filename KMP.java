@@ -1,3 +1,5 @@
+package com.example.tools;
+
 // 滚动比较String，使用KMP算法
 // 使用方法：
 //   KMP kmp = new KMP(String pattern)

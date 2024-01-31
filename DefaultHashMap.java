@@ -1,3 +1,5 @@
+package com.example.tools;
+
 import java.util.HashMap;
 
 class DefaultHashMap<K, V> extends HashMap<K, V> {

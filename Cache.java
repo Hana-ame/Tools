@@ -1,3 +1,5 @@
+package com.example.tools;
+
 import java.util.HashMap;
 
 // 这是一个缓存

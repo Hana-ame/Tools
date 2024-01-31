@@ -1,3 +1,5 @@
+package com.example.tools;
+
 // ongoing 
 
 import java.util.ArrayList;
@@ -67,13 +69,13 @@ public class SEG<E> {
     return root.set(index, element);
   }
 
-  public Node query(int low, int high) {
-    if (l < low) {
-      if ((l+r)/2 <low) {
-        // todo
-      }
-    }
-  }
+  // public Node query(int low, int high) {
+  //   if (l < low) {
+  //     if ((l+r)/2 <low) {
+  //       // todo
+  //     }
+  //   }
+  // }
 
   public static void main(String[] args) {
     ArrayList<Integer> arr = new ArrayList<>();
