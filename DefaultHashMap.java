@@ -14,6 +14,18 @@ class DefaultHashMap<K, V> extends HashMap<K, V> {
     return (v = super.get(key)) == null ? defaultFunction.run() : v ;
   }
   
+  @Override
+  public V put(K key, V value) {
+    if (removeValue(value)) {
+      return remove(key);
+    }    
+    return super.put(key, value);
+  }
+
+  protected boolean removeValue(V value) {
+    return false;
+  }
+
   public static void main(String[] args) {
     DefaultHashMap<Integer, Integer> m = new DefaultHashMap<>(()->{return 1;}); 
     Integer a = null;

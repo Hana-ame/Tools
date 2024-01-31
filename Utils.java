@@ -26,9 +26,30 @@ class Utils {
     }
 
     // Arrays.asList
+    public static ArrayList<Long> asList(long[] arr) {
+        ArrayList<Long> list = new ArrayList<>(arr.length);
+        for (long i : arr)
+            list.add(i);
+        return list;
+    }    
+    
     public static ArrayList<Integer> asList(int[] arr) {
         ArrayList<Integer> list = new ArrayList<>(arr.length);
         for (int i : arr)
+            list.add(i);
+        return list;
+    }   
+
+    public static ArrayList<Short> asList(short[] arr) {
+        ArrayList<Short> list = new ArrayList<>(arr.length);
+        for (short i : arr)
+            list.add(i);
+        return list;
+    }    
+
+    public static ArrayList<Byte> asList(byte[] arr) {
+        ArrayList<Byte> list = new ArrayList<>(arr.length);
+        for (byte i : arr)
             list.add(i);
         return list;
     }
@@ -36,6 +57,27 @@ class Utils {
     public static ArrayList<Character> asList(char[] arr) {
         ArrayList<Character> list = new ArrayList<>(arr.length);
         for (char i : arr)
+            list.add(i);
+        return list;
+    }
+
+    public static ArrayList<Double> asList(double[] arr) {
+        ArrayList<Double> list = new ArrayList<>(arr.length);
+        for (double i : arr)
+            list.add(i);
+        return list;
+    }
+
+    public static ArrayList<Float> asList(Float[] arr) {
+        ArrayList<Float> list = new ArrayList<>(arr.length);
+        for (Float i : arr)
+            list.add(i);
+        return list;
+    }
+
+    public static ArrayList<Boolean> asList(boolean[] arr) {
+        ArrayList<Boolean> list = new ArrayList<>(arr.length);
+        for (boolean i : arr)
             list.add(i);
         return list;
     }

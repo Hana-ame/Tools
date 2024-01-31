@@ -1,32 +1,48 @@
 // import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class Solution {
-  int r;
-  public int minimumSeconds(List<Integer> nums) {
-    DefaultHashMap<Integer,ArrayList<Integer>> dm = new DefaultHashMap<>(()->{return new ArrayList<Integer>();});
-    for (int i=0; i<nums.size(); i++) {
-      ArrayList<Integer> arr = dm.get(nums.get(i));
-      arr.add(i);
-      dm.put(nums.get(i), arr);
-    }
-    r = Integer.MAX_VALUE;
-    dm.forEach((k,v)->{
-      int halvinterval = minimumSeconds(v, nums.size());
-      // r = Math.min(r, halvinterval);
-      setR(halvinterval);
-    });
-    return r;
+  public int[] distinctDifferenceArray(int[] nums) {
+      DefaultHashMap<Integer, Integer> dm = new DefaultHashMap<>(()->{return Integer.valueOf(0);}) {
+          @Override
+          protected boolean removeValue(Integer v) {
+              return v == 0;
+          }
+      };
+      Set<Integer> m = new HashSet<>();
+      for (int n : nums) {
+        dm.put(n, dm.get(n)+1);
+      }
+      int [] res = new int [nums.length];
+      for (int i=0; i<nums.length; i++) {
+        m.add(i);
+        dm.put(nums[i],dm.get(nums[i])-1);
+        System.out.println(dm);
+        System.out.println(m);
+        res[i] = dm.size() - m.size();
+      }
+      return res;
   }
-  private void setR(int r){
-    this.r = r;
-  }
-  public int minimumSeconds(List<Integer> nums, int length) {
-    int interval = nums.get(0)-0+length-1-nums.get(nums.size()-1);
-    for (int i=0; i+1<nums.size(); i++) {
-      interval = Math.max(interval, nums.get(1+1)- nums.get(i));
-    }
-    return (interval+1)/2;
+  public static void main(String[] args) {
+    Solution s = new Solution();
+    s.distinctDifferenceArray(new int[]{1,2,3,4,5,6});
+    ArrayList<Integer> arr = new ArrayList<>();
+    arr.add(1);
+    arr.add(1);
+    arr.add(1);
+    arr.add(1);
+    System.out.println(arr);
+    int [] a = new int[]{1,2,3,4,5,6};
+    System.out.println(a);
+    System.out.println(Utils.asList(a));  
+    System.out.println(Utils.asList(a));  
+    Arrays.asList(a);
+    
+    
   }
 }
