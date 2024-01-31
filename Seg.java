@@ -84,7 +84,6 @@ public class SEG<E> {
     arr.add(3);
     arr.add(4);
     arr.add(5);
-    SEG<Integer> seg = new SEG<>(arr, (a, b)->{return Math.max(a,b);});
   }
 
 }

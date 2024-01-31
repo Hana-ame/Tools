@@ -6,6 +6,9 @@ public class ModCalc {
   ModCalc(long mod){
     MOD = mod;
   } 
+  ModCalc(int mod){
+    this((long)mod);
+  } 
   ModCalc(ModCalc calc){
     MOD = calc.MOD;
     ans = calc.ans;
@@ -17,6 +20,9 @@ public class ModCalc {
     ans = n % MOD;
     return this;
   }
+  public ModCalc set(int n) {
+    return set((long)n);
+  }
   public ModCalc set(ModCalc calc) {
     ans = calc.ans % MOD;
     return this;
@@ -27,6 +33,9 @@ public class ModCalc {
     ans %= MOD;
     return this;
   }
+  public ModCalc add(int n) {
+    return add((long)n);
+  }
   public ModCalc add(ModCalc calc) {
     calc.ans %= MOD;
     ans += calc.ans;
@@ -36,12 +45,17 @@ public class ModCalc {
   public ModCalc sub(long n) {
     n %= MOD;
     ans -= n;
+    ans += MOD;
     ans %= MOD;
     return this;
+  }
+  public ModCalc sub(int n) {
+    return sub((long)n);
   }
   public ModCalc sub(ModCalc calc) {
     calc.ans %= MOD;
     ans -= calc.ans;
+    ans += MOD;
     ans %= MOD;
     return this;
   }
@@ -50,6 +64,9 @@ public class ModCalc {
     ans *= n;
     ans %= MOD;
     return this;
+  }
+  public ModCalc mul(int n) {
+    return mul((long)n);
   }
   public ModCalc mul(ModCalc calc) {
     calc.ans %= MOD;

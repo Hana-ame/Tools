@@ -9,7 +9,7 @@ public class MidPriorityQueue<E> {
   private final PriorityQueue<E> head;
   private final PriorityQueue<E> tail;
 
-  MidPriorityQueue(PriorityQueue<E> head, PriorityQueue<E> tail){
+  public MidPriorityQueue(PriorityQueue<E> head, PriorityQueue<E> tail){
     this.head = head;
     this.tail = tail;
   }
@@ -93,22 +93,6 @@ public class MidPriorityQueue<E> {
         res[i] = (int)sum;
     }
     // output
-    System.out.println(Utils.asList(res));
-  }
-}
-
-class PriorityQueueWithMemo<E> extends PriorityQueue<E> {
-  E memo;
-
-  PriorityQueueWithMemo(Comparator<? super E> comparator, E memo){
-    super(comparator);
-    this.memo = memo;
-  }
-
-  public void setMemo(E e) {
-    memo = e;
-  }
-  public E getMemo() {
-    return memo;
+    System.out.println(MyUtils.asList(res));
   }
 }

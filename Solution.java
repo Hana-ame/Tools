@@ -3,9 +3,7 @@ package com.example.tools;
 // import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 // import com.example.tools.*;
@@ -43,8 +41,8 @@ class Solution {
     System.out.println(arr);
     int [] a = new int[]{1,2,3,4,5,6};
     System.out.println(a);
-    System.out.println(Utils.asList(a));  
-    System.out.println(Utils.asList(a));  
+    System.out.println(MyUtils.asList(a));  
+    System.out.println(MyUtils.asList(a));  
     Arrays.asList(a);
     
     

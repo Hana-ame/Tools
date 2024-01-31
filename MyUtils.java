@@ -2,10 +2,9 @@ package com.example.tools;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
-class Utils {
+public class MyUtils {
     // math
     public static int gcd(int a, int b) {
         if (b == 0)
