@@ -69,9 +69,9 @@ public class MyUtils {
         return list;
     }
 
-    public static ArrayList<Float> asList(Float[] arr) {
+    public static ArrayList<Float> asList(float[] arr) {
         ArrayList<Float> list = new ArrayList<>(arr.length);
-        for (Float i : arr)
+        for (float i : arr)
             list.add(i);
         return list;
     }
