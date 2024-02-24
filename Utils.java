@@ -89,30 +89,38 @@ class Utils {
 
     // print
     public static void printList(List<?> a) {
+        System.out.printf("List<?>[");
         for (Object o : a) {
             System.out.printf("%s, ", o.toString());
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(Object[] a) {
+        System.out.printf("Object[");
         for (Object o : a) {
             System.out.printf("%s, ", o.toString());
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(char[] a) {
+        System.out.printf("char[");
         for (char o : a) {
             System.out.printf("%s, ", o);
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(int[] a) {
+        System.out.printf("int[");
         for (int o : a) {
             System.out.printf("%s, ", o);
         }
+        System.out.printf("]");
         System.out.println();
     }
 }
