@@ -83,8 +83,8 @@ class Utils {
     }
 
     public static <T> ArrayList<T> asList(T[] arr) {
-        List<T> list = Arrays.asList(arr);
-        return (ArrayList<T>) list;
+        ArrayList<T> list = (ArrayList<T>) Arrays.asList(arr);
+        return list;
     }
 
     // print
