@@ -2,7 +2,7 @@
 
 package myiter
 
-import "github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+import "api-pack/Tools/orderedmap"
 
 type SliceIter []any
 

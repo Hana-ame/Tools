@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+	"api-pack/Tools/orderedmap"
 )
 
 func TestXxx(t *testing.T) {
