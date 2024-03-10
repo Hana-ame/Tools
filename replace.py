@@ -21,8 +21,6 @@ def replace_go_file(file_path, module_name):
   with open(file_path, 'w') as f:
     f.write(file)
 
-
-
 def replace_go_files(module_name):
   for root, _, files in os.walk(TOOLS_DIR):
     for file in files:
