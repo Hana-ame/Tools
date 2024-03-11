@@ -23,7 +23,7 @@ func ParsePointerToString(s any, ok bool) string {
 	return ""
 }
 
-// return &s
+// 用不了的吧
 func ParseSliceToStringSlice(s any, ok bool) []string {
 	if !ok {
 		return nil
