@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+	"api-pack/Tools/orderedmap"
 )
 
 // this function receive json request.

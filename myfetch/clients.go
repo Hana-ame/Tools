@@ -10,7 +10,11 @@ type clients struct {
 	clients []*http.Client
 }
 
-func (cs *clients) pick() *http.Client {
+func NewClients() *clients {
+	return new(clients)
+}
+
+func (cs *clients) Client() *http.Client {
 	cs.cnt++
 	if len(cs.clients) == 0 {
 		return http.DefaultClient
@@ -19,18 +23,18 @@ func (cs *clients) pick() *http.Client {
 	}
 }
 
-func (cs *clients) setClients(clients []*http.Client) {
+func (cs *clients) SetClients(clients []*http.Client) {
 	cs.clients = clients
 }
 
-var DefaultClients *clients = &clients{cnt: 0, clients: []*http.Client{}}
-
 // public methods
 
+var DefaultClients *clients = &clients{cnt: 0, clients: []*http.Client{}}
+
 func Client() *http.Client {
-	return DefaultClients.pick()
+	return DefaultClients.Client()
 }
 
 func SetClients(clients []*http.Client) {
-	DefaultClients.setClients(clients)
+	DefaultClients.SetClients(clients)
 }
