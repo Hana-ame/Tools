@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 )
 
 // pass an iter function to iter then you can iter it.

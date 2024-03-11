@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 )
 
 // this function receive json request.

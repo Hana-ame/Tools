@@ -3,7 +3,7 @@ package tools
 import (
 	"reflect"
 
-	"api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 )
 
 // return &s
