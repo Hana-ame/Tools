@@ -8,13 +8,25 @@ import (
 	"net/http"
 )
 
-var Header = make(map[string]string)
+var defaultHeader = make(http.Header)
 
-func FetchWithRequest(req *http.Request) (*http.Response, error) {
+func SetDefaultHeader(header http.Header) {
+	defaultHeader = header
+}
+
+func Do(req *http.Request) (*http.Response, error) {
+	for k, vs := range defaultHeader {
+		if req.Header.Get(k) == "" {
+			for _, v := range vs {
+				req.Header.Add(k, v)
+			}
+		}
+	}
 	return Client().Do(req)
 }
 
-func NewRequest(method, url string, header map[string]string, body io.Reader) (*http.Request, error) {
+func NewRequest(method, url string, header http.Header, body io.Reader) (*http.Request, error) {
+
 	req, err := http.NewRequest(
 		method,
 		url,
@@ -23,24 +35,21 @@ func NewRequest(method, url string, header map[string]string, body io.Reader) (*
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range Header {
-		if _, exist := header[k]; exist {
-			continue
-		} else {
-			req.Header.Set(k, v)
-		}
+
+	if header != nil {
+		req.Header = header
 	}
-	for k, v := range header {
-		req.Header.Set(k, v)
-	}
+
 	return req, nil
 }
 
 // this function make a request and return a response
-func Fetch(method, url string, header map[string]string, body io.Reader) (*http.Response, error) {
+func Fetch(method, url string, header http.Header, body io.Reader) (*http.Response, error) {
+
 	req, err := NewRequest(method, url, header, body)
 	if err != nil {
 		return nil, err
 	}
-	return FetchWithRequest(req)
+
+	return Do(req)
 }
