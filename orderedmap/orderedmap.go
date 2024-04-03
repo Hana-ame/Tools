@@ -60,6 +60,9 @@ func (o *OrderedMap) Get(key string) (interface{}, bool) {
 	return val, exists
 }
 
+// this function returns definatly the type of defaultValue.
+// the default value should be the same type as supposed.
+// otherwise, it will return default value though the original value exists.
 func (o *OrderedMap) GetOrDefault(key string, defaultValue interface{}) interface{} {
 	val, exists := o.values[key]
 	if !exists {
