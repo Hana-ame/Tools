@@ -2,6 +2,9 @@
 
 import os
 import sys
+import time
+import traceback
+
 def decode(s: str) -> str:
   try:
     return s.encode('gbk').decode('shift_jisx0213')
@@ -46,13 +49,17 @@ def rename_all(path):
     new_path = os.path.join(head, decode(tail))
     rename(path, new_path)
 
-
-for arg in sys.argv:
- rename_all(arg)
+try:
+  for arg in sys.argv:
+    print(arg)
+    rename_all(arg)
+except Exception as e:
+  traceback.print_exc()
+finally:
+  time.sleep(123)
 
 # fn = r'c:\Users\Lumin\Downloads\棦帯傔偺涋彈\www\audio\bgs\拞弌偟嘆.ogg'
 # rename_all(fn)
-
 
 encoding_list = ['ascii',
  'big5',
