@@ -1,12 +1,14 @@
+# python
 __pycache__
 
+# pyinstaller
 build
 dist
 *.spec
+*.sqlite3
+
 
 time.txt
-
-
 
 java
 js
