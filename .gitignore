@@ -1,6 +1,12 @@
 __pycache__
 
+build
+dist
+*.spec
+
 time.txt
+
+
 
 java
 js
