@@ -1,3 +1,5 @@
+# run py ./replace for everytiem cloned as submodel
+
 import os
 import sys
 import re
