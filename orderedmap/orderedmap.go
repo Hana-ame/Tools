@@ -61,12 +61,12 @@ func (o *OrderedMap) Get(key string) (interface{}, bool) {
 }
 
 func (o *OrderedMap) GetOrDefault(key string, defaultValue interface{}) interface{} {
-	val, exists := o.values[key]
+	val, exists := o.Get(key)
 	if !exists {
 		return defaultValue
 	}
 	if val == nil {
-		return val
+		return defaultValue
 	}
 	if reflect.TypeOf(val) == reflect.TypeOf(defaultValue) {
 		return val

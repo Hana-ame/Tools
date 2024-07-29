@@ -1,3 +1,5 @@
+// 整个文件意义不明。
+
 package tools
 
 import (
