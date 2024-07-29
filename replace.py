@@ -14,8 +14,9 @@ def get_module_name():
     return module_name.strip()
 
 def replace_go_file(file_path, module_name):
+  print("!",file_path, module_name)
   file = ''
-  with open(file_path) as f:
+  with open(file_path, encoding='utf8') as f:
     file = f.read()
   file = re.sub(r'"(.*?)/Tools/(.*?)"', fr'"{module_name}/Tools/\2"', file)
   with open(file_path, 'w') as f:

@@ -3,7 +3,7 @@ package tools
 import (
 	"reflect"
 
-	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 )
 
 // return &s
@@ -23,7 +23,7 @@ func ParsePointerToString(s any, ok bool) string {
 	return ""
 }
 
-// 用不了的吧
+// �ò��˵İ�
 func ParseSliceToStringSlice(s any, ok bool) []string {
 	if !ok {
 		return nil
