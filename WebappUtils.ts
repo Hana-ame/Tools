@@ -1,3 +1,5 @@
+// https://claude.ai/chat/74c7fea8-43d8-431e-8f1a-bd2d8bfde314
+
 export function getCookiesAsMap(document: Document) {
   const cookieMap = new Map<string, string>();
   
