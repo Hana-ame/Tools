@@ -1,6 +1,7 @@
 // 2024-7-29
+// randomreader @ 240801
 
-package tools
+package randomreader
 
 import (
 	"crypto/rand"
@@ -31,3 +32,7 @@ func (r *RandomReader) Read(p []byte) (int, error) {
 }
 
 var DefaultRandomReader = NewRandomReader("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+func Read(p []byte) (int, error) {
+	return DefaultRandomReader.Read(p)
+}
