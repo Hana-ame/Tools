@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"go-tools/Tools/orderedmap"
 )
 
 func BuildPlainReader(s any) io.Reader {

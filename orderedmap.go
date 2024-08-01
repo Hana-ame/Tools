@@ -5,7 +5,7 @@ package tools
 import (
 	"reflect"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"go-tools/Tools/orderedmap"
 )
 
 // return &s

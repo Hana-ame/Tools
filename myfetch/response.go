@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"go-tools/Tools/orderedmap"
 )
 
 // this function receive json request.
