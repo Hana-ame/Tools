@@ -51,6 +51,19 @@ func NewFromPairs(pairs []*Pair) *OrderedMap {
 	return o
 }
 
+// add and tested @ 240801
+
+func NewFromMap(values map[string]interface{}) *OrderedMap {
+	var keys []string
+	for k := range values {
+		keys = append(keys, k)
+	}
+	return &OrderedMap{
+		keys:   keys,
+		values: values,
+	}
+}
+
 func (o *OrderedMap) SetEscapeHTML(on bool) {
 	o.escapeHTML = on
 }

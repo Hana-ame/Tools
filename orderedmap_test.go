@@ -48,3 +48,19 @@ func TestOrderedmap(t *testing.T) {
 	oa := o.GetOrDefault("application", orderedmap.New()).(*orderedmap.OrderedMap)
 	fmt.Println(oa)
 }
+
+func TestFromMap(t *testing.T) {
+	m := map[string]any{
+		"asdf": 123,
+		"234":  4,
+	}
+	o := orderedmap.NewFromMap(m)
+	var v any
+	v = o.GetOrDefault("asdf", 1)
+	fmt.Println(v)
+	v = o.GetOrDefault("234", 1)
+	fmt.Println(v)
+	v = o.GetOrDefault("2345", 1)
+	fmt.Println(v)
+	fmt.Println(o)
+}
