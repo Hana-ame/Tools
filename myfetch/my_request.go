@@ -1,3 +1,4 @@
+// gin-pack @ 2024-04-06
 // azure-go @ 2023-12-21
 
 package myfetch
@@ -7,11 +8,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 )
+
+// requests
+// 就加了个header。
+func NewRequest(method, url string, header http.Header, body io.Reader) (*http.Request, error) {
+
+	req, err := http.NewRequest(
+		method,
+		url,
+		body,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if header != nil {
+		req.Header = header
+	}
+
+	return req, nil
+}
+
+// 下面的不知道是啥东西。没实现吧。
 
 func BuildPlainReader(s any) io.Reader {
 	switch v := s.(type) {
