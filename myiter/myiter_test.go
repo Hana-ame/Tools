@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"go-tools/Tools/orderedmap"
+	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 )
 
 // pass an iter function to iter then you can iter it.

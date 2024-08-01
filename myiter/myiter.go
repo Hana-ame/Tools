@@ -2,7 +2,7 @@
 
 package myiter
 
-import "go-tools/Tools/orderedmap"
+import "github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 
 type SliceIter []any
 
