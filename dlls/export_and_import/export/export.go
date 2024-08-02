@@ -1,3 +1,5 @@
+// return不了float和double啊。
+
 package main
 
 import "C"
@@ -34,7 +36,7 @@ func ConcatString(a, b *C.char) *C.char {
 }
 
 //export SampleFunction
-func SampleFunction(intVal C.int, floatVal C.float, doubleVal C.double, strVal *C.char, boolVal C.int) C.double {
+func SampleFunction(intVal C.int, floatVal C.float, doubleVal C.double, strVal *C.char, boolVal C.int, resultPtr *C.double) C.int {
 	goInt := int(intVal)
 	goFloat := float32(floatVal)
 	goDouble := float64(doubleVal)
@@ -52,7 +54,10 @@ func SampleFunction(intVal C.int, floatVal C.float, doubleVal C.double, strVal *
 
 	fmt.Printf("DLL: SampleFunction calculated result: %f\n", result)
 
-	return C.double(result)
+	// 这个可以
+	*resultPtr = C.double(result)
+
+	return C.int(result)
 }
 
 func main() {}

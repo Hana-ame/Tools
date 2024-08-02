@@ -1,5 +1,9 @@
+// https://github.com/golang/go/issues/3588
+// 下次试试在param里面用pointer引用。
+
 package main
 
+import "C"
 import (
 	"fmt"
 	"math"
@@ -10,79 +14,65 @@ import (
 const DLL_PATH = "../export/example.dll"
 
 func main() {
-	// Load the DLL
 	dll, err := syscall.LoadDLL(DLL_PATH)
 	if err != nil {
 		panic(err)
 	}
 	defer dll.Release()
 
-	// Find the Add procedure
-	addProc, err := dll.FindProc("Add")
-	if err != nil {
-		panic(err)
-	}
+	// Test Add function
+	addProc, _ := dll.FindProc("Add")
+	addRet, _, _ := addProc.Call(uintptr(5), uintptr(3))
+	fmt.Printf("Add result: %d\n", int(addRet))
 
-	// Call the Add function
-	a, b := 5, 3
-	ret, _, err := addProc.Call(uintptr(a), uintptr(b))
-	if err != syscall.Errno(0) {
-		fmt.Println("Syscall returned error:", err)
-	}
+	// Test AddFloat function
+	addFloatProc, _ := dll.FindProc("AddFloat")
+	a, b := float32(2.5), float32(3.7)
+	addFloatRet, _, _ := addFloatProc.Call(uintptr(math.Float32bits(a)), uintptr(math.Float32bits(b)))
+	fmt.Printf("SampleFunction raw return value: %v\n", addFloatRet)
+	fmt.Printf("AddFloat result: %f\n", math.Float32frombits(uint32(addFloatRet)))
 
-	fmt.Printf("Add function result: %d\n", int(ret))
-}
+	// Test AddDouble function
+	addDoubleProc, _ := dll.FindProc("AddDouble")
+	c, d := 2.5, 3.7
+	addDoubleRet, _, _ := addDoubleProc.Call(uintptr(math.Float64bits(c)), uintptr(math.Float64bits(d)))
+	fmt.Printf("SampleFunction raw return value: %v\n", addFloatRet)
+	fmt.Printf("AddDouble result: %f\n", math.Float64frombits(uint64(addDoubleRet)))
 
-func importSampleFunction() {
-	// Load the DLL
-	dll, err := syscall.LoadDLL(DLL_PATH)
-	if err != nil {
-		panic(err)
-	}
-	defer dll.Release()
+	// Test ConcatString function
+	concatStringProc, _ := dll.FindProc("ConcatString")
+	str1, _ := syscall.BytePtrFromString("Hello, ")
+	str2, _ := syscall.BytePtrFromString("World!")
+	concatStringRet, _, _ := concatStringProc.Call(uintptr(unsafe.Pointer(str1)), uintptr(unsafe.Pointer(str2)))
+	// 将返回的C字符串转换为Go字符串
+	fmt.Printf("ConcatString result: %s\n", C.GoString((*C.char)(unsafe.Pointer(concatStringRet)))) // must be that, or use &result instead.
 
-	// Find the procedure
-	proc, err := dll.FindProc("SampleFunction")
-	if err != nil {
-		panic(err)
-	}
-
-	// Prepare arguments
+	// Test SampleFunction
+	sampleProc, _ := dll.FindProc("SampleFunction")
 	intArg := 42
 	floatArg := float32(3.14)
 	doubleArg := 2.71828
-	strArg := "Hello, DLL!"
+	strArg, _ := syscall.BytePtrFromString("Hello, DLL!")
 	boolArg := true
+	var result float64
 
-	// Convert string to *byte
-	strPtr, err := syscall.BytePtrFromString(strArg)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Calling DLL with: int=%d, float=%f, double=%f, string=%s, bool=%v\n",
-		intArg, floatArg, doubleArg, strArg, boolArg)
-
-	// Call the function
-	ret, _, err := proc.Call(
+	sampleRet, _, err := sampleProc.Call(
 		uintptr(intArg),
 		uintptr(math.Float32bits(floatArg)),
 		uintptr(math.Float64bits(doubleArg)),
-		uintptr(unsafe.Pointer(strPtr)),
+		uintptr(unsafe.Pointer(strArg)),
 		uintptr(boolToInt(boolArg)),
+		uintptr(unsafe.Pointer(&result)),
 	)
 
 	if err != syscall.Errno(0) {
-		fmt.Println("Syscall returned error:", err)
+		fmt.Println("SampleFunction syscall returned error:", err)
 	}
 
-	// Print raw return value
-	fmt.Printf("Raw return value: %v\n", ret)
-
-	// Convert the result back to float64
-	result := math.Float64frombits(uint64(ret))
-
-	fmt.Printf("Result from DLL (as float64): %f\n", result)
+	fmt.Printf("SampleFunction raw return value: %v\n", sampleRet)
+	sampleResult := math.Float64frombits(uint64(sampleRet))
+	fmt.Printf("SampleFunction result (as float64): %f\n", sampleResult)
+	fmt.Printf("SampleFunction result (as float64): %f\n", result)
 }
 
 func boolToInt(b bool) int {
