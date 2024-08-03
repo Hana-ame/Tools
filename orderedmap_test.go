@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"api-pack/Tools/orderedmap"
 )
 
 func TestXxx(t *testing.T) {

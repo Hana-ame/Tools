@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"api-pack/Tools/orderedmap"
 )
 
 // requests
