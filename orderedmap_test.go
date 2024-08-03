@@ -64,3 +64,17 @@ func TestFromMap(t *testing.T) {
 	fmt.Println(v)
 	fmt.Println(o)
 }
+
+func TestMarshalNil(t *testing.T) {
+	var o *orderedmap.OrderedMap
+	s, e := json.Marshal(o)
+	fmt.Println(s, e)
+	fmt.Println(string(s)) // null
+}
+
+func TestUnmarshalNil(t *testing.T) {
+	s := "null"
+	o := orderedmap.New()
+	json.Unmarshal([]byte(s), o)
+	fmt.Println(o)
+}
