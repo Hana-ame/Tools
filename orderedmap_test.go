@@ -75,6 +75,34 @@ func TestMarshalNil(t *testing.T) {
 func TestUnmarshalNil(t *testing.T) {
 	s := "null"
 	o := orderedmap.New()
+	o.Set("key", "value")
 	json.Unmarshal([]byte(s), o)
+	fmt.Println(o) // same as orderedmap.New()
+}
+
+func TestUnmarshalPointer(t *testing.T) {
+	s := `{"a": "b", "b":{"c": "d"} } `
+	// s := `{a:"b"}`
+	o := orderedmap.New()
+	// fmt.Println(json.Unmarshal([]byte(s), *o)) // 这个不行，其他都可以
+	// fmt.Println(o)
+	fmt.Println(json.Unmarshal([]byte(s), o))
 	fmt.Println(o)
+	fmt.Println(json.Unmarshal([]byte(s), &o))
+	fmt.Println(o)
+	po := &o
+	fmt.Println(json.Unmarshal([]byte(s), &(po)))
+	fmt.Println(o)
+}
+
+// 全然大丈夫です
+func TestUnmarshalSlice(t *testing.T) {
+	s := `[{"b":"a"},{"a":"b"}]`
+	// o := orderedmap.New()
+	so := make([]*orderedmap.OrderedMap, 0, 5)
+	fmt.Println(json.Unmarshal([]byte(s), &so))
+	fmt.Println(so)
+	for _, o := range so {
+		fmt.Println(o)
+	}
 }
