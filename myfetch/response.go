@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 )
 
 // this function receive json request.
