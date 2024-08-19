@@ -4,12 +4,8 @@ package com.example.tools;
 // almost unable to use.
 public class ModCalc {
   final long MOD;
-  long ans;
   ModCalc(long mod){
     MOD = mod;
-  } 
-  ModCalc(int mod){
-    this((long)mod);
   } 
   ModCalc(ModCalc calc){
     MOD = calc.MOD;
@@ -18,25 +14,15 @@ public class ModCalc {
   public long ans() {
     return ans;
   }
-  public ModCalc set(long n) {
-    ans = n % MOD;
-    return this;
-  }
-  public ModCalc set(int n) {
-    return set((long)n);
+  public long mod(long n) {
+    return ((n % MOD) + MOD) % MOD;
   }
   public ModCalc set(ModCalc calc) {
     ans = calc.ans % MOD;
     return this;
   }
-  public ModCalc add(long n) {
-    n %= MOD;
-    ans += n;
-    ans %= MOD;
-    return this;
-  }
-  public ModCalc add(int n) {
-    return add((long)n);
+  public long sub(long a, long b) {
+    return mod(mod(a) - mod(b));
   }
   public ModCalc add(ModCalc calc) {
     calc.ans %= MOD;
@@ -47,17 +33,12 @@ public class ModCalc {
   public ModCalc sub(long n) {
     n %= MOD;
     ans -= n;
-    ans += MOD;
     ans %= MOD;
     return this;
-  }
-  public ModCalc sub(int n) {
-    return sub((long)n);
   }
   public ModCalc sub(ModCalc calc) {
     calc.ans %= MOD;
     ans -= calc.ans;
-    ans += MOD;
     ans %= MOD;
     return this;
   }
@@ -66,9 +47,6 @@ public class ModCalc {
     ans *= n;
     ans %= MOD;
     return this;
-  }
-  public ModCalc mul(int n) {
-    return mul((long)n);
   }
   public ModCalc mul(ModCalc calc) {
     calc.ans %= MOD;
