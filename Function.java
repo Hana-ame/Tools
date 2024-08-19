@@ -1,4 +1,5 @@
 package com.example.tools;
+
 @FunctionalInterface // java 1.8
 interface Function<T> {
   // public abstract String hashString();

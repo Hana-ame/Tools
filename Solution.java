@@ -41,8 +41,8 @@ class Solution {
     System.out.println(arr);
     int [] a = new int[]{1,2,3,4,5,6};
     System.out.println(a);
-    System.out.println(MyUtils.asList(a));  
-    System.out.println(MyUtils.asList(a));  
+    System.out.println(MyUtils.Arrays.asList(a));  
+    System.out.println(MyUtils.Arrays.asList(a));  
     Arrays.asList(a);
     
     

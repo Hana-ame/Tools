@@ -21,6 +21,34 @@ public class SEG<E> {
   
     Node pn;
     int l;
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + getEnclosingInstance().hashCode();
+      result = prime * result + l;
+      result = prime * result + r;
+      return result;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Node other = (Node) obj;
+      if (!getEnclosingInstance().equals(other.getEnclosingInstance()))
+        return false;
+      if (l != other.l)
+        return false;
+      if (r != other.r)
+        return false;
+      return true;
+    }
+
     int r;
     Node ln;
     Node rn;
@@ -56,6 +84,9 @@ public class SEG<E> {
         else return rn.set(index, element);
       }
       return e;
+    }
+    private SEG getEnclosingInstance() {
+      return SEG.this;
     }
   }
 

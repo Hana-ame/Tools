@@ -91,6 +91,6 @@ public class MidPriorityQueue<E> {
         res[i] = (int)sum;
     }
     // output
-    System.out.println(MyUtils.asList(res));
+    System.out.println(MyUtils.Arrays.asList(res));
   }
 }
