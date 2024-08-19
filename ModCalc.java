@@ -4,6 +4,7 @@ package com.example.tools;
 // almost unable to use.
 public class ModCalc {
   final long MOD;
+  private long ans;
   ModCalc(long mod){
     MOD = mod;
   } 

@@ -1,6 +1,7 @@
 # tools in maven
 
-时间太长其实不记得marven里面的java文件和单独的java文件有什么区别了。记得应该有。
+~~时间太长其实不记得marven里面的java文件和单独的java文件有什么区别了。记得应该有。~~  
+要加package这句   
 
 # tips
 为啥constructor也要public。
