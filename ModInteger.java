@@ -28,7 +28,11 @@ public class ModInteger {
   private int value;
   
   public ModInteger(int n) {
-    value = n;
+    value = n % C;
+  }
+  
+  public int getValue() {
+    return value % C;
   }
 
   public ModInteger add(ModInteger i) {
@@ -46,9 +50,20 @@ public class ModInteger {
     value = (int)(((long)value * (long)i.value) % C);
     return this;
   }
-  public int getValue() {
-    return value % C;
+
+  public ModInteger add(int i) {
+    value = (value + i) % C;
+    value = (value + C) % C;
+    return this;
   }
-
-
+  public ModInteger substract(int i) {
+    value = (value - i) % ModInteger.C;
+    value = (value + C) % C;
+    return this;
+  }
+  // to long
+  public ModInteger multiply(int i) {
+    value = (int)(((long)value * (long)i) % C);
+    return this;
+  }
 }
