@@ -1,4 +1,4 @@
-package handler
+package handlerFunc
 
 import (
 	"io"

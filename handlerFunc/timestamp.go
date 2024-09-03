@@ -1,4 +1,4 @@
-package timestamp
+package handlerFunc
 
 import (
 	"net/http"
