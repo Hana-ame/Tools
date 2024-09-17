@@ -2,39 +2,44 @@ package com.example.tools;
 
 import java.util.HashMap;
 
-public class UniqueSet<E> {
+public class UniqueSet<E> extends HashMap<E, Integer> {
 
-  private final HashMap<E, Integer> map;
   private int size = 0;
   
   public UniqueSet() {
-    map = new HashMap<>();
+    super();
   }
 
-  public void add(E e) {
-    map.put(e, map.getOrDefault(e, 0) + 1);
+  public UniqueSet(UniqueSet<E> set) {
+    super(set);
+    size = set.size;
+    keySet();
+  }
+
+  public void addElement(E e) {
+    put(e, getOrDefault(e, 0) + 1);
     size++;
   }
 
-  public boolean remove(E e) {
+  public boolean removeElement(E e) {
     // not removed
-    int oldVal = map.getOrDefault(e, 0);
+    int oldVal = getOrDefault(e, 0);
     if (oldVal <= 0) {
-      map.remove(e);
+      remove(e);
       return false;
     }
     
     // removed
     if (oldVal == 1)
-      map.remove(e);
+      remove(e);
     else 
-      map.put(e, oldVal - 1);
+      put(e, oldVal - 1);
     size--;      
     return true;
   }
 
   public int uniqueSize() {
-    return map.size();
+    return super.size();
   }
 
   public int size() {
