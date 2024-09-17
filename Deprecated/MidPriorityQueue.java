@@ -1,7 +1,13 @@
-package com.example.tools;
+package com.example.tools.Deprecated;
 
 import java.util.PriorityQueue;
 
+import com.example.tools.MyUtils;
+import com.example.tools.PriorityQueueWithMemo;
+import com.example.tools.MyUtils.Arrays;
+
+// 请找时候写一个更通用的数据结构处理器
+@Deprecated
 public class MidPriorityQueue<E> {
 
   private final PriorityQueue<E> head;

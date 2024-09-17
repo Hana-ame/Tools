@@ -1,12 +1,13 @@
-package com.example.tools;
+package com.example.tools.Deprecated;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// 写的啥。
+@Deprecated
 class LRUCache<K, V> extends LinkedHashMap<K, V> {
 
   private int capacity; // 缓存容量
-  // private LinkedHashMap<K, V> cache; // 缓存数据结构
 
   public LRUCache(int capacity) {
     // 初始化 LinkedHashMap，设置 accessOrder 为 true，表示按照访问顺序排序

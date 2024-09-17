@@ -1,4 +1,4 @@
-package com.example.tools;
+package com.example.tools.Deprecated;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.PriorityQueue;
 import com.example.Utils;
 
+// 请找时候写一个更通用的数据结构处理器
+@Deprecated
 public class MidQueue<E extends Comparable<E>>  {
   
   private final PriorityQueue<E> lo;

@@ -1,7 +1,9 @@
 // 请用ModInteger。这个文件留着展示。
 
-package com.example.tools;
+package com.example.tools.Deprecated;
+
 // almost unable to use.
+@Deprecated
 public class ModCalc {
   final long MOD;
   private long ans;

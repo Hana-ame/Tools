@@ -41,7 +41,7 @@ public class ModInteger {
     return this;
   }
   public ModInteger substract(ModInteger i) {
-    value = (value - i.value) % ModInteger.C;
+    value = (value - i.value) % C;
     value = (value + C) % C;
     return this;
   }
@@ -57,7 +57,7 @@ public class ModInteger {
     return this;
   }
   public ModInteger substract(int i) {
-    value = (value - i) % ModInteger.C;
+    value = (value - i) % C;
     value = (value + C) % C;
     return this;
   }

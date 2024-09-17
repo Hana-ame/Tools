@@ -2,38 +2,39 @@ package com.example.tools;
 
 import java.util.HashMap;
 
-public class UniqueSet<E> extends HashMap<E, Integer> {
+public class UniqueHashSet<E> extends HashMap<E, Integer> {
 
-  private int size = 0;
+  private transient int size = 0;
   
-  public UniqueSet() {
+  public UniqueHashSet() {
     super();
   }
 
-  public UniqueSet(UniqueSet<E> set) {
+  public UniqueHashSet(UniqueHashSet<E> set) {
     super(set);
     size = set.size;
-    keySet();
+    // keySet();
   }
 
-  public void addElement(E e) {
-    put(e, getOrDefault(e, 0) + 1);
+  public int addElement(E e) {
+    int count = put(e, getOrDefault(e, 0) + 1);
     size++;
+    return count;
   }
 
   public boolean removeElement(E e) {
     // not removed
-    int oldVal = getOrDefault(e, 0);
-    if (oldVal <= 0) {
+    int count = getOrDefault(e, 0);
+    if (count <= 0) {
       remove(e);
       return false;
     }
     
     // removed
-    if (oldVal == 1)
+    if (count == 1)
       remove(e);
     else 
-      put(e, oldVal - 1);
+      put(e, count - 1);
     size--;      
     return true;
   }

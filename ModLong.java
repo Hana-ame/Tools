@@ -49,35 +49,36 @@ public class ModLong {
     return value % C;
   }
 
-  public ModLong add(ModLong i) {
-    value = (value + i.value) % C;
+  public ModLong add(ModLong num) {
+    value = (value + num.value) % C;
     value = (value + C) % C;
     return this;
   }
-  public ModLong substract(ModLong i) {
-    value = (value - i.value) % ModLong.C;
+  public ModLong substract(ModLong num) {
+    value = (value - num.value) % C;
     value = (value + C) % C;
-    return this;
-  }
-  // to long
-  public ModLong multiply(ModLong i) {
-    value = (int)(((long)value * (long)i.value) % C);
     return this;
   }
 
-  public ModLong add(long i) {
-    value = (value + i) % C;
+  public ModLong multiply(ModLong num) {
+    value = ((value * num.value) % C);
+    return this;
+  }
+
+  public ModLong add(long num) {
+    value = (value + num) % C;
     value = (value + C) % C;
     return this;
   }
-  public ModLong substract(long i) {
-    value = (value - i) % ModLong.C;
+
+  public ModLong substract(long num) {
+    value = (value - num) % C;
     value = (value + C) % C;
     return this;
   }
   // to long
-  public ModLong multiply(long i) {
-    value = ((value * i) % C);
+  public ModLong multiply(long num) {
+    value = ((value * num) % C);
     return this;
   }
 

@@ -2,10 +2,17 @@ package com.example.tools;
 
 import java.util.HashMap;
 
-class DefaultHashMap<K, V> extends HashMap<K, V> {
+public class DefaultHashMap<K, V> extends HashMap<K, V> {
+
+  @FunctionalInterface // java 1.8
+  public interface Function<T> {
+    // public abstract String hashString();
+    public abstract T run();  
+  }
+
   private final Function<V> defaultFunction;
 
-  DefaultHashMap(Function<V> function) {
+  public DefaultHashMap(Function<V> function) {
     super();
     defaultFunction = function;
   }
@@ -45,7 +52,9 @@ class DefaultHashMap<K, V> extends HashMap<K, V> {
       protected boolean removeValue(Integer v) {
           return v == 0;
       }
-  };
+    };
+    dm.put(1, 2);
+    System.out.println(dm);
   }
 
 }

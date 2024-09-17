@@ -6,13 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 
 class Utils {
-    // math
-    public static int gcd(int a, int b) {
-        if (b == 0)
-            return a;
-        return gcd(b, a % b);
-    }
-
     // builder
     public static String toRawString(String s) {
         int n = s.length();

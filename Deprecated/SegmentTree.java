@@ -1,4 +1,4 @@
-package com.example.tools;
+package com.example.tools.Deprecated;
 
 import javax.swing.text.Segment;
 
