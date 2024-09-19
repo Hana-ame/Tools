@@ -5,3 +5,5 @@ time.txt
 build
 dist
 *.spec
+
+*.jpg
