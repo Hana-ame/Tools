@@ -1,3 +1,5 @@
+# what is this.
+
 fn = '/home/admin/access.log'
 
 def process_line(fn: str, fun: callable[[str], list[str]]):

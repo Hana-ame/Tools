@@ -1,1 +1,1 @@
-import e_dotenv
+from . import e_dotenv

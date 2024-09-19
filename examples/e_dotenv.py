@@ -3,6 +3,9 @@ import dotenv
 
 dotenv.load_dotenv()
 env = os.getenv("EXAMPLE")
+host = os.getenv("HOST")
+auth = os.getenv("AUTH")
+id = os.getenv("ID")
 
 print(env)
 # example
