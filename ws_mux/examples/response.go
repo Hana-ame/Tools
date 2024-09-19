@@ -3,6 +3,7 @@ package examples
 import (
 	wsmux "api-pack/Tools/ws_mux"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -49,32 +50,38 @@ func handleRequestFileBySha1sum(muc *wsmux.WsMuxConn) {
 	}
 	defer file.Close()
 
-	closed := false
-	stuck := make(chan struct{}, 1)
-	go func() {
-		for !closed {
-			buf := make([]byte, 1024*32)
-			n, err := file.Read(buf)
-			if err != nil {
-				stuck <- struct{}{}
-				break
-			}
-			if _, err := muc.Write(buf[:n]); err != nil {
-				stuck <- struct{}{}
-				break
-			}
-		}
-	}()
+	// 这段代码用了之后文件尾有问题。
+	// closed := false
+	// stuck := make(chan struct{}, 1)
+	// go func() {
+	// 	for !closed {
+	// 		buf := make([]byte, 1024*32)
+	// 		n, err := file.Read(buf)
+	// 		if err != nil {
+	// 			stuck <- struct{}{}
+	// 			break
+	// 		}
+	// 		if _, err := muc.Write(buf[:n]); err != nil {
+	// 			stuck <- struct{}{}
+	// 			break
+	// 		}
+	// 	}
+	// }()
 
-	select {
-	case <-stuck:
-	case <-muc.ReadChan:
-	}
+	// select {
+	// case <-stuck:
+	// case <-muc.ReadChan:
+	// }
 
-	closed = true
-	// n, err := io.CopyBuffer(muc, file, buf)
+	// 不能加，加了会导致文件卡死在最后0B，还会断流
+	// time.Sleep(time.Minute * 2)
+	// closed = true
 
-	log.Println("handleRequestFileBySha1sum")
+	buf := make([]byte, 1024)
+	n, err := io.CopyBuffer(muc, file, buf)
+
+	log.Println("handleRequestFileBySha1sum", n, err)
+	// log.Println("handleRequestFileBySha1sum")
 
 }
 
