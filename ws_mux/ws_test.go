@@ -1,8 +1,13 @@
 package wsmux
 
 import (
+	"fmt"
+	"io"
 	"log"
+	"math/rand"
 	"net/url"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -96,20 +101,87 @@ func TestMuxMul(t *testing.T) {
 		log.Println(pkg)
 	}()
 
-	go dialSendRecv(mux, []byte("卧槽你有病"), 5)
-	go dialSendRecv(mux, []byte("卧槽你有病吧"), 5)
-	go dialSendRecv(mux, []byte("卧槽你有大病吧"), 5)
+	go dialSendRecv(mux, []byte("1"), 5)
+	go dialSendRecv(mux, []byte("2"), 5)
+	go dialSendRecv(mux, []byte("3"), 5)
 
-	time.Sleep(time.Second * 20)
+	time.Sleep(time.Second * 200)
 }
 
 func dialSendRecv(mux *WsMux, msg []byte, times int) {
 	c, _ := mux.Dial()
 	go func() {
-		pkg := c.ReadPackage()
-		log.Println(pkg)
+		for {
+			pkg := c.ReadPackage()
+			log.Println("recv:", pkg, msg)
+		}
 	}()
 	for i := 0; i < times; i++ {
 		c.Write(msg)
+		log.Println("send:", i, msg)
+		time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
 	}
+}
+
+func TestCopy(t *testing.T) {
+	// 打开源文件
+	srcFile, err := os.Open("source.txt")
+	if err != nil {
+		fmt.Println("打开源文件失败:", err)
+		return
+	}
+	defer srcFile.Close()
+
+	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8080", Path: "/ws"}
+	log.Println(u)
+
+	// 建立 WebSocket 连接
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
+	log.Println("dial")
+
+	mux := NewWsMux(c, MuxSeqClient)
+
+	go func() {
+		for {
+			c := mux.Accept()
+			go func(c *WsConn) {
+				// 创建目标文件
+				dstFile, err := os.Create("destination" + strconv.Itoa(int(c.ID)) + ".txt")
+				if err != nil {
+					fmt.Println("创建目标文件失败:", err)
+					return
+				}
+				defer dstFile.Close()
+				buffer := make([]byte, 1024)
+				io.CopyBuffer(dstFile, c, buffer)
+			}(c)
+		}
+	}()
+
+	cs := make([]*WsConn, 3)
+	for i := 0; i < 3; i++ {
+		go func(i int) {
+			cs[i], _ = mux.Dial()
+			buf := make([]byte, 1024) // 1KB缓冲区
+			file, err := os.Open("source.txt")
+			if err != nil {
+				fmt.Println("打开文件失败:", err)
+				return
+			}
+			defer file.Close()
+
+			io.CopyBuffer(cs[i], file, buf)
+		}(i)
+	}
+	// 创建缓冲区
+	// 循环读取并写入
+
+	fmt.Println("文件复制完成")
+
+	time.Sleep(time.Minute * 2)
+
 }

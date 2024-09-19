@@ -2,6 +2,7 @@ package wsmux
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -54,15 +55,17 @@ func (c *WsConn) WritePackage(pkg *WsPackage) error {
 		pkg = &WsPackage{ID: c.ID, SeqN: c.SeqN, Message: []byte{}}
 	}
 	err := c.WriteMessage(websocket.BinaryMessage, pkg.ToBytes())
-	if err == nil {
-		c.SeqN++
-	}
+
 	return err
 }
 
 func (c *WsConn) Read(p []byte) (n int, err error) {
 	pkg := c.ReadPackage()
-	return copy(p, pkg.Message), nil
+	if len(pkg.Message) == 0 {
+		err = io.EOF
+		c.Close()
+	}
+	return copy(p, pkg.Message), err
 }
 func (c *WsConn) Write(p []byte) (n int, err error) {
 	c.Lock()
@@ -73,7 +76,7 @@ func (c *WsConn) Write(p []byte) (n int, err error) {
 		Message: p,
 	}
 	err = c.WritePackage(pkg)
-	if err == nil {
+	if err != nil {
 		c.SeqN++
 	}
 	return len(pkg.Message), err
