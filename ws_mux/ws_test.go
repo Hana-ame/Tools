@@ -62,6 +62,7 @@ func TestMux(t *testing.T) {
 	log.Println("dial")
 
 	mux := NewWsMux(c, MuxSeqClient)
+	go mux.ReadDaemon(c)
 
 	go func() {
 		c := mux.Accept()
@@ -94,6 +95,7 @@ func TestMuxMul(t *testing.T) {
 	log.Println("dial")
 
 	mux := NewWsMux(c, MuxSeqClient)
+	go mux.ReadDaemon(c)
 
 	go func() {
 		c := mux.Accept()
@@ -144,11 +146,12 @@ func TestCopy(t *testing.T) {
 	log.Println("dial")
 
 	mux := NewWsMux(c, MuxSeqClient)
+	go mux.ReadDaemon(c)
 
 	go func() {
 		for {
 			c := mux.Accept()
-			go func(c *WsConn) {
+			go func(c *WsMuxConn) {
 				// 创建目标文件
 				dstFile, err := os.Create("destination" + strconv.Itoa(int(c.ID)) + ".txt")
 				if err != nil {
@@ -162,7 +165,7 @@ func TestCopy(t *testing.T) {
 		}
 	}()
 
-	cs := make([]*WsConn, 3)
+	cs := make([]*WsMuxConn, 3)
 	for i := 0; i < 3; i++ {
 		go func(i int) {
 			cs[i], _ = mux.Dial()

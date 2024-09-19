@@ -3,12 +3,13 @@ package wsmux
 import (
 	"fmt"
 	"io"
+	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
-type WsConn struct {
+type WsMuxConn struct {
 	sync.Mutex
 
 	*WsMux
@@ -22,8 +23,8 @@ type WsConn struct {
 	closed bool
 }
 
-func NewWsConn(id uint16, w *WsMux) *WsConn {
-	conn := &WsConn{
+func NewWsConn(id uint16, w *WsMux) *WsMuxConn {
+	conn := &WsMuxConn{
 		WsMux:    w,
 		ID:       id,
 		ReadChan: make(chan *WsPackage, 32),
@@ -34,7 +35,7 @@ func NewWsConn(id uint16, w *WsMux) *WsConn {
 	return conn
 }
 
-func (c *WsConn) PutPackage(pkg *WsPackage) bool {
+func (c *WsMuxConn) PutPackage(pkg *WsPackage) bool {
 	select {
 	case c.ReadChan <- pkg:
 		return true
@@ -43,32 +44,36 @@ func (c *WsConn) PutPackage(pkg *WsPackage) bool {
 	}
 }
 
-func (c *WsConn) ReadPackage() *WsPackage {
+// 喷了这边怎么实现EOF啊
+func (c *WsMuxConn) ReadPackage() *WsPackage {
 	return <-c.ReadChan
 }
-func (c *WsConn) WritePackage(pkg *WsPackage) error {
+func (c *WsMuxConn) WritePackage(pkg *WsPackage) error {
 	if c.closed {
-		return fmt.Errorf("WsConn is closed")
+		return fmt.Errorf("WsMuxConn is closed")
 	}
 
 	if pkg == nil {
-		pkg = &WsPackage{ID: c.ID, SeqN: c.SeqN, Message: []byte{}}
+		return fmt.Errorf("pkg is nil")
+		// pkg = &WsPackage{ID: c.ID, SeqN: c.SeqN, Message: []byte{}}
 	}
 	err := c.WriteMessage(websocket.BinaryMessage, pkg.ToBytes())
 
 	return err
 }
 
-func (c *WsConn) Read(p []byte) (n int, err error) {
+func (c *WsMuxConn) Read(p []byte) (n int, err error) {
 	pkg := c.ReadPackage()
+	// log.Println("read", len(pkg.Message)) // debug
 	if len(pkg.Message) == 0 {
 		err = io.EOF
 		c.Close()
 	}
 	return copy(p, pkg.Message), err
 }
-func (c *WsConn) Write(p []byte) (n int, err error) {
+func (c *WsMuxConn) Write(p []byte) (n int, err error) {
 	c.Lock()
+	// log.Println("write", len(p), p[:min(len(p), 10)])
 	defer c.Unlock()
 	pkg := &WsPackage{
 		ID:      c.ID,
@@ -82,15 +87,16 @@ func (c *WsConn) Write(p []byte) (n int, err error) {
 	return len(pkg.Message), err
 }
 
-func (c *WsConn) Close() error {
+func (c *WsMuxConn) Close() error {
 	c.Lock()
+	log.Println("close")
 	defer c.Unlock()
 
 	if c.closed {
 		return nil
 	}
 	c.WsMux.DeleteConn(c.ID)
-	c.Write([]byte{})
+	c.WritePackage(&WsPackage{ID: c.ID, SeqN: 0, Message: []byte{}})
 	c.closed = true
 	return nil
 }

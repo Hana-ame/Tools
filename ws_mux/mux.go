@@ -18,9 +18,9 @@ type WsMux struct {
 
 	SeqN uint16
 
-	acceptingConnChan     chan *WsConn
+	acceptingConnChan     chan *WsMuxConn
 	acceptingConnChanSize int
-	Conns                 map[uint16]*WsConn
+	Conns                 map[uint16]*WsMuxConn
 
 	err error
 }
@@ -31,10 +31,10 @@ func NewWsMux(conn *websocket.Conn, seqType uint16) *WsMux {
 		Conn:                  conn,
 		SeqN:                  seqType,
 		acceptingConnChanSize: acceptingConnChanSize,
-		acceptingConnChan:     make(chan *WsConn, acceptingConnChanSize),
-		Conns:                 make(map[uint16]*WsConn),
+		acceptingConnChan:     make(chan *WsMuxConn, acceptingConnChanSize),
+		Conns:                 make(map[uint16]*WsMuxConn),
 	}
-	go wsMux.readDaemon(conn)
+	// go wsMux.ReadDaemon(conn)
 	return wsMux
 }
 
@@ -51,7 +51,7 @@ func (w *WsMux) generateSequenceNumber() uint16 {
 	return w.SeqN
 }
 
-func (w *WsMux) readDaemon(conn *websocket.Conn) {
+func (w *WsMux) ReadDaemon(conn *websocket.Conn) {
 	for {
 		_, data, err := conn.ReadMessage()
 		if w.setErrorIfPresent(err) {
@@ -64,6 +64,9 @@ func (w *WsMux) readDaemon(conn *websocket.Conn) {
 		}
 
 		if w.GetConn(pkg.ID) == nil {
+			if len(pkg.Message) == 0 {
+				continue
+			}
 			for len(w.acceptingConnChan) > 0 {
 				(<-w.acceptingConnChan).Close()
 			}
@@ -74,14 +77,14 @@ func (w *WsMux) readDaemon(conn *websocket.Conn) {
 		w.GetConn(pkg.ID).PutPackage(pkg)
 	}
 }
-func (w *WsMux) AddConn(conn *WsConn) *WsConn {
+func (w *WsMux) AddConn(conn *WsMuxConn) *WsMuxConn {
 	w.Lock()
 	defer w.Unlock()
 	w.Conns[conn.ID] = conn
 	return conn
 }
 
-func (w *WsMux) GetConn(id uint16) *WsConn {
+func (w *WsMux) GetConn(id uint16) *WsMuxConn {
 	w.RLock()
 	defer w.RUnlock()
 	return w.Conns[id]
@@ -93,12 +96,12 @@ func (w *WsMux) DeleteConn(id uint16) {
 	delete(w.Conns, id)
 }
 
-func (w *WsMux) Accept() *WsConn {
+func (w *WsMux) Accept() *WsMuxConn {
 	return <-w.acceptingConnChan
 }
 
 // always no error
-func (w *WsMux) Dial() (*WsConn, error) {
+func (w *WsMux) Dial() (*WsMuxConn, error) {
 	conn := NewWsConn(w.generateSequenceNumber(), w)
 	w.AddConn(conn)
 	return conn, nil
