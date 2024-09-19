@@ -7,6 +7,8 @@ dist
 *.spec
 *.sqlite3
 
+*.jpg
+*.png
 
 time.txt
 

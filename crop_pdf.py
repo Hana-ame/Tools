@@ -11,7 +11,7 @@ def crop_file(fn:str, pages:int):
   # get pages.
   reader = PdfReader(fn)
   total_pages = len(reader.pages) 
-  for i in range(0,total_pages,pages):
+  for i in range(0,total_pages,pages): # 0, 5, 10, 15, ...
     page_start = i+1
     page_end = min(i+pages, total_pages)
     print(page_start, page_end)
