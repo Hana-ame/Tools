@@ -1,7 +1,6 @@
 package mymux
 
 import (
-	"fmt"
 	"io"
 	"net"
 )
@@ -36,17 +35,11 @@ func (b *MyConnBus) SetReading(reading bool) {
 func (b *MyConnBus) RecvFrame() (MyFrame, error) {
 	f := make([]byte, 1500)
 	n, err := b.Read(f)
-	return DataFrame(f[:n]), err
+	return MyFrame(f[:n]), err
 }
 
 func (b *MyConnBus) SendFrame(f MyFrame) {
-	switch v := f.(type) {
-	case DataFrame:
-		b.Write(v)
-	case CtrlFrame:
-		b.Write(v)
-	default:
-	}
+	b.Write(f)
 }
 
 type MyReadWriteBus struct {
@@ -71,17 +64,10 @@ func (b *MyReadWriteBus) SetReading(reading bool) {
 func (b *MyReadWriteBus) RecvFrame() (MyFrame, error) {
 	f := make([]byte, 1500)
 	n, err := b.Read(f)
-	return DataFrame(f[:n]), err
+	return MyFrame(f[:n]), err
 }
 
 func (b *MyReadWriteBus) SendFrame(f MyFrame) error {
-	switch v := f.(type) {
-	case DataFrame:
-		b.Write(v)
-	case CtrlFrame:
-		b.Write(v)
-	default:
-		return fmt.Errorf("unkown type")
-	}
-	return nil
+	_, err := b.Write(f)
+	return err
 }

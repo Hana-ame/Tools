@@ -92,6 +92,9 @@ func (c *MyConn) Read(p []byte) (n int, err error) {
 	}
 	c.nextReadSeq = f.SequenceNumber() // 这个需要稍后改一下。
 
+	log.Printf("%s", f.Data())
+	// PrintFrame((f))
+
 	copy(p, f.Data())
 	return
 }
@@ -102,7 +105,7 @@ func (c *MyConn) Close() error {
 		return fmt.Errorf("closed")
 	}
 	// 给ReadBuf发送一个Close的CtrlFrame，读到就直接EOF
-	c.ReadBuf <- DataFrame(NewCtrlFrame(0, 0, 0, Close, 0, 0))
+	c.ReadBuf <- MyFrame(NewCtrlFrame(0, 0, 0, Close, 0, 0))
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.Port, Close, c.sequenceNumber, c.nextReadSeq))
 	c.MyMux.RemoveConn(c)
 	c.MyMux.PrintMap() // debug

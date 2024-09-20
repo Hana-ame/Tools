@@ -18,8 +18,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := b2bReader.Read(buf)
-			// log.Printf("==========pipe b:")
-			// PrintFrame(buf[:n])
+			log.Printf("==========pipe b:")
+			PrintFrame(buf[:n])
 			b2bWriter.Write(buf[:n])
 		}
 	}()
@@ -27,8 +27,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := a2aReader.Read(buf)
-			// log.Printf("==========pipe a:")
-			// PrintFrame(buf[:n])
+			log.Printf("==========pipe a:")
+			PrintFrame(buf[:n])
 			a2aWriter.Write(buf[:n])
 		}
 	}()
@@ -69,7 +69,7 @@ func handleServerConn(c *MyConn) {
 				log.Fatal(err)
 			}
 
-			log.Println(c.Tag(), "server recv:", string(buf[:n]))
+			log.Println(c.Tag(), n, "server recv:", string(buf[:n]))
 
 			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
 		}
@@ -96,7 +96,7 @@ func handleClient(client *MyMuxClient) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println(c.Tag(), "client recv:", string(buf[:n]))
+			log.Println(c.Tag(), n, "client recv:", string(buf[:n]))
 		}
 	}()
 

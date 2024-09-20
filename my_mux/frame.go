@@ -45,29 +45,11 @@ const (
 	Acknowledge Command = 1<<6 | 2
 )
 
-type MyFrame interface {
-	Tag() MyTag
+type MyFrame []byte
 
-	// 源地址 [0:2]
-	Source() Addr
-	// 目的地址 [2:4]
-	Destination() Addr
-	// 端口号只有单向有效，不同服务请用不同的目的地址 [4]
-	Port() uint8
-	// Data = 0, Ctrl != 0 [5]
-	Command() Command
-	// 窗口大小 max = 127， [6]
-	SequenceNumber() uint8
-	AcknowledgeNumber() uint8 // 对不齐不做了
-
-	Data() []byte
-}
-
-type CtrlFrame []byte
-
-func NewCtrlFrame(source, destination Addr, port uint8, command Command, sequenceNumber, acknowledgeNumber uint8) CtrlFrame {
+func NewCtrlFrame(source, destination Addr, port uint8, command Command, sequenceNumber, acknowledgeNumber uint8) MyFrame {
 	// 创建一个新的 CtrlFrame，长度为头部长度
-	f := make(CtrlFrame, FrameHeadLength)
+	f := make(MyFrame, FrameHeadLength)
 	f.SetSource(source)
 	f.SetDestination(destination)
 	f.SetPort(port)
@@ -77,77 +59,8 @@ func NewCtrlFrame(source, destination Addr, port uint8, command Command, sequenc
 	return f
 }
 
-func (f CtrlFrame) Tag() MyTag {
-	var tag MyTag
-	copy(tag[:], f[:TagLength])
-	return tag
-}
-
-// 获取源地址
-func (f CtrlFrame) Source() Addr {
-	return Addr(binary.BigEndian.Uint16(f[0:2])) // 使用大端字节序读取
-}
-
-// 获取目的地址
-func (f CtrlFrame) Destination() Addr {
-	return Addr(binary.BigEndian.Uint16(f[2:4])) // 使用大端字节序读取
-}
-
-// 获取端口
-func (f CtrlFrame) Port() uint8 {
-	return f[4] // 假设 Port 在第 5 个字节
-}
-
-// 获取数据类型
-func (f CtrlFrame) Command() Command {
-	return Command(f[5]) // 假设 Command 在第 6 个字节
-}
-
-// 获取序列号
-func (f CtrlFrame) SequenceNumber() uint8 {
-	return f[6] // 假设 SequenceNumber 在第 6 个字节
-}
-
-func (f CtrlFrame) AcknowledgeNumber() uint8 {
-	return f[7]
-}
-
-// 设置源地址
-func (f CtrlFrame) SetSource(source Addr) {
-	binary.BigEndian.PutUint16(f[0:2], uint16(source)) // 使用大端字节序写入
-}
-
-// 设置目的地址
-func (f CtrlFrame) SetDestination(destination Addr) {
-	binary.BigEndian.PutUint16(f[2:4], uint16(destination)) // 使用大端字节序写入
-}
-
-// 设置端口
-func (f CtrlFrame) SetPort(port uint8) {
-	f[4] = port // 假设 Port 在第 5 个字节
-}
-
-func (f CtrlFrame) SetCommand(command Command) {
-	f[5] = byte(command)
-}
-
-// 设置序列号
-func (f CtrlFrame) SetSequenceNumber(sequence uint8) {
-	f[6] = sequence // 假设 SequenceNumber 在第 6 个字节
-}
-
-func (f CtrlFrame) SetAcknowledgeNumber(acknowledge uint8) {
-	f[7] = acknowledge // 假设 SequenceNumber 在第 7 个字节
-}
-
-func (f CtrlFrame) Data() []byte {
-	return f[FrameHeadLength:]
-}
-
-type DataFrame []byte
-
-func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowledgeNumber uint8, data []byte) DataFrame {
-	f := make(DataFrame, FrameHeadLength+len(data))
+func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowledgeNumber uint8, data []byte) MyFrame {
+	f := make(MyFrame, FrameHeadLength+len(data))
 	f.SetSource(source)
 	f.SetDestination(destination)
 	f.SetPort(port)
@@ -157,80 +70,84 @@ func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowle
 	return f
 }
 
-func PrintFrame(f DataFrame) {
+func PrintFrame(f MyFrame) {
 	log.Printf("%d->%d:%d,%s, %s\n",
 		f.Source(), f.Destination(),
 		f.Port(), f.Command().ToString(),
 		f.Data())
 }
 
-func (f DataFrame) Tag() MyTag {
+func (f MyFrame) Tag() MyTag {
 	var tag MyTag
 	copy(tag[:], f[:TagLength])
 	return tag
 }
 
 // 获取源地址
-func (f DataFrame) Source() Addr {
+func (f MyFrame) Source() Addr {
 	return Addr(binary.BigEndian.Uint16(f[0:2])) // 使用大端字节序读取
 }
 
 // 获取目的地址
-func (f DataFrame) Destination() Addr {
+func (f MyFrame) Destination() Addr {
 	return Addr(binary.BigEndian.Uint16(f[2:4])) // 使用大端字节序读取
 }
 
 // 获取端口
-func (f DataFrame) Port() uint8 {
+func (f MyFrame) Port() uint8 {
 	return f[4] // 假设 Port 在第 5 个字节
 }
 
 // 获取数据类型
-func (f DataFrame) Command() Command {
+func (f MyFrame) Command() Command {
 	return Command(f[5]) // 假设 Command 在第 6 个字节
 }
 
 // 获取序列号
-func (f DataFrame) SequenceNumber() uint8 {
+func (f MyFrame) SequenceNumber() uint8 {
 	return f[6] // 假设 SequenceNumber 在第 7 个字节
 }
 
 // 获取序列号
-func (f DataFrame) AcknowledgeNumber() uint8 {
+func (f MyFrame) AcknowledgeNumber() uint8 {
 	return f[7] // 假设 SequenceNumber 在第 7 个字节
 }
 
 // 获取数据内容
-func (f DataFrame) Data() []byte {
+func (f MyFrame) Data() []byte {
 	return f[FrameHeadLength:] // 假设数据内容从第 8 个字节开始
 }
 
 // 设置源地址
-func (f DataFrame) SetSource(source Addr) {
+func (f MyFrame) SetSource(source Addr) {
 	binary.BigEndian.PutUint16(f[0:2], uint16(source)) // 使用大端字节序写入
 }
 
 // 设置目的地址
-func (f DataFrame) SetDestination(destination Addr) {
+func (f MyFrame) SetDestination(destination Addr) {
 	binary.BigEndian.PutUint16(f[2:4], uint16(destination)) // 使用大端字节序写入
 }
 
 // 设置端口
-func (f DataFrame) SetPort(port uint8) {
+func (f MyFrame) SetPort(port uint8) {
 	f[4] = port // 假设 Port 在第 5 个字节
 }
 
+func (f MyFrame) SetCommand(command Command) {
+	f[5] = byte(command)
+}
+
 // 设置序列号
-func (f DataFrame) SetSequenceNumber(sequence uint8) {
+func (f MyFrame) SetSequenceNumber(sequence uint8) {
 	f[6] = sequence // 假设 SequenceNumber 在第 7 个字节
 }
 
-func (f DataFrame) SetAcknowledgeNumber(acknowledge uint8) {
+func (f MyFrame) SetAcknowledgeNumber(acknowledge uint8) {
 	f[7] = acknowledge // 假设 SequenceNumber 在第 7 个字节
 }
 
 // 设置数据内容
-func (f DataFrame) SetData(data []byte) int {
+func (f MyFrame) SetData(data []byte) int {
 	f[5] = byte(Data)
 	return copy(f[FrameHeadLength:], data) // 假设数据内容从第 8 个字节开始
 }
