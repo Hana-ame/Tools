@@ -1,6 +1,7 @@
 package examples
 
 import (
+	db "api-pack/Tools/db_filehash"
 	wsmux "api-pack/Tools/ws_mux"
 	"fmt"
 	"io"
@@ -38,7 +39,11 @@ func handleRequestFileBySha1sum(muc *wsmux.WsMuxConn) {
 	pkg := muc.ReadPackage()
 	sha1sum := string(pkg.Message)
 
-	filepath := getPathFromSha1sum(sha1sum)
+	filepath, err := getPathFromSha1sum(sha1sum)
+	if err != nil {
+		log.Println(filepath, err)
+		return
+	}
 
 	log.Println(filepath)
 
@@ -86,6 +91,6 @@ func handleRequestFileBySha1sum(muc *wsmux.WsMuxConn) {
 }
 
 // このまま
-func getPathFromSha1sum(sha1sum string) string {
-	return sha1sum
+func getPathFromSha1sum(sha1sum string) (string, error) {
+	return db.ReadPathByHash(sha1sum)
 }

@@ -1,10 +1,11 @@
 // by gpt4o mini @ 240801
 // https://chatgpt.com/share/943bfc66-0ba6-45aa-b680-9abbfbc02d36
 
-package tools
+package log
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 )
 
@@ -50,4 +51,51 @@ func DeepPrint(v any, indent string) {
 	default:
 		fmt.Println(rv.Interface())
 	}
+}
+
+type logLevel int
+
+const (
+	Trace logLevel = iota
+	Debug
+	Info
+	Warn
+	Error
+	Fatal
+)
+
+var LogLevel logLevel = Warn
+
+func LogT(tag any, msg any) {
+	if LogLevel > Trace {
+		return
+	}
+	log.Println("[", tag, "] Trace:", msg)
+}
+func LogD(tag any, msg any) {
+	if LogLevel > Debug {
+		return
+	}
+	log.Println("[", tag, "] Debug:", msg)
+}
+func LogI(tag any, msg any) {
+	if LogLevel > Info {
+		return
+	}
+	log.Println("[", tag, "] Error:", msg)
+}
+func LogW(tag any, msg any) {
+	if LogLevel > Warn {
+		return
+	}
+	log.Println("[", tag, "] Warn:", msg)
+}
+func LogE(tag any, msg any) {
+	if LogLevel > Error {
+		return
+	}
+	log.Println("[", tag, "] Error:", msg)
+}
+func LogF(tag any, msg any) {
+	log.Fatal("[", tag, "] Fatal:", msg)
 }
