@@ -2,13 +2,16 @@ package mymux
 
 import (
 	"fmt"
+	"log"
 
 	tools "github.com/hana-ame/udptun/Tools"
 )
 
-type FrameTag [6]byte
+const TagLength = 5
 
-func (f FrameTag) Tag() FrameTag {
+type MyTag [TagLength]byte
+
+func (f MyTag) Tag() MyTag {
 	return f
 }
 
@@ -16,6 +19,9 @@ type MyMux interface {
 	MyBusWriter
 
 	RemoveConn(*MyConn)
+
+	// debug
+	PrintMap()
 }
 
 type MyMuxServer struct {
@@ -24,7 +30,7 @@ type MyMuxServer struct {
 	localAddr Addr
 
 	// SequenceNumber uint8 // for control frame
-	*tools.ConcurrentHashMap[FrameTag, *MyConn]
+	*tools.ConcurrentHashMap[MyTag, *MyConn]
 	acceptedConnChannel chan *MyConn
 }
 
@@ -32,7 +38,7 @@ func NewMuxServer(writer MyBusWriter) *MyMuxServer {
 	mux := &MyMuxServer{
 		MyBusWriter: writer,
 
-		ConcurrentHashMap:   tools.NewConcurrentHashMap[FrameTag, *MyConn](),
+		ConcurrentHashMap:   tools.NewConcurrentHashMap[MyTag, *MyConn](),
 		acceptedConnChannel: make(chan *MyConn),
 	}
 	return mux
@@ -64,6 +70,8 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 				m.acceptedConnChannel <- newConn
 			}
 			m.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Acknowledge, 0, 0))
+			log.Println("after request")
+			m.PrintMap() // debug
 		case Acknowledge:
 			continue
 
@@ -81,7 +89,13 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 			}
 		}
 	}
+}
 
+func (m *MyMuxServer) PrintMap() {
+	log.Println("print mux map", m.localAddr)
+	m.ConcurrentHashMap.ForEach(func(key MyTag, value *MyConn) {
+		fmt.Println(key, value)
+	})
 }
 
 type MyMuxClient struct {
@@ -89,7 +103,7 @@ type MyMuxClient struct {
 
 	localAddr Addr
 	// SequenceNumber uint8 // for control frame
-	*tools.ConcurrentHashMap[FrameTag, *MyConn]
+	*tools.ConcurrentHashMap[MyTag, *MyConn]
 
 	nextport uint8
 }
@@ -98,7 +112,7 @@ func NewMuxClient(writer MyBusWriter) *MyMuxClient {
 	mux := &MyMuxClient{
 		MyBusWriter: writer,
 
-		ConcurrentHashMap: tools.NewConcurrentHashMap[FrameTag, *MyConn](),
+		ConcurrentHashMap: tools.NewConcurrentHashMap[MyTag, *MyConn](),
 	}
 	return mux
 }
@@ -158,5 +172,11 @@ func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
 			}
 		}
 	}
+}
 
+func (m *MyMuxClient) PrintMap() {
+	log.Println("print mux map", m.localAddr)
+	m.ConcurrentHashMap.ForEach(func(key MyTag, value *MyConn) {
+		fmt.Println(key, value)
+	})
 }

@@ -9,7 +9,7 @@ import (
 type MyConn struct {
 	MyMux
 
-	FrameTag
+	MyTag
 
 	localAddr  Addr
 	remoteAddr Addr
@@ -27,10 +27,10 @@ type MyConn struct {
 	closed bool
 }
 
-func NewConn(mux MyMux, frameTag FrameTag, localAddr, remoteAddr Addr, port uint8) *MyConn {
+func NewConn(mux MyMux, frameTag MyTag, localAddr, remoteAddr Addr, port uint8) *MyConn {
 	conn := &MyConn{
 		MyMux:          mux,
-		FrameTag:       frameTag,
+		MyTag:          frameTag,
 		localAddr:      localAddr,
 		remoteAddr:     remoteAddr,
 		Port:           port,
@@ -93,6 +93,7 @@ func (c *MyConn) Close() error {
 	c.ReadBuf <- DataFrame(NewCtrlFrame(0, 0, 0, Close, 0, 0))
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.Port, Close, c.sequenceNumber, c.nextReadSeq))
 	c.MyMux.RemoveConn(c)
+	c.MyMux.PrintMap() // debug
 	return nil
 }
 

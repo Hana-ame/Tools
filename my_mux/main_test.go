@@ -18,7 +18,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := b2bReader.Read(buf)
-			log.Println("pipe b:", buf[:n])
+			// log.Println("pipe b:", buf[:n])
+			PrintFrame(buf[:n])
 			b2bWriter.Write(buf[:n])
 		}
 	}()
@@ -26,7 +27,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := a2aReader.Read(buf)
-			log.Println("pipe a:", buf[:n])
+			// log.Println("pipe a:", buf[:n])
+			PrintFrame(buf[:n])
 			a2aWriter.Write(buf[:n])
 		}
 	}()
@@ -41,10 +43,12 @@ func TestXxx(t *testing.T) {
 	go bMux.ReadDaemon(bBus)
 
 	go handleServer(aMux)
-	go handleClient(bMux)
-	go handleClient(bMux)
+	time.Sleep(5 * time.Second)
 
-	time.Sleep(30 * time.Second)
+	go handleClient(bMux)
+	// go handleClient(bMux)
+
+	time.Sleep(60 * time.Second)
 }
 
 func handleServer(server *MyMuxServer) {
@@ -67,7 +71,7 @@ func handleServerConn(c *MyConn) {
 
 			log.Println(c.Tag(), "server recv:", string(buf[:n]))
 
-			c.Write(buf[:n])
+			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
 		}
 	}()
 

@@ -2,10 +2,27 @@ package mymux
 
 import (
 	"encoding/binary"
+	"log"
 	"strconv"
 )
 
 type Command uint8
+
+func (cmd Command) ToString() string {
+	switch cmd {
+	case Data:
+		return "Data"
+	case Close:
+		return "Close"
+	case Request:
+		return "Request"
+	case Acknowledge:
+		return "Acknowledge"
+	default:
+		return "Unknown"
+	}
+}
+
 type Addr uint16
 
 func (a Addr) NetWork() string {
@@ -29,7 +46,7 @@ const (
 )
 
 type MyFrame interface {
-	Tag() FrameTag
+	Tag() MyTag
 
 	// 源地址 [0:2]
 	Source() Addr
@@ -60,9 +77,9 @@ func NewCtrlFrame(source, destination Addr, port uint8, command Command, sequenc
 	return f
 }
 
-func (f CtrlFrame) Tag() FrameTag {
-	var tag FrameTag
-	copy(tag[:], f[:6])
+func (f CtrlFrame) Tag() MyTag {
+	var tag MyTag
+	copy(tag[:], f[:TagLength])
 	return tag
 }
 
@@ -112,8 +129,6 @@ func (f CtrlFrame) SetPort(port uint8) {
 
 func (f CtrlFrame) SetCommand(command Command) {
 	f[5] = byte(command)
-	n := cap(f)
-	println(n)
 }
 
 // 设置序列号
@@ -142,9 +157,16 @@ func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowle
 	return f
 }
 
-func (f DataFrame) Tag() FrameTag {
-	var tag FrameTag
-	copy(tag[:], f[:6])
+func PrintFrame(f DataFrame) {
+	log.Printf("%d->%d:%d,%s, %s\n",
+		f.Source(), f.Destination(),
+		f.Port(), f.Command().ToString(),
+		f.Data())
+}
+
+func (f DataFrame) Tag() MyTag {
+	var tag MyTag
+	copy(tag[:], f[:TagLength])
 	return tag
 }
 
