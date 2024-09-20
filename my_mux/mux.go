@@ -61,17 +61,21 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 
 	for {
 		f, _ := c.RecvFrame()
+		// log.Println("!!s", f) // debug
 		switch f.Command() {
 		case Request:
 			// 创建新Conn
 			if _, exist := m.Get(f.Tag()); !exist {
-				newConn := NewConn(m, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
-				m.Put(newConn.Tag(), newConn)
-				m.acceptedConnChannel <- newConn
+				c := NewConn(m, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
+				m.Put(c.Tag(), c)
+				m.acceptedConnChannel <- c
 			}
 			m.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Acknowledge, 0, 0))
-			log.Println("after request")
-			m.PrintMap() // debug
+
+			// // debug
+			// log.Println("mapmapmap after request")
+			// m.PrintMap() // debug
+
 		case Acknowledge:
 			continue
 
@@ -80,6 +84,12 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 			if conn, exist := m.Get(f.Tag()); exist {
 				conn.PutFrame(f)
 			} else {
+
+				// // debug
+				// log.Println("mapmapmap not exist")
+				// m.PrintMap() // debug
+				// log.Println(f.Tag())
+
 				// not exist
 				if f.Command() == Close {
 					// if the command is close, not return another close
@@ -137,6 +147,10 @@ func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
 	m.SendFrame(f)
 	m.PutIfAbsent(c.Tag(), c)
 
+	// // debug
+	// log.Println("mapmapmap after dial")
+	// m.PrintMap()
+
 	m.nextport++
 
 	return c, nil
@@ -151,6 +165,7 @@ func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
 
 	for {
 		f, _ := c.RecvFrame()
+		// log.Println("!!c", f) // debug
 		switch f.Command() {
 		case Request:
 			// 不会有的，拒绝链接
@@ -163,6 +178,11 @@ func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
 			if conn, exist := m.Get(f.Tag()); exist {
 				conn.PutFrame(f)
 			} else {
+				// // debug
+				// log.Println("mapmapmap not exist @ client")
+				// m.PrintMap() // debug
+				// log.Println(f.Tag())
+
 				// not exist
 				if f.Command() == Close {
 					// if the command is close, not return another close

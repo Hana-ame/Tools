@@ -18,8 +18,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := b2bReader.Read(buf)
-			// log.Println("pipe b:", buf[:n])
-			PrintFrame(buf[:n])
+			// log.Printf("==========pipe b:")
+			// PrintFrame(buf[:n])
 			b2bWriter.Write(buf[:n])
 		}
 	}()
@@ -27,8 +27,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := a2aReader.Read(buf)
-			// log.Println("pipe a:", buf[:n])
-			PrintFrame(buf[:n])
+			// log.Printf("==========pipe a:")
+			// PrintFrame(buf[:n])
 			a2aWriter.Write(buf[:n])
 		}
 	}()
@@ -75,10 +75,11 @@ func handleServerConn(c *MyConn) {
 		}
 	}()
 
-	for i := 0; i < 5; i++ {
-		c.Write([]byte(fmt.Sprintf("来自server %d", i)))
-		time.Sleep(time.Second)
-	}
+	// for i := 0; i < 5; i++ {
+	i := -1
+	c.Write([]byte(fmt.Sprintf("来自server %d", i)))
+	time.Sleep(time.Second)
+	// }
 	time.Sleep(time.Minute)
 }
 
@@ -99,9 +100,10 @@ func handleClient(client *MyMuxClient) {
 		}
 	}()
 
-	for i := 0; i < 5; i++ {
-		c.Write([]byte(fmt.Sprintf("来自client %d", i)))
-		time.Sleep(time.Second)
-	}
+	// for i := 0; i < 5; i++ {
+	i := -1
+	c.Write([]byte(fmt.Sprintf("来自client %d", i)))
+	time.Sleep(time.Second)
+	// }
 	time.Sleep(time.Minute)
 }

@@ -1,15 +1,17 @@
 package mymux
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"time"
 )
 
 type MyConn struct {
 	MyMux
 
-	MyTag
+	// MyTag
 
 	localAddr  Addr
 	remoteAddr Addr
@@ -29,8 +31,8 @@ type MyConn struct {
 
 func NewConn(mux MyMux, frameTag MyTag, localAddr, remoteAddr Addr, port uint8) *MyConn {
 	conn := &MyConn{
-		MyMux:          mux,
-		MyTag:          frameTag,
+		MyMux: mux,
+		// MyTag:          frameTag,
 		localAddr:      localAddr,
 		remoteAddr:     remoteAddr,
 		Port:           port,
@@ -43,6 +45,15 @@ func NewConn(mux MyMux, frameTag MyTag, localAddr, remoteAddr Addr, port uint8) 
 		closed:         false,
 	}
 	return conn
+}
+
+// c.localAddr, c.remoteAdr, c.port
+func (c *MyConn) Tag() MyTag {
+	var tag MyTag
+	binary.BigEndian.PutUint16(tag[0:2], uint16(c.remoteAddr))
+	binary.BigEndian.PutUint16(tag[2:4], uint16(c.localAddr))
+	tag[4] = c.Port
+	return tag
 }
 
 // 会限制不能大于MTU
@@ -86,6 +97,7 @@ func (c *MyConn) Read(p []byte) (n int, err error) {
 }
 
 func (c *MyConn) Close() error {
+	log.Println(c.Tag(), "closing")
 	if c.closed {
 		return fmt.Errorf("closed")
 	}
