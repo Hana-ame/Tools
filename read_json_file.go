@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"api-pack/Tools/orderedmap"
+	"github.com/hana-ame/udptun/Tools/orderedmap"
 )
 
 // this function receive json request.

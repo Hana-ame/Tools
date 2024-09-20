@@ -1,7 +1,7 @@
 package main
 
 import (
-	examples "api-pack/Tools/ws_mux/examples"
+	examples "github.com/hana-ame/udptun/Tools/ws_mux/examples"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 package examples
 
 import (
-	db "api-pack/Tools/db_filehash"
-	wsmux "api-pack/Tools/ws_mux"
+	db "github.com/hana-ame/udptun/Tools/db_filehash"
+	wsmux "github.com/hana-ame/udptun/Tools/ws_mux"
 	"fmt"
 	"io"
 	"log"
