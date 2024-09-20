@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS file_hashes (
 	id INTEGER PRIMARY KEY,
 	path TEXT NOT NULL,
 	sha1_sum TEXT NOT NULL
-);
-	`
+);`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
@@ -37,8 +36,8 @@ CREATE TABLE IF NOT EXISTS file_hashes (
 func CreatePathHash(path, hash string) {
 	sqlStmt := `
 INSERT INTO file_hashes (path, sha1_sum)
-	VALUES (?, ?);
-`
+VALUES (?, ?)
+;`
 	_, err := DB.Exec(sqlStmt, path, hash)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
@@ -50,20 +49,20 @@ func ReadPathByHash(hash string) (string, error) {
 	sqlStmt := `
 SELECT path
 FROM file_hashes
-WHERE sha1_sum = ?;
-	`
+WHERE sha1_sum = ?
+;`
 	row := DB.QueryRow(sqlStmt, hash)
-	var path string
+	var path sql.NullString
 	err := row.Scan(&path)
 
-	return path, err
+	return path.String, err
 }
 
 func DeleteByPath(path string) error {
 	sqlStmt := `
 DELETE FROM file_hashes
-WHERE path = ?;
-	`
+WHERE path = ?
+;`
 	_, err := DB.Exec(sqlStmt, path)
 	return err
 }
