@@ -67,6 +67,7 @@ func (c *MyConn) Write(p []byte) (n int, err error) {
 		p = p[:c.MTU]
 	}
 	f := NewDataFrame(c.localAddr, c.remoteAddr, c.Port, c.sequenceNumber, c.nextReadSeq, p)
+
 	n = len(p)
 	err = c.MyMux.SendFrame(f)
 	return
@@ -92,15 +93,19 @@ func (c *MyConn) Read(p []byte) (n int, err error) {
 	}
 	c.nextReadSeq = f.SequenceNumber() // 这个需要稍后改一下。
 
-	log.Printf("%s", f.Data())
+	// log.Println("++++++++++++++++++")
+	// log.Printf("%s", f.Data())
 	// PrintFrame((f))
+	// log.Println("++++++++++++++++++")
 
-	copy(p, f.Data())
+	n = copy(p, f.Data())
 	return
 }
 
 func (c *MyConn) Close() error {
+	// debug
 	log.Println(c.Tag(), "closing")
+	defer log.Println(c.Tag(), "closed")
 	if c.closed {
 		return fmt.Errorf("closed")
 	}
@@ -108,7 +113,7 @@ func (c *MyConn) Close() error {
 	c.ReadBuf <- MyFrame(NewCtrlFrame(0, 0, 0, Close, 0, 0))
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.Port, Close, c.sequenceNumber, c.nextReadSeq))
 	c.MyMux.RemoveConn(c)
-	c.MyMux.PrintMap() // debug
+	// c.MyMux.PrintMap() // debug 加了这句client Close不能
 	return nil
 }
 

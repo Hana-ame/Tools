@@ -18,8 +18,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := b2bReader.Read(buf)
-			log.Printf("==========pipe b:")
-			PrintFrame(buf[:n])
+			// log.Printf("==========pipe b:")
+			// PrintFrame(buf[:n])
 			b2bWriter.Write(buf[:n])
 		}
 	}()
@@ -27,8 +27,8 @@ func TestXxx(t *testing.T) {
 		buf := make([]byte, 1500)
 		for {
 			n, _ := a2aReader.Read(buf)
-			log.Printf("==========pipe a:")
-			PrintFrame(buf[:n])
+			// log.Printf("==========pipe a:")
+			// PrintFrame(buf[:n])
 			a2aWriter.Write(buf[:n])
 		}
 	}()
@@ -36,18 +36,20 @@ func TestXxx(t *testing.T) {
 	aBus := NewReaderWriterBus(a2bReader, a2bWriter)
 	bBus := NewReaderWriterBus(b2aReader, b2aWriter)
 
-	aMux := NewMuxServer(aBus)
+	aMux := NewMuxServer(aBus, 5)
 	go aMux.ReadDaemon(aBus)
 
-	bMux := NewMuxClient(bBus)
+	bMux := NewMuxClient(bBus, 0)
 	go bMux.ReadDaemon(bBus)
 
 	go handleServer(aMux)
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	go handleClient(bMux)
-	// go handleClient(bMux)
-
+	time.Sleep(9 * time.Second)
+	go handleClient(bMux)
+	var a uint
+	_ = a
 	time.Sleep(60 * time.Second)
 }
 
@@ -66,7 +68,7 @@ func handleServerConn(c *MyConn) {
 		for {
 			n, err := c.Read(buf)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 
 			log.Println(c.Tag(), n, "server recv:", string(buf[:n]))
@@ -75,11 +77,11 @@ func handleServerConn(c *MyConn) {
 		}
 	}()
 
-	// for i := 0; i < 5; i++ {
-	i := -1
-	c.Write([]byte(fmt.Sprintf("来自server %d", i)))
-	time.Sleep(time.Second)
-	// }
+	for i := 0; i < 5; i++ {
+		// i := -1
+		c.Write([]byte(fmt.Sprintf("来自server %d", i)))
+		time.Sleep(time.Second)
+	}
 	time.Sleep(time.Minute)
 }
 
@@ -87,23 +89,23 @@ func handleClient(client *MyMuxClient) {
 	log.Println("handleClient")
 	c, err := client.Dial(5)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	go func() {
 		buf := make([]byte, 1500)
 		for {
 			n, err := c.Read(buf)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 			log.Println(c.Tag(), n, "client recv:", string(buf[:n]))
 		}
 	}()
-
-	// for i := 0; i < 5; i++ {
-	i := -1
-	c.Write([]byte(fmt.Sprintf("来自client %d", i)))
-	time.Sleep(time.Second)
-	// }
+	c.Close()
+	for i := 0; i < 5; i++ {
+		// i := -1
+		c.Write([]byte(fmt.Sprintf("来自client %d", i)))
+		time.Sleep(time.Second)
+	}
 	time.Sleep(time.Minute)
 }

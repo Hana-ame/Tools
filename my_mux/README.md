@@ -76,3 +76,19 @@ tag解决了，是顺序反了的关系。
 话说为什么会反啊。
 
 接下来是发送接收有问题，没data
+
+气笑了，是返回的n没设置
+
+closing会导致锁死。
+
+client的closing不行
+去掉了printMap好了
+
+首先是一个local的
+
+Bus提供公用接口
+
+停在Route
+
+非常Raw的也要提供一下
+bus_test.go

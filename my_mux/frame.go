@@ -8,12 +8,14 @@ import (
 
 type Command uint8
 
-func (cmd Command) ToString() string {
+func (cmd Command) String() string {
 	switch cmd {
 	case Data:
 		return "Data"
 	case Close:
 		return "Close"
+	case Aloha:
+		return "Aloha"
 	case Request:
 		return "Request"
 	case Acknowledge:
@@ -39,7 +41,7 @@ const (
 	// for conn
 	Data  Command = 0
 	Close Command = 1
-
+	Aloha Command = 4
 	// for mux
 	Request     Command = 1<<6 | 1
 	Acknowledge Command = 1<<6 | 2
@@ -73,7 +75,7 @@ func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowle
 func PrintFrame(f MyFrame) {
 	log.Printf("%d->%d:%d,%s, %s\n",
 		f.Source(), f.Destination(),
-		f.Port(), f.Command().ToString(),
+		f.Port(), f.Command().String(),
 		f.Data())
 }
 

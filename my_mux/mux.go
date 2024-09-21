@@ -3,6 +3,7 @@ package mymux
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	tools "github.com/hana-ame/udptun/Tools"
 )
@@ -34,9 +35,11 @@ type MyMuxServer struct {
 	acceptedConnChannel chan *MyConn
 }
 
-func NewMuxServer(writer MyBusWriter) *MyMuxServer {
+func NewMuxServer(writer MyBusWriter, localAddr Addr) *MyMuxServer {
 	mux := &MyMuxServer{
 		MyBusWriter: writer,
+
+		localAddr: localAddr,
 
 		ConcurrentHashMap:   tools.NewConcurrentHashMap[MyTag, *MyConn](),
 		acceptedConnChannel: make(chan *MyConn),
@@ -64,6 +67,10 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 		// log.Println("!!s", f) // debug
 		switch f.Command() {
 		case Request:
+			// 不响应不是叫自己的
+			if f.Destination() != m.localAddr {
+				continue
+			}
 			// 创建新Conn
 			if _, exist := m.Get(f.Tag()); !exist {
 				c := NewConn(m, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
@@ -111,6 +118,8 @@ func (m *MyMuxServer) PrintMap() {
 type MyMuxClient struct {
 	MyBusWriter
 
+	sync.Mutex
+
 	localAddr Addr
 	// SequenceNumber uint8 // for control frame
 	*tools.ConcurrentHashMap[MyTag, *MyConn]
@@ -118,9 +127,11 @@ type MyMuxClient struct {
 	nextport uint8
 }
 
-func NewMuxClient(writer MyBusWriter) *MyMuxClient {
+func NewMuxClient(writer MyBusWriter, localAddr Addr) *MyMuxClient {
 	mux := &MyMuxClient{
 		MyBusWriter: writer,
+
+		localAddr: localAddr,
 
 		ConcurrentHashMap: tools.NewConcurrentHashMap[MyTag, *MyConn](),
 	}
@@ -132,6 +143,9 @@ func (m *MyMuxClient) RemoveConn(c *MyConn) {
 }
 
 func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
+	m.Lock()
+	defer m.Unlock()
+
 	if m.Size() > 254 {
 		return nil, fmt.Errorf("no other ports")
 	}

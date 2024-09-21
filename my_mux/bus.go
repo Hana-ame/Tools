@@ -71,3 +71,15 @@ func (b *MyReadWriteBus) SendFrame(f MyFrame) error {
 	_, err := b.Write(f)
 	return err
 }
+
+type MyPipeBus struct {
+	MyBusReader
+	MyBusWriter
+}
+
+func NewPipeBus(reader MyBusReader, writer MyBusWriter) *MyPipeBus {
+	return &MyPipeBus{
+		MyBusReader: reader,
+		MyBusWriter: writer,
+	}
+}
