@@ -19,3 +19,6 @@ index.html
 nohup.out
 
 .env
+
+*.zip
+*.exe
