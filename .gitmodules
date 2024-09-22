@@ -1,3 +1,9 @@
 [submodule "wsmux"]
 	path = wsmux
 	url = https://gist.github.com/99c2caeddf11472fa4685d7849578cb1.git
+[submodule "cloudflare-workers/c5b2c944585119ca70eb193ad7273090"]
+	path = cloudflare-workers/c5b2c944585119ca70eb193ad7273090
+	url = https://gist.github.com/c5b2c944585119ca70eb193ad7273090.git
+[submodule "s1"]
+	path = s1
+	url = https://gist.github.com/24532d7ee471e7a1c6eeab9ca50f21aa.git
