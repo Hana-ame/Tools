@@ -1,0 +1,9 @@
+directories:
+  - dir: "." # 文件夹，不包含子文件夹的
+    tags: ["main"] # 这个文件夹分类的tag
+
+index: "main" # 主页用的tag，主要是/tag/[tag]-0.html的copy
+tags:
+  - "main" # 显示在头部的tag
+
+dist: "./bulletin" # 编译到这个目录
