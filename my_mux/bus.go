@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+const (
+	ERR_BUS_CLOSED = "my bus already closed"
+)
+
 type MyBus interface {
 	MyBusReader
 	MyBusWriter
@@ -51,11 +55,16 @@ func (b *MyConnBus) RecvFrame() (MyFrame, error) {
 	return MyFrame(f), err
 }
 
-func (b *MyConnBus) SendFrame(f MyFrame) {
+func (b *MyConnBus) SendFrame(f MyFrame) error {
 	l := make([]byte, 2)
 	binary.BigEndian.PutUint16(l, uint16(len(f)))
-	b.Write(l)
-	b.Write(f)
+	if _, err := b.Write(l); err != nil {
+		return err
+	}
+	if _, err := b.Write(f); err != nil {
+		return err
+	}
+	return nil
 }
 
 // // local bus
@@ -96,7 +105,7 @@ type MyPipeBus struct {
 
 func (b *MyPipeBus) Close() error {
 	if b.closed {
-		return fmt.Errorf("my pipe bus already closed")
+		return fmt.Errorf(ERR_BUS_CLOSED)
 	}
 	b.closed = true
 	b.MyBusReader.Close()

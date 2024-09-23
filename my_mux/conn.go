@@ -68,6 +68,17 @@ func (c *MyFrameConn) ReadFrame() ([]byte, error) {
 	return f.Data(), nil
 }
 
+// close
+func (c *MyFrameConn) Close() error {
+	if c.closed {
+		return fmt.Errorf("my frame conn closed")
+	}
+	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.port, Close, 0, 0))
+	c.MyBus.Close()
+	// c.MyMux.PrintMap() // debug 加了这句client Close不能
+	return nil
+}
+
 // for net.Conn interface
 func (c *MyFrameConn) LocalAddr() Addr {
 	return c.localAddr

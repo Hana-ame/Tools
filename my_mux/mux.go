@@ -1,6 +1,10 @@
+// 只能适配MyConn了，
+// 大概会弃用
+
 package mymux
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"sync"
@@ -12,6 +16,14 @@ const TagLength = 5
 
 type MyTag [TagLength]byte
 
+func NewTag(remoteAddr, localAddr Addr, port uint8) MyTag {
+	var tag MyTag
+	binary.BigEndian.PutUint16(tag[0:2], uint16(remoteAddr))
+	binary.BigEndian.PutUint16(tag[2:4], uint16(localAddr))
+	tag[4] = port
+	return tag
+}
+
 func (f MyTag) Tag() MyTag {
 	return f
 }
@@ -20,9 +32,6 @@ type MyMux interface {
 	MyBus
 
 	RemoveConn(*MyConn)
-
-	// debug
-	// PrintMap()
 }
 
 type MyMuxServer struct {
@@ -75,13 +84,13 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 				m.Put(c.Tag(), c)
 				m.acceptedConnChannel <- c
 			}
-			m.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Acknowledge, 0, 0))
+			m.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Accept, 0, 0))
 
 			// // debug
 			// log.Println("mapmapmap after request")
 			// m.PrintMap() // debug
 
-		case Acknowledge:
+		case Accept:
 			continue
 
 		default:
@@ -181,7 +190,7 @@ func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
 			// 不会有的，拒绝链接
 			m.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Close, 0, 0))
 			continue
-		case Acknowledge:
+		case Accept:
 			continue
 		default:
 			// 其他情况直接转发

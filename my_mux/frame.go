@@ -18,7 +18,7 @@ func (cmd Command) String() string {
 		return "Aloha"
 	case Request:
 		return "Request"
-	case Acknowledge:
+	case Accept:
 		return "Acknowledge"
 	default:
 		return "Unknown"
@@ -43,10 +43,10 @@ const (
 	Close Command = 1
 	Aloha Command = 4
 	// for udp
-	Disorder Command = 1<<4 | 0
+	Disorder Command = 1 << 4
 	// for mux
-	Request     Command = 1<<6 | 1
-	Acknowledge Command = 1<<6 | 2
+	Request Command = 1<<6 | 1
+	Accept  Command = 1<<6 | 2
 )
 
 type MyFrame []byte
@@ -88,6 +88,9 @@ func NewFrame(source, destination Addr, port uint8, command Command, sequenceNum
 }
 
 func PrintFrame(f MyFrame) {
+	if len(f) < FrameHeadLength {
+		return
+	}
 	log.Printf("%d->%d:%d,%s, %s\n",
 		f.Source(), f.Destination(),
 		f.Port(), f.Command().String(),

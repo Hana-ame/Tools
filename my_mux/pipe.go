@@ -5,10 +5,14 @@ import (
 	"sync"
 )
 
+const (
+	ERR_PIPE_CLOSED = "my pipe closed"
+)
+
 // not tested
 type MyPipe struct {
 	// ch chan MyFrame
-	sync.Cond
+	*sync.Cond
 
 	sync.Mutex // for only one read deamon
 
@@ -17,31 +21,37 @@ type MyPipe struct {
 	closed bool
 }
 
-func (p *MyPipe) SendFrame(f MyFrame) error {
-	for p.f != nil || !p.closed {
+func (p *MyPipe) SendFrame(f MyFrame) (err error) {
+	p.L.Lock()
+	for p.f != nil && !p.closed {
 		p.Wait()
 	}
 	if p.closed {
-		return fmt.Errorf("closed")
+		err = fmt.Errorf(ERR_PIPE_CLOSED)
 	}
 	p.f = f
+	p.L.Unlock()
 
 	p.Signal()
-	return nil
+	return
 }
 
-func (p *MyPipe) RecvFrame() (MyFrame, error) {
+func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
+	p.L.Lock()
 	for p.f == nil && !p.closed {
 		p.Wait()
 	}
+
 	if p.closed {
-		return nil, fmt.Errorf("closed")
+		err = fmt.Errorf(ERR_PIPE_CLOSED)
 	}
-	f := p.f
+	f = p.f
 	p.f = nil
+	p.L.Unlock()
 
 	p.Signal()
-	return f, nil
+	PrintFrame(f) // debug/
+	return f, err
 }
 
 func (p *MyPipe) Close() error {
@@ -51,6 +61,6 @@ func (p *MyPipe) Close() error {
 }
 
 func NewPipe() (MyBusReader, MyBusWriter) {
-	pipe := &MyPipe{}
+	pipe := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
 	return pipe, pipe
 }
