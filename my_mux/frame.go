@@ -42,6 +42,8 @@ const (
 	Data  Command = 0
 	Close Command = 1
 	Aloha Command = 4
+	// for udp
+	Disorder Command = 1<<4 | 0
 	// for mux
 	Request     Command = 1<<6 | 1
 	Acknowledge Command = 1<<6 | 2
@@ -66,6 +68,19 @@ func NewDataFrame(source, destination Addr, port uint8, sequenceNumber, acknowle
 	f.SetSource(source)
 	f.SetDestination(destination)
 	f.SetPort(port)
+	f.SetCommand(Data)
+	f.SetSequenceNumber(sequenceNumber)
+	f.SetAcknowledgeNumber(acknowledgeNumber)
+	f.SetData(data)
+	return f
+}
+
+func NewFrame(source, destination Addr, port uint8, command Command, sequenceNumber, acknowledgeNumber uint8, data []byte) MyFrame {
+	f := make(MyFrame, FrameHeadLength+len(data))
+	f.SetSource(source)
+	f.SetDestination(destination)
+	f.SetPort(port)
+	f.SetCommand(command)
 	f.SetSequenceNumber(sequenceNumber)
 	f.SetAcknowledgeNumber(acknowledgeNumber)
 	f.SetData(data)
@@ -150,6 +165,6 @@ func (f MyFrame) SetAcknowledgeNumber(acknowledge uint8) {
 
 // 设置数据内容
 func (f MyFrame) SetData(data []byte) int {
-	f[5] = byte(Data)
+	// f[5] = byte(Data)
 	return copy(f[FrameHeadLength:], data) // 假设数据内容从第 8 个字节开始
 }

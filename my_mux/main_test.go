@@ -2,56 +2,54 @@ package mymux
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"testing"
 	"time"
 )
 
-func TestXxx(t *testing.T) {
-	a2bReader, b2bWriter := io.Pipe()
-	b2bReader, b2aWriter := io.Pipe()
-	b2aReader, a2aWriter := io.Pipe()
-	a2aReader, a2bWriter := io.Pipe()
+// func TestXxx(t *testing.T) {
+// 	a2bReader, b2bWriter := io.Pipe()
+// 	b2bReader, b2aWriter := io.Pipe()
+// 	b2aReader, a2aWriter := io.Pipe()
+// 	a2aReader, a2bWriter := io.Pipe()
 
-	go func() {
-		buf := make([]byte, 1500)
-		for {
-			n, _ := b2bReader.Read(buf)
-			// log.Printf("==========pipe b:")
-			// PrintFrame(buf[:n])
-			b2bWriter.Write(buf[:n])
-		}
-	}()
-	go func() {
-		buf := make([]byte, 1500)
-		for {
-			n, _ := a2aReader.Read(buf)
-			// log.Printf("==========pipe a:")
-			// PrintFrame(buf[:n])
-			a2aWriter.Write(buf[:n])
-		}
-	}()
+// 	go func() {
+// 		buf := make([]byte, 1500)
+// 		for {
+// 			n, _ := b2bReader.Read(buf)
+// 			// log.Printf("==========pipe b:")
+// 			// PrintFrame(buf[:n])
+// 			b2bWriter.Write(buf[:n])
+// 		}
+// 	}()
+// 	go func() {
+// 		buf := make([]byte, 1500)
+// 		for {
+// 			n, _ := a2aReader.Read(buf)
+// 			// log.Printf("==========pipe a:")
+// 			// PrintFrame(buf[:n])
+// 			a2aWriter.Write(buf[:n])
+// 		}
+// 	}()
 
-	aBus := NewReaderWriterBus(a2bReader, a2bWriter)
-	bBus := NewReaderWriterBus(b2aReader, b2aWriter)
+// 	aBus := NewReaderWriterBus(a2bReader, a2bWriter)
+// 	bBus := NewReaderWriterBus(b2aReader, b2aWriter)
 
-	aMux := NewMuxServer(aBus, 5)
-	go aMux.ReadDaemon(aBus)
+// 	aMux := NewMuxServer(aBus, 5)
+// 	go aMux.ReadDaemon(aBus)
 
-	bMux := NewMuxClient(bBus, 0)
-	go bMux.ReadDaemon(bBus)
+// 	bMux := NewMuxClient(bBus, 0)
+// 	go bMux.ReadDaemon(bBus)
 
-	go handleServer(aMux)
-	time.Sleep(3 * time.Second)
+// 	go handleServer(aMux)
+// 	time.Sleep(3 * time.Second)
 
-	go handleClient(bMux)
-	time.Sleep(9 * time.Second)
-	go handleClient(bMux)
-	var a uint
-	_ = a
-	time.Sleep(60 * time.Second)
-}
+// 	go handleClient(bMux)
+// 	time.Sleep(9 * time.Second)
+// 	go handleClient(bMux)
+// 	var a uint
+// 	_ = a
+// 	time.Sleep(60 * time.Second)
+// }
 
 func handleServer(server *MyMuxServer) {
 	log.Println("handleServer")

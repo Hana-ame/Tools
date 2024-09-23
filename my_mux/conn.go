@@ -8,8 +8,106 @@ import (
 	"time"
 )
 
+type MyFrameConn struct {
+	MyBus
+
+	localAddr  Addr
+	remoteAddr Addr
+	port       uint8
+
+	closed bool
+
+	MTU int // for body
+}
+
+func NewFrameConn(bus MyBus, localAddr, remoteAddr Addr, port uint8) *MyFrameConn {
+	c := &MyFrameConn{
+		MyBus: bus,
+
+		localAddr:  localAddr,
+		remoteAddr: remoteAddr,
+		port:       port,
+
+		MTU: 1024,
+	}
+	return c
+}
+
+func (c *MyFrameConn) WriteFrame(p []byte) (n int, err error) {
+	if c.closed {
+		err = fmt.Errorf("closed")
+		return
+	}
+	if len(p) > c.MTU {
+		p = p[:c.MTU]
+	}
+	f := NewFrame(c.localAddr, c.remoteAddr, c.port, Disorder, 0, 0, p)
+
+	n = len(p)
+	err = c.MyBus.SendFrame(f)
+	return
+}
+
+// 需要大于MTU
+// 从ReadBuf里面取到纯净的Data
+func (c *MyFrameConn) ReadFrame() ([]byte, error) {
+	if c.closed {
+		return nil, fmt.Errorf("my frame conn closed")
+	}
+
+	f, err := c.MyBus.RecvFrame()
+	if err != nil {
+		return nil, err
+	}
+
+	if f.Command() == Close {
+		defer c.Close()
+		return nil, fmt.Errorf("my frame conn closed")
+	}
+
+	return f.Data(), nil
+}
+
+// for net.Conn interface
+func (c *MyFrameConn) LocalAddr() Addr {
+	return c.localAddr
+}
+func (c *MyFrameConn) RemoteAddr() Addr {
+	return c.remoteAddr
+}
+
+func (c *MyFrameConn) SetDeadline(t time.Time) error {
+	return fmt.Errorf("todo")
+}
+func (c *MyFrameConn) SetReadDeadline(t time.Time) error {
+	return fmt.Errorf("todo")
+}
+func (c *MyFrameConn) SetWriteDeadline(t time.Time) error {
+	return fmt.Errorf("todo")
+}
+
+// 插口，专门把FreamConn转换为io.Streamer
+type MyFrameConnStreamr struct {
+	*MyFrameConn
+
+	rb []byte
+}
+
+func (c *MyFrameConnStreamr) Write(p []byte) (n int, err error) {
+	return c.WriteFrame(p)
+}
+
+func (c *MyFrameConnStreamr) Read(p []byte) (n int, err error) {
+	if len(c.rb) == 0 {
+		c.rb, err = c.ReadFrame()
+	}
+	n = copy(p, c.rb)
+	c.rb = c.rb[n:]
+	return n, nil
+}
+
 type MyConn struct {
-	MyMux
+	MyBus
 
 	// MyTag
 
@@ -29,9 +127,9 @@ type MyConn struct {
 	closed bool
 }
 
-func NewConn(mux MyMux, frameTag MyTag, localAddr, remoteAddr Addr, port uint8) *MyConn {
+func NewConn(mux MyBus, frameTag MyTag, localAddr, remoteAddr Addr, port uint8) *MyConn {
 	conn := &MyConn{
-		MyMux: mux,
+		MyBus: mux,
 		// MyTag:          frameTag,
 		localAddr:      localAddr,
 		remoteAddr:     remoteAddr,
@@ -69,7 +167,7 @@ func (c *MyConn) Write(p []byte) (n int, err error) {
 	f := NewDataFrame(c.localAddr, c.remoteAddr, c.Port, c.sequenceNumber, c.nextReadSeq, p)
 
 	n = len(p)
-	err = c.MyMux.SendFrame(f)
+	err = c.MyBus.SendFrame(f)
 	return
 }
 
@@ -112,7 +210,8 @@ func (c *MyConn) Close() error {
 	// 给ReadBuf发送一个Close的CtrlFrame，读到就直接EOF
 	c.ReadBuf <- MyFrame(NewCtrlFrame(0, 0, 0, Close, 0, 0))
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.Port, Close, c.sequenceNumber, c.nextReadSeq))
-	c.MyMux.RemoveConn(c)
+	// c.MyBus.RemoveConn(c)
+	c.MyBus.Close()
 	// c.MyMux.PrintMap() // debug 加了这句client Close不能
 	return nil
 }
@@ -129,7 +228,7 @@ func (c *MyConn) PutFrame(f MyFrame) {
 	c.ReadBuf <- f
 }
 
-// for net.Conn
+// for net.Conn interface
 func (c *MyConn) LocalAddr() Addr {
 	return c.localAddr
 }

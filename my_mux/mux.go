@@ -17,12 +17,12 @@ func (f MyTag) Tag() MyTag {
 }
 
 type MyMux interface {
-	MyBusWriter
+	MyBus
 
 	RemoveConn(*MyConn)
 
 	// debug
-	PrintMap()
+	// PrintMap()
 }
 
 type MyMuxServer struct {
@@ -56,11 +56,8 @@ func (m *MyMuxServer) Accept() *MyConn {
 }
 
 func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
-	if c.IsReading() {
-		return
-	}
-	c.SetReading(true)
-	defer c.SetReading(false)
+	c.Lock()
+	defer c.Unlock()
 
 	for {
 		f, _ := c.RecvFrame()
@@ -73,7 +70,8 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 			}
 			// 创建新Conn
 			if _, exist := m.Get(f.Tag()); !exist {
-				c := NewConn(m, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
+				cBus, _ := NewBusPipe()
+				c := NewConn(cBus, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
 				m.Put(c.Tag(), c)
 				m.acceptedConnChannel <- c
 			}
@@ -155,7 +153,8 @@ func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
 		m.nextport++
 		f.SetPort(m.nextport)
 	}
-	c := NewConn(m, f.Tag(), m.localAddr, dst, m.nextport)
+	cBus, _ := NewBusPipe()
+	c := NewConn(cBus, f.Tag(), m.localAddr, dst, m.nextport)
 
 	// 请求建立链接
 	m.SendFrame(f)
@@ -171,11 +170,8 @@ func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
 }
 
 func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
-	if c.IsReading() {
-		return
-	}
-	c.SetReading(true)
-	defer c.SetReading(false)
+	c.Lock()
+	defer c.Unlock()
 
 	for {
 		f, _ := c.RecvFrame()
