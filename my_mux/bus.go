@@ -113,17 +113,25 @@ func (b *MyPipeBus) Close() error {
 	return nil
 }
 
-func NewPipeBus(reader MyBusReader, writer MyBusWriter) *MyPipeBus {
+func NewBusFromPipe(reader MyBusReader, writer MyBusWriter) *MyPipeBus {
 	return &MyPipeBus{
 		MyBusReader: reader,
 		MyBusWriter: writer,
 	}
 }
 
-func NewBusPipe() (*MyPipeBus, *MyPipeBus) {
+func NewPipeBusPair() (*MyPipeBus, *MyPipeBus) {
 	a2bReader, b2aWriter := NewPipe()
 	b2aReader, a2bWriter := NewPipe()
-	a2bBus := NewPipeBus(a2bReader, a2bWriter)
-	b2aBus := NewPipeBus(b2aReader, b2aWriter)
+	a2bBus := NewBusFromPipe(a2bReader, a2bWriter)
+	b2aBus := NewBusFromPipe(b2aReader, b2aWriter)
+	return a2bBus, b2aBus
+}
+
+func NewDebugPipeBusPair() (*MyPipeBus, *MyPipeBus) {
+	a2bReader, b2aWriter := NewDebugPipe()
+	b2aReader, a2bWriter := NewDebugPipe()
+	a2bBus := NewBusFromPipe(a2bReader, a2bWriter)
+	b2aBus := NewBusFromPipe(b2aReader, b2aWriter)
 	return a2bBus, b2aBus
 }

@@ -38,7 +38,7 @@ func (s *MyServer) ReadDeamon() error {
 			}
 			// 创建新Conn
 			if _, exist := s.Get(f.Tag()); !exist {
-				cBus, sBus := NewBusPipe()
+				cBus, sBus := NewPipeBusPair()
 				go func(b MyBus, tag MyTag) {
 					// bus对面是client conn
 					for {

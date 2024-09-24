@@ -79,7 +79,7 @@ func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
 			}
 			// 创建新Conn
 			if _, exist := m.Get(f.Tag()); !exist {
-				cBus, _ := NewBusPipe()
+				cBus, _ := NewPipeBusPair()
 				c := NewConn(cBus, f.Tag(), f.Destination(), f.Source(), f.Port()) // 会反一下
 				m.Put(c.Tag(), c)
 				m.acceptedConnChannel <- c
@@ -162,7 +162,7 @@ func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
 		m.nextport++
 		f.SetPort(m.nextport)
 	}
-	cBus, _ := NewBusPipe()
+	cBus, _ := NewPipeBusPair()
 	c := NewConn(cBus, f.Tag(), m.localAddr, dst, m.nextport)
 
 	// 请求建立链接

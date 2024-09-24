@@ -12,6 +12,9 @@ func handleClientConn(c *MyFrameConn) {
 		f, e := c.ReadFrame()
 		if e != nil {
 			log.Println(e)
+			if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+				return
+			}
 			continue
 		}
 		log.Println("client recv:", string(f))
@@ -23,6 +26,9 @@ func handleAcceptedConn(c *MyFrameConn) {
 		f, e := c.ReadFrame()
 		if e != nil {
 			log.Println(e)
+			if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+				return
+			}
 			continue
 		}
 		log.Println("serve recv:", string(f))
@@ -30,7 +36,7 @@ func handleAcceptedConn(c *MyFrameConn) {
 }
 
 func TestClient(t *testing.T) {
-	cb, sb := NewBusPipe()
+	cb, sb := NewPipeBusPair()
 	server := NewServer(sb, 0)
 	go server.ReadDeamon()
 	go func() {
@@ -47,25 +53,35 @@ func TestClient(t *testing.T) {
 
 	client := NewClient(cb, 1)
 	go client.ReadDaemon()
-	// {
-	c, e := client.Dial(0)
-	if e != nil {
-		t.Error(e)
+	{
+		c, e := client.Dial(0)
+		if e != nil {
+			t.Error(e)
+		}
+		go handleClientConn(c)
+		// time.Sleep(time.Second)
+		_, e = c.WriteFrame([]byte("from client 11"))
+		if e != nil {
+			t.Error(e)
+
+		}
+		_, e = c.WriteFrame([]byte("from client 12"))
+		if e != nil {
+			t.Error(e)
+
+		}
 	}
-	go handleClientConn(c)
-	// 	c.WriteFrame([]byte("from client 11"))
-	// 	c.WriteFrame([]byte("from client 12"))
-	// }
-	// {
-	// 	c, e := client.Dial(0)
-	// 	if e != nil {
-	// 		t.Error(e)
-	// 	}
-	// 	go handleClientConn(c)
-	// 	c.WriteFrame([]byte("from client 21"))
-	// 	c.WriteFrame([]byte("from client 22"))
-	// }
-	time.Sleep(time.Second * 30)
+	{
+		c, e := client.Dial(0)
+		if e != nil {
+			t.Error(e)
+		}
+		go handleClientConn(c)
+		time.Sleep(time.Second)
+		c.WriteFrame([]byte("from client 21"))
+		c.WriteFrame([]byte("from client 22"))
+	}
+	time.Sleep(time.Second * 20)
 }
 
 // func TestClient(t *testing.T) {

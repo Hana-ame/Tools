@@ -9,7 +9,7 @@ func TestBus(t *testing.T) {
 	mux := NewMuxServer(muxWriter, 1)
 	go mux.ReadDaemon(muxReader)
 
-	bus := NewPipeBus(busReader, busWriter)
+	bus := NewBusFromPipe(busReader, busWriter)
 
 	router := NewRouter()
 	_ = bus

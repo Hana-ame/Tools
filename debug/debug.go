@@ -1,7 +1,7 @@
 // by gpt4o mini @ 240801
 // https://chatgpt.com/share/943bfc66-0ba6-45aa-b680-9abbfbc02d36
 
-package log
+package debug
 
 import (
 	"fmt"
@@ -56,7 +56,7 @@ func DeepPrint(v any, indent string) {
 type logLevel int
 
 const (
-	Trace logLevel = iota
+	Trace = iota
 	Debug
 	Info
 	Warn
@@ -66,36 +66,41 @@ const (
 
 var LogLevel logLevel = Warn
 
-func LogT(tag any, msg any) {
+func T(tag any, msg ...any) {
 	if LogLevel > Trace {
 		return
 	}
-	log.Println("[", tag, "] Trace:", msg)
+	log.Printf("[%s] TRACE: %s", tag, fmt.Sprint(msg...))
 }
-func LogD(tag any, msg any) {
+
+func D(tag any, msg ...any) {
 	if LogLevel > Debug {
 		return
 	}
-	log.Println("[", tag, "] Debug:", msg)
+	log.Printf("[%s] DEBUG: %s", tag, fmt.Sprint(msg...))
 }
-func LogI(tag any, msg any) {
+
+func I(tag any, msg ...any) {
 	if LogLevel > Info {
 		return
 	}
-	log.Println("[", tag, "] Error:", msg)
+	log.Printf("[%s] INFO: %s", tag, fmt.Sprint(msg...))
 }
-func LogW(tag any, msg any) {
+
+func W(tag any, msg ...any) {
 	if LogLevel > Warn {
 		return
 	}
-	log.Println("[", tag, "] Warn:", msg)
+	log.Printf("[%s] WARN: %s", tag, fmt.Sprint(msg...))
 }
-func LogE(tag any, msg any) {
+
+func E(tag any, msg ...any) {
 	if LogLevel > Error {
 		return
 	}
-	log.Println("[", tag, "] Error:", msg)
+	log.Printf("[%s] ERROR: %s", tag, fmt.Sprint(msg...))
 }
-func LogF(tag any, msg any) {
-	log.Fatal("[", tag, "] Fatal:", msg)
+
+func F(tag any, msg ...any) {
+	log.Fatalf("[%s] FATAL: %s", tag, fmt.Sprint(msg...))
 }

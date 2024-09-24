@@ -3,6 +3,8 @@ package mymux
 import (
 	"fmt"
 	"sync"
+
+	log "github.com/hana-ame/udptun/Tools/debug"
 )
 
 const (
@@ -50,7 +52,7 @@ func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 	p.L.Unlock()
 
 	p.Signal()
-	PrintFrame(f) // debug/
+	// PrintFrame(f) // debug
 	return f, err
 }
 
@@ -63,4 +65,26 @@ func (p *MyPipe) Close() error {
 func NewPipe() (MyBusReader, MyBusWriter) {
 	pipe := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
 	return pipe, pipe
+}
+
+func NewDebugPipe() (MyBusReader, MyBusWriter) {
+	pipeR := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
+	pipeW := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
+	go func() {
+		for {
+			f, e := pipeW.RecvFrame()
+			if e != nil {
+				log.E("debug pipe", e)
+			} else if len(f) < FrameHeadLength {
+				log.W("debug pipe", "length = ", len(f))
+			} else {
+				PrintFrame(f)
+				e = pipeR.SendFrame(f)
+				if e != nil {
+					log.E("debug pipe", e)
+				}
+			}
+		}
+	}()
+	return pipeR, pipeW
 }

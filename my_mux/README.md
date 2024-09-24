@@ -95,3 +95,25 @@ bus_test.go
 
 改一下
 现在mux肯定没法用
+
+
+client的sBus忘记加map里面了。加了就好
+喷了，有时候client的newconn没有输出的。
+
+差不多成了的。
+client dial的时候可能还是有点问题，但是如果是按顺序的Bus的话应该没问题了。
+接下来是Router的问题。
+不过话说明明已经按顺序了为什么还是会丢一部分啊。
+接下来先更新一下websocket的反向代理得了。
+其实还有多路还有缓冲之类的东西。
+
+大体上是
+
+read/write         accpet                                             dial                write/read
+conn -- pipe bus -- server -- 转接头 bus -- 真实链接 -- 转接头 bus -- client -- pipe bus -- conn
+conn -- pipe bus --                                                        -- pipe bus -- conn
+conn -- pipe bus --                                                        -- pipe bus -- conn
+
+还要加 router。
+switcher
+hub什么的

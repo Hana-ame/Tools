@@ -7,7 +7,7 @@ import (
 
 func TestMutex(t *testing.T) {
 	reader, writer := NewPipe()
-	bus := NewPipeBus(reader, writer)
+	bus := NewBusFromPipe(reader, writer)
 	reader.Lock()
 	bus.Lock()
 	fmt.Println("never")
