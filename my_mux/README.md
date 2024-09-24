@@ -117,3 +117,7 @@ conn -- pipe bus --                                                        -- pi
 还要加 router。
 switcher
 hub什么的
+
+比如顺序的整理器
+队列什么的
+果然还是加到Conn里面吧。
