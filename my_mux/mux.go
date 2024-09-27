@@ -9,7 +9,7 @@ import (
 	"log"
 	"sync"
 
-	tools "github.com/hana-ame/udptun/Tools"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 )
 
 const TagLength = 5

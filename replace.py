@@ -34,7 +34,7 @@ def replace_go_file(file_path, module_name):
 
   # Replace import paths with the correct module name
   updated_content = re.sub(
-    r'"(.*?)/Tools/(.*?)"', rf'"{module_name}/Tools/\2"', file_content
+    r'"(.*?)/Tools(.*?)"', rf'"{module_name}/Tools\2"', file_content
   )
 
   with open(file_path, "w", encoding="utf8") as f:

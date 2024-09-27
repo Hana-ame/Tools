@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	tools "github.com/hana-ame/udptun/Tools"
-	"github.com/hana-ame/udptun/Tools/debug"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	"github.com/Hana-ame/neo-moonchan/Tools/debug"
 )
 
 type portMap [32]byte

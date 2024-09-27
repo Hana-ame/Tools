@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"runtime"
 )
 
 func DeepPrint(v any, indent string) {
@@ -103,4 +104,12 @@ func E(tag any, msg ...any) {
 
 func F(tag any, msg ...any) {
 	log.Fatalf("[%s] FATAL: %s", tag, fmt.Sprint(msg...))
+}
+
+func Print(v ...any) {
+	// 获取调用栈信息
+	_, file, line, ok := runtime.Caller(1)
+	if ok {
+		D(fmt.Sprintf("%s:%d", file, line), v...)
+	}
 }

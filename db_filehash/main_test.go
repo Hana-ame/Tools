@@ -1,7 +1,7 @@
 package db
 
 import (
-	// _ "github.com/hana-ame/udptun/Tools/db_filehash"
+	// _ "github.com/Hana-ame/neo-moonchan/Tools/db_filehash"
 	"database/sql"
 	"fmt"
 	"log"

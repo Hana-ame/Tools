@@ -1,7 +1,7 @@
 package mymux
 
 import (
-	tools "github.com/hana-ame/udptun/Tools"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 )
 
 // TODO
