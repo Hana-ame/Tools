@@ -1,9 +1,10 @@
 package mymux
 
 import (
-	"fmt"
-	"log"
+	"testing"
 	"time"
+
+	"github.com/Hana-ame/udptun/Tools/debug"
 )
 
 // func TestXxx(t *testing.T) {
@@ -51,59 +52,189 @@ import (
 // 	time.Sleep(60 * time.Second)
 // }
 
-func handleServer(server *MyMuxServer) {
-	log.Println("handleServer")
-	for {
-		c := server.Accept()
-		go handleServerConn(c)
-	}
-}
+// var handleServer = func(server *MyMuxServer) {
+// 	go server.ReadDaemon()
+// 	log.Println("handleServer")
+// 	for {
+// 		c := server.Accept()
+// 		go handleServerConn(c)
+// 	}
+// }
 
-func handleServerConn(c *MyConn) {
-	log.Println("handleConn")
-	go func() {
-		buf := make([]byte, 1500)
+// var handleClient = func(client *MyMuxClient) {
+// 	log.Println("handleClient")
+// 	c, e := client.Dial(5)
+// 	if e != nil {
+// 		debug.E("handleClient", e.Error())
+// 	}
+// 	go func() {
+// 		buf := make([]byte, 1500)
+// 		for {
+// 			n, e := c.Read(buf)
+// 			if e != nil {
+// 				debug.E("handleClient", e.Error())
+// 			}
+// 			debug.I("handleClient", c.Tag(), n, "client recv:", string(buf[:n]))
+// 		}
+// 	}()
+// 	c.Close()
+// 	for i := 0; i < 5; i++ {
+// 		// i := -1
+// 		c.Write([]byte(fmt.Sprintf("来自client %d", i)))
+// 		time.Sleep(time.Second)
+// 	}
+// 	time.Sleep(time.Minute)
+// }
+
+// var handleAcceptedConn = func(c *MyFrameConn) {
+// 	for {
+// 		f, e := c.ReadFrame()
+// 		if e != nil {
+// 			debug.E("handleAcceptedConn", e.Error())
+// 			if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+// 				return
+// 			}
+// 			continue
+// 		}
+// 		debug.I("serve recv:", string(f))
+// 	}
+// }
+
+func TestClient(t *testing.T) {
+
+	// handleServerConn := func(c *MyConn) {
+	// 	log.Println("handleConn")
+	// 	go func() {
+	// 		buf := make([]byte, 1500)
+	// 		for {
+	// 			n, e := c.Read(buf)
+	// 			if e != nil {
+	// 				debug.E("handleConn", e.Error())
+	// 			}
+
+	// 			debug.I("handleServerConn", c.Tag(), n, "server recv:", string(buf[:n]))
+
+	// 			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
+	// 		}
+	// 	}()
+
+	// 	for i := 0; i < 5; i++ {
+	// 		// i := -1
+	// 		c.Write([]byte(fmt.Sprintf("来自server %d", i)))
+	// 		time.Sleep(time.Second)
+	// 	}
+	// 	time.Sleep(time.Minute)
+	// }
+	handleClientConn := func(c *MyFrameConn) {
 		for {
-			n, err := c.Read(buf)
-			if err != nil {
-				log.Println(err)
+			f, e := c.ReadFrame()
+			if e != nil {
+				debug.E("handleClientConn", e.Error())
+				if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+					return
+				}
+				continue
 			}
-
-			log.Println(c.Tag(), n, "server recv:", string(buf[:n]))
-
-			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
+			debug.I("client recv:", string(f))
 		}
-	}()
-
-	for i := 0; i < 5; i++ {
-		// i := -1
-		c.Write([]byte(fmt.Sprintf("来自server %d", i)))
-		time.Sleep(time.Second)
 	}
+
+	handleServer := func(server *MyServer) {
+		handleAcceptedConn := func(c *MyFrameConn) {
+			for {
+				f, e := c.ReadFrame()
+				if e != nil {
+					debug.E("handleAcceptedConn", e.Error())
+					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+						return
+					}
+					continue
+				}
+				debug.I("serve recv:", string(f))
+			}
+		}
+		go server.ReadDeamon()
+		for {
+			c := server.Accpet()
+			go handleAcceptedConn(c)
+
+			time.Sleep(time.Second)
+			c.WriteFrame([]byte("from server 1"))
+			time.Sleep(time.Second)
+			c.WriteFrame([]byte("from server 2"))
+		}
+	}
+
+	handleClient := func(client *MyClient) {
+		go client.ReadDaemon()
+	}
+
+	// 这是一对bus，至少应该是正常传输的。
+	cb, sb := NewDebugPipeBusPair("bus")
+	// 这是server，listen在bus上然后地址是0
+	server := NewServer(sb, 0)
+	go handleServer(server)
+
+	client := NewClient(cb, 1)
+	go handleClient(client)
+
+	dialAndEcho := func(client *MyClient) {
+		const Tag = "dialAndEcho"
+		c, e := client.Dial(0)
+		if e != nil {
+			debug.E(Tag, e.Error())
+			t.Error(e)
+		}
+		go handleClientConn(c)
+		// time.Sleep(time.Second)
+		_, e = c.WriteFrame([]byte("from client 11"))
+		if e != nil {
+			t.Error(e)
+
+		}
+		_, e = c.WriteFrame([]byte("from client 12"))
+		if e != nil {
+			t.Error(e)
+
+		}
+	}
+	go dialAndEcho(client)
+	// go dialAndEcho(client)
+	// go dialAndEcho(client)
+
 	time.Sleep(time.Minute)
 }
 
-func handleClient(client *MyMuxClient) {
-	log.Println("handleClient")
-	c, err := client.Dial(5)
-	if err != nil {
-		log.Println(err)
-	}
-	go func() {
-		buf := make([]byte, 1500)
-		for {
-			n, err := c.Read(buf)
-			if err != nil {
-				log.Println(err)
-			}
-			log.Println(c.Tag(), n, "client recv:", string(buf[:n]))
-		}
-	}()
-	c.Close()
-	for i := 0; i < 5; i++ {
-		// i := -1
-		c.Write([]byte(fmt.Sprintf("来自client %d", i)))
-		time.Sleep(time.Second)
-	}
-	time.Sleep(time.Minute)
-}
+// func TestClient(t *testing.T) {
+// 	cb, sb := NewBusPipe()
+// 	server := NewServer(sb, 0)
+// 	go server.ReadDeamon()
+// 	go func() {
+// 		for {
+// 			c := server.Accpet()
+// 			go handleAcceptedConn(c)
+
+// 			time.Sleep(time.Second)
+// 			c.WriteFrame([]byte("from server 1"))
+// 			time.Sleep(time.Second)
+// 			c.WriteFrame([]byte("from server 2"))
+// 		}
+// 	}()
+// 	{
+// 		client := NewClient(cb, 1, 2, 3)
+// 		go handleClientConn(client)
+// 		client.WriteFrame([]byte("from client 11"))
+// 		client.WriteFrame([]byte("from client 12"))
+// 	}
+// 	{
+// 		client := NewClient(cb, 1, 2, 4)
+// 		go handleClientConn(client)
+// 		client.WriteFrame([]byte("from client 21"))
+// 		client.WriteFrame([]byte("from client 22"))
+// 		client.Close()
+// 		client.WriteFrame([]byte("from client 25"))
+
+// 	}
+// 	time.Sleep(time.Minute)
+
+// }
