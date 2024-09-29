@@ -6,6 +6,8 @@ import (
 	"io"
 	"net"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -65,6 +67,24 @@ func (b *MyConnBus) SendFrame(f MyFrame) error {
 		return err
 	}
 	return nil
+}
+
+// 用于websocket.Conn的bus
+type MyWsBus struct {
+	*websocket.Conn
+
+	sync.Mutex // only one read deamon can read.
+}
+
+// before recv loop, use Lock
+func (b *MyWsBus) RecvFrame() (MyFrame, error) {
+	_, f, err := b.ReadMessage()
+	return MyFrame(f), err
+}
+
+func (b *MyWsBus) SendFrame(f MyFrame) error {
+	err := b.WriteMessage(websocket.BinaryMessage, f)
+	return err
 }
 
 // // local bus

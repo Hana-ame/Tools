@@ -1,6 +1,6 @@
 package mymux
 
-import tools "github.com/Hana-ame/neo-moonchan/Tools"
+import tools "github.com/Hana-ame/udptun/Tools"
 
 type MyServer struct {
 	MyBus

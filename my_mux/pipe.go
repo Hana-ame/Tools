@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	log "github.com/Hana-ame/neo-moonchan/Tools/debug"
+	log "github.com/Hana-ame/udptun/Tools/debug"
 )
 
 const (
