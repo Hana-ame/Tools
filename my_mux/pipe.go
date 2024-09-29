@@ -8,83 +8,86 @@ import (
 )
 
 const (
-	ERR_PIPE_CLOSED = "my pipe closed"
+	ERR_PIPE_CLOSED = "my pipe closed" // 管道关闭错误信息
 )
 
-// not tested
+// MyPipe 定义了一个管道结构，用于在读取和写入之间传递数据。
 type MyPipe struct {
-	// ch chan MyFrame
-	*sync.Cond
+	*sync.Cond // 条件变量，用于同步
+	sync.Mutex // 互斥锁，确保只有一个读取协程在运行
 
-	sync.Mutex // for only one read deamon
-
-	f MyFrame
-
-	closed bool
+	f      MyFrame // 存储要传递的帧
+	closed bool    // 管道是否关闭
 }
 
+// SendFrame 发送帧到管道。
 func (p *MyPipe) SendFrame(f MyFrame) (err error) {
-	p.L.Lock()
+	p.L.Lock() // 锁定互斥锁
+	// 当帧不为空且管道未关闭时，等待
 	for p.f != nil && !p.closed {
 		p.Wait()
 	}
 	if p.closed {
-		err = fmt.Errorf(ERR_PIPE_CLOSED)
+		err = fmt.Errorf(ERR_PIPE_CLOSED) // 如果管道已关闭，返回错误
 	}
-	p.f = f
+	p.f = f // 设置帧
 	p.L.Unlock()
 
-	p.Signal()
+	p.Signal() // 唤醒等待的协程
 	return
 }
 
+// RecvFrame 从管道接收帧。
 func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
-	p.L.Lock()
+	p.L.Lock() // 锁定互斥锁
+	// 当帧为空且管道未关闭时，等待
 	for p.f == nil && !p.closed {
 		p.Wait()
 	}
 
 	if p.closed {
-		err = fmt.Errorf(ERR_PIPE_CLOSED)
+		err = fmt.Errorf(ERR_PIPE_CLOSED) // 如果管道已关闭，返回错误
 	}
-	f = p.f
-	p.f = nil
+	f = p.f   // 获取帧
+	p.f = nil // 清空帧
 	p.L.Unlock()
 
-	p.Signal()
-	// PrintFrame(f) // debug
+	p.Signal() // 唤醒等待的协程
 	return f, err
 }
 
+// Close 关闭管道并广播唤醒所有等待的协程。
 func (p *MyPipe) Close() error {
 	p.closed = true
-	p.Broadcast()
+	p.Broadcast() // 广播信号
 	return nil
 }
 
+// NewPipe 创建一个新的管道，返回读取和写入接口。
 func NewPipe() (MyBusReader, MyBusWriter) {
 	pipe := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
-	return pipe, pipe
+	return pipe, pipe // 返回同一个管道的读写接口
 }
 
-func NewDebugPipe() (MyBusReader, MyBusWriter) {
+// NewDebugPipe 创建一个带调试功能的管道。
+func NewDebugPipe(tag string) (MyBusReader, MyBusWriter) {
 	pipeR := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
 	pipeW := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
 	go func() {
 		for {
-			f, e := pipeW.RecvFrame()
+			f, e := pipeW.RecvFrame() // 从写管道接收帧
 			if e != nil {
-				log.E("debug pipe", e)
+				log.E(tag, e) // 记录错误
 			} else if len(f) < FrameHeadLength {
-				log.W("debug pipe", "length = ", len(f))
+				log.W(tag, "length = ", len(f)) // 记录警告
 			} else {
-				PrintFrame(f)
-				e = pipeR.SendFrame(f)
+				log.D(SprintFrame(f))  // 打印帧内容
+				e = pipeR.SendFrame(f) // 发送帧到读管道
 				if e != nil {
-					log.E("debug pipe", e)
+					log.E(tag, e) // 记录错误
 				}
 			}
 		}
 	}()
-	return pipeR, pipeW
+	return pipeR, pipeW // 返回读写管道
 }

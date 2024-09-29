@@ -2,6 +2,7 @@ package mymux
 
 import "testing"
 
+// not tested.
 func TestBus(t *testing.T) {
 	muxReader, busWriter := NewPipe()
 	busReader, muxWriter := NewPipe()
