@@ -121,3 +121,11 @@ hub什么的
 比如顺序的整理器
 队列什么的
 果然还是加到Conn里面吧。
+
+## 在wsl里面的指南
+
+似乎还不需要build
+`git submodule foreach git pull`
+
+反正在这里pull了test。
+
