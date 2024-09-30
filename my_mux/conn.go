@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"time"
+
+	"github.com/Hana-ame/udptun/Tools/debug"
 )
 
 type MyFrameConn struct {
@@ -117,6 +118,7 @@ func (c *MyFrameConnStreamr) Read(p []byte) (n int, err error) {
 	return n, nil
 }
 
+// 这里开始没什么关系，可能用到TCP的东西再说。
 type MyConn struct {
 	MyBus
 
@@ -202,19 +204,16 @@ func (c *MyConn) Read(p []byte) (n int, err error) {
 	}
 	c.nextReadSeq = f.SequenceNumber() // 这个需要稍后改一下。
 
-	// log.Println("++++++++++++++++++")
-	// log.Printf("%s", f.Data())
-	// PrintFrame((f))
-	// log.Println("++++++++++++++++++")
-
 	n = copy(p, f.Data())
 	return
 }
 
 func (c *MyConn) Close() error {
 	// debug
-	log.Println(c.Tag(), "closing")
-	defer log.Println(c.Tag(), "closed")
+	const Tag = "MyConn.Close"
+	debug.T(Tag, "closing")
+	defer debug.T(Tag, "closed")
+
 	if c.closed {
 		return fmt.Errorf("closed")
 	}

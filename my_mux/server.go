@@ -1,6 +1,9 @@
 package mymux
 
-import tools "github.com/Hana-ame/udptun/Tools"
+import (
+	tools "github.com/Hana-ame/udptun/Tools"
+	"github.com/Hana-ame/udptun/Tools/debug"
+)
 
 type MyServer struct {
 	MyBus
@@ -22,6 +25,10 @@ func NewServer(bus MyBus, addr Addr) *MyServer {
 	return server
 }
 func (s *MyServer) ReadDeamon() error {
+	const Tag = "MyServer.ReadDeamon"
+	debug.T(Tag, "initial")
+	defer debug.T(Tag, "exited")
+
 	s.Lock()
 	defer s.Unlock()
 	for {
@@ -49,10 +56,10 @@ func (s *MyServer) ReadDeamon() error {
 						s.SendFrame(f)
 					}
 				}(sBus, f.Tag())
-				c := NewFrameConn(cBus, f.Destination(), f.Source(), f.Port()) // 会反一下
+				c := NewFrameConn(cBus, f.Destination(), f.Source(), f.Port())
 				s.Put(f.Tag(), sBus)
 				s.accpetChannel <- c
-				s.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Accept, 0, 0))
+				s.SendFrame(NewCtrlFrame(f.Destination(), f.Source(), f.Port(), Accept, 0, 0)) // for accepting the request, should reverse the receiver and sender.
 			}
 		default:
 			// 其他情况直接转发
