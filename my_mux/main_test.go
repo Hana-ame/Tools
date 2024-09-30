@@ -100,32 +100,32 @@ import (
 // 	}
 // }
 
+// handleServerConn := func(c *MyConn) {
+// 	log.Println("handleConn")
+// 	go func() {
+// 		buf := make([]byte, 1500)
+// 		for {
+// 			n, e := c.Read(buf)
+// 			if e != nil {
+// 				debug.E("handleConn", e.Error())
+// 			}
+
+// 			debug.I("handleServerConn", c.Tag(), n, "server recv:", string(buf[:n]))
+
+// 			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
+// 		}
+// 	}()
+
+//		for i := 0; i < 5; i++ {
+//			// i := -1
+//			c.Write([]byte(fmt.Sprintf("来自server %d", i)))
+//			time.Sleep(time.Second)
+//		}
+//		time.Sleep(time.Minute)
+//	}
 func TestClient(t *testing.T) {
-
-	// handleServerConn := func(c *MyConn) {
-	// 	log.Println("handleConn")
-	// 	go func() {
-	// 		buf := make([]byte, 1500)
-	// 		for {
-	// 			n, e := c.Read(buf)
-	// 			if e != nil {
-	// 				debug.E("handleConn", e.Error())
-	// 			}
-
-	// 			debug.I("handleServerConn", c.Tag(), n, "server recv:", string(buf[:n]))
-
-	// 			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
-	// 		}
-	// 	}()
-
-	// 	for i := 0; i < 5; i++ {
-	// 		// i := -1
-	// 		c.Write([]byte(fmt.Sprintf("来自server %d", i)))
-	// 		time.Sleep(time.Second)
-	// 	}
-	// 	time.Sleep(time.Minute)
-	// }
 	handleClientConn := func(c *MyFrameConn) {
+		debug.T("handleClientConn", "")
 		for {
 			f, e := c.ReadFrame()
 			if e != nil {
@@ -140,11 +140,16 @@ func TestClient(t *testing.T) {
 	}
 
 	handleServer := func(server *MyServer) {
+		const Tag = "handleServer"
+		debug.T(Tag, "")
+
 		handleAcceptedConn := func(c *MyFrameConn) {
+			const Tag = "handleAcceptedConn"
+			debug.T(Tag, "")
 			for {
 				f, e := c.ReadFrame()
 				if e != nil {
-					debug.E("handleAcceptedConn", e.Error())
+					debug.E(Tag, e.Error())
 					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
 						return
 					}
@@ -166,6 +171,8 @@ func TestClient(t *testing.T) {
 	}
 
 	handleClient := func(client *MyClient) {
+		const Tag = "handleClient"
+		debug.T(Tag, "")
 		go client.ReadDaemon()
 	}
 

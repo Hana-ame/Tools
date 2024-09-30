@@ -13,10 +13,10 @@ TODO 加一个ack，以防丢
 2024/09/20 21:32:20 0->5:2,Data, 来自client 0
 2024/09/20 21:32:20 5->0:2,Acknowledge,
 2024/09/20 21:32:20 0->5:1,Data, 来自client 0
-FAIL    github.com/hana-ame/udptun/Tools/my_mux 19.329s
+FAIL    github.com/Hana-ame/udptun/Tools/my_mux 19.329s
 PS C:\workplace\udptun> ^C
 PS C:\workplace\udptun>
-PS C:\workplace\udptun> go.exe test -timeout 3000s -run ^TestXxx$ github.com/hana-ame/udptun/Tools/my_mux -v
+PS C:\workplace\udptun> go.exe test -timeout 3000s -run ^TestXxx$ github.com/Hana-ame/udptun/Tools/my_mux -v
 === RUN   TestXxx
 2024/09/20 21:32:45 handleServer
 2024/09/20 21:32:50 handleClient
@@ -63,7 +63,7 @@ Close没有正常被响应
 2024/09/20 21:46:12 5->0:1,Data, 来自server 0
 2024/09/20 21:46:12 0->5:1,Close,
 2024/09/20 21:46:12 EOF
-FAIL    github.com/hana-ame/udptun/Tools/my_mux 5.299s
+FAIL    github.com/Hana-ame/udptun/Tools/my_mux 5.299s
 FAIL
 ```
 

@@ -8,6 +8,8 @@ import (
 	"log"
 	"reflect"
 	"runtime"
+
+	"github.com/fatih/color"
 )
 
 func DeepPrint(v any, indent string) {
@@ -57,7 +59,7 @@ func DeepPrint(v any, indent string) {
 type logLevel int
 
 const (
-	Trace = iota
+	Trace logLevel = iota
 	Debug
 	Info
 	Warn
@@ -65,45 +67,72 @@ const (
 	Fatal
 )
 
-var LogLevel logLevel = Warn
+func levelToString(level logLevel) string {
+	switch level {
+	case Trace:
+		return logFunctions[Trace]("TRACE")
+	case Debug:
+		return logFunctions[Debug]("DEBUG")
+	case Info:
+		return logFunctions[Info]("INFO")
+	case Warn:
+		return logFunctions[Warn]("WARN")
+	case Error:
+		return logFunctions[Error]("ERROR")
+	case Fatal:
+		return logFunctions[Fatal]("Fatal")
+	default:
+		return logFunctions[Fatal]("UNKNOWN")
+	}
+}
+
+var LogLevel logLevel = Trace
+var logFunctions = map[logLevel]func(a ...interface{}) string{
+	Trace: color.New(color.FgBlack, color.BgCyan, color.Bold).SprintFunc(),
+	Debug: color.New(color.FgBlack, color.BgBlue, color.Bold).SprintFunc(),
+	Info:  color.New(color.FgBlack, color.BgGreen, color.Bold).SprintFunc(),
+	Warn:  color.New(color.FgBlack, color.BgYellow, color.Bold).SprintFunc(),
+	Error: color.New(color.FgBlack, color.BgRed, color.Bold).SprintFunc(),
+	Fatal: color.New(color.FgBlack, color.BgRed, color.Bold).SprintFunc(),
+}
 
 func T(tag any, msg ...any) {
 	if LogLevel > Trace {
 		return
 	}
-	log.Printf("[%s] TRACE: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Trace), fmt.Sprint(msg...))
 }
 
 func D(tag any, msg ...any) {
 	if LogLevel > Debug {
 		return
 	}
-	log.Printf("[%s] DEBUG: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Debug), fmt.Sprint(msg...))
 }
 
 func I(tag any, msg ...any) {
 	if LogLevel > Info {
 		return
 	}
-	log.Printf("[%s] INFO: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Info), fmt.Sprint(msg...))
 }
 
 func W(tag any, msg ...any) {
 	if LogLevel > Warn {
 		return
 	}
-	log.Printf("[%s] WARN: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Warn), fmt.Sprint(msg...))
 }
 
 func E(tag any, msg ...any) {
 	if LogLevel > Error {
 		return
 	}
-	log.Printf("[%s] ERROR: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Error), fmt.Sprint(msg...))
 }
 
 func F(tag any, msg ...any) {
-	log.Fatalf("[%s] FATAL: %s", tag, fmt.Sprint(msg...))
+	log.Printf("[%s] %s %s", tag, levelToString(Fatal), fmt.Sprint(msg...))
 }
 
 func Print(v ...any) {

@@ -81,8 +81,8 @@ func NewDebugPipe(tag string) (MyBusReader, MyBusWriter) {
 			} else if len(f) < FrameHeadLength {
 				log.W(tag, "length = ", len(f)) // 记录警告
 			} else {
-				log.D(SprintFrame(f))  // 打印帧内容
-				e = pipeR.SendFrame(f) // 发送帧到读管道
+				log.D(tag, SprintFrame(f)) // 打印帧内容
+				e = pipeR.SendFrame(f)     // 发送帧到读管道
 				if e != nil {
 					log.E(tag, e) // 记录错误
 				}
