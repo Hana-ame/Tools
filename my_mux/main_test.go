@@ -74,7 +74,7 @@ import (
 // 			if e != nil {
 // 				debug.E("handleClient", e.Error())
 // 			}
-// 			debug.I("handleClient", c.Tag(), n, "client recv:", string(buf[:n]))
+// 			debug.I("handleClient", c.Tag(), n, "client recv", string(buf[:n]))
 // 		}
 // 	}()
 // 	c.Close()
@@ -96,7 +96,7 @@ import (
 // 			}
 // 			continue
 // 		}
-// 		debug.I("serve recv:", string(f))
+// 		debug.I("serve recv", string(f))
 // 	}
 // }
 
@@ -110,7 +110,7 @@ import (
 // 				debug.E("handleConn", e.Error())
 // 			}
 
-// 			debug.I("handleServerConn", c.Tag(), n, "server recv:", string(buf[:n]))
+// 			debug.I("handleServerConn", c.Tag(), n, "server recv", string(buf[:n]))
 
 // 			c.Write([]byte(fmt.Sprintf("反弹 %s", buf[:n])))
 // 		}
@@ -135,7 +135,7 @@ func TestClient(t *testing.T) {
 				}
 				continue
 			}
-			debug.I("client recv:", string(f))
+			debug.I("client recv", string(f))
 		}
 	}
 
@@ -155,7 +155,7 @@ func TestClient(t *testing.T) {
 					}
 					continue
 				}
-				debug.I("serve recv:", string(f))
+				debug.I("serve recv", string(f))
 			}
 		}
 		go server.ReadDeamon()
