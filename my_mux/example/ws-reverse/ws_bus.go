@@ -9,6 +9,9 @@ import (
 // 会无限重试websocket.Conn
 // 通过再loader中定义新Conn的生成方式
 // 取代websocket.Conn的位置，表现为websocket.Conn
+
+// 带锁的websockt.Conn
+// 使用set重置
 type Conn struct {
 	*websocket.Conn
 
@@ -106,16 +109,6 @@ func (b *Buffer) Read(id uint8) (uint8, []byte, bool) {
 
 }
 
-// func (b *MyBuffer) Remove(id uint8) {
-// 	b.L.Lock()
-// 	b.valid[id%b.size] = false
-// 	for !b.valid[b.tail%b.size] {
-// 		b.tail++
-// 	}
-// 	b.L.Unlock()
-// 	b.Broadcast()
-// }
-
 func (b *Buffer) SetTail(tail uint8) {
 	b.L.Lock()
 	for tail-b.tail > 0 {
@@ -127,14 +120,57 @@ func (b *Buffer) SetTail(tail uint8) {
 }
 
 // // 接续在Conn上，
-// type WsBus struct {
-// 	*Conn
+type WsBus struct {
+	*Conn
 
-// 	// SendFrame -> WriteMessage
-// 	writebuf mymux.MyBuffer
+	// reading channel
+	nextReadId uint8
 
-// 	sync.Mutex
-// }
+	// writing channel
+	nextWriteId uint8 // this can be reset by nextReadId from remote
+	*Buffer           // SendFrame -> WriteMessage
+
+	sync.Cond
+	onError bool
+
+	receivingId    uint8
+	receivingValid bool
+}
+
+func NewWsBus(c *Conn, buffer *Buffer) *WsBus {
+	wsbus := &WsBus{
+		Conn:   c,
+		Buffer: buffer,
+		Cond:   *sync.NewCond(&sync.Mutex{}),
+	}
+	return wsbus
+}
+
+func (b *WsBus) ReadDeamon() {
+	for {
+		msgType, data, err := b.ReadMessage()
+		if err != nil {
+			b.L.Lock()
+			b.onError = true
+			for b.onError {
+				b.Wait()
+			}
+			b.L.Unlock()
+			continue
+		}
+		switch msgType {
+		case websocket.TextMessage: // control
+			if data[0] == 0 { // data[0] = "next is data", data[1] = the next frame's id
+				b.receivingId = data[1]
+				b.receivingValid = true
+			}
+		case websocket.BinaryMessage: // data
+			if b.receivingValid {
+				b.receivingValid = false
+			}
+		}
+	}
+}
 
 // // 守护进程。
 // func (b *WsBus) Deamon() {
