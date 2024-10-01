@@ -137,5 +137,29 @@ hub什么的
 
 - [x] Tag明显又反了，需要接收的时候直接取tag然后相等的
     好像是写错了
+没有自增
 
-- [ ] port 似乎没有自增
+需要干掉server接受到close之后好像不干活的问题
+
+好像是没处理。
+
+好像收到close不能自动close，什么毛病。
+
+要存远端是不是要closed。好麻烦。  
+还要存自己端。  
+反正应该嘛，算成了。  
+这个问题留到TCPConn的时候解决。  
+- 双向的close。
+- read、write channel的不好处
+- channel 应该如下，写一串东西，然后close。
+- 写到close禁止写入
+- 读到close禁止读
+- 感觉单向conn才是基本元素，草泥马
+- 感觉其实可以去掉port直接通的。
+
+其实应该把基础的小结构分的再小一点。应该让writerreader都自治的。
+放TCPConn的地方解决
+
+现在就全都放到ws带重传的bus上。
+
+

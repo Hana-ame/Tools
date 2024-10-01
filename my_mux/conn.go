@@ -9,6 +9,15 @@ import (
 	"github.com/Hana-ame/udptun/Tools/debug"
 )
 
+const (
+	ERR_CONN_CLOSED = "my frame conn closed"
+)
+
+func ErrorIsClosed(err error) bool {
+	e := err.Error()
+	return e == ERR_BUS_CLOSED || e == ERR_PIPE_CLOSED || e == ERR_CONN_CLOSED
+}
+
 type MyFrameConn struct {
 	MyBus
 
@@ -35,7 +44,10 @@ func NewFrameConn(bus MyBus, localAddr, remoteAddr Addr, port uint8) *MyFrameCon
 }
 
 func (c *MyFrameConn) WriteFrame(p []byte) (n int, err error) {
+	const Tag = "MyFrameConn.WriteFrame"
+	debug.T(Tag, c.localAddr, "->", c.remoteAddr, ":", c.port, string(p))
 	if c.closed {
+		debug.D(Tag, c.localAddr, "->", c.remoteAddr, ":", c.port, "conn closed")
 		err = fmt.Errorf("closed")
 		return
 	}
@@ -52,31 +64,38 @@ func (c *MyFrameConn) WriteFrame(p []byte) (n int, err error) {
 // 需要大于MTU
 // 从ReadBuf里面取到纯净的Data
 func (c *MyFrameConn) ReadFrame() ([]byte, error) {
+	const Tag = "MyFrameConn.ReadFrame"
 	if c.closed {
-		return nil, fmt.Errorf("my frame conn closed")
+		return nil, fmt.Errorf(ERR_CONN_CLOSED)
 	}
 
 	f, err := c.MyBus.RecvFrame()
 	if err != nil {
 		return nil, err
 	}
-
+	debug.T(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, f.Command().String())
 	if f.Command() == Close {
 		defer c.Close()
-		return nil, fmt.Errorf("my frame conn closed")
+		return nil, fmt.Errorf(ERR_CONN_CLOSED)
 	}
-
+	debug.T(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, string(f.Data()))
 	return f.Data(), nil
 }
 
 // close
 func (c *MyFrameConn) Close() error {
+	const Tag = "MyFrameConn.Close"
+	debug.D(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, "closing")
+	defer debug.D(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, "closed")
+
 	if c.closed {
-		return fmt.Errorf("my frame conn closed")
+		return fmt.Errorf(ERR_CONN_CLOSED)
 	}
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.port, Close, 0, 0))
+	// time.Sleep(time.Second) // it seems that close cannot send, so sleep and
 	c.MyBus.Close()
 	// c.MyMux.PrintMap() // debug 加了这句client Close不能
+	c.closed = true
 	return nil
 }
 

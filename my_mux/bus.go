@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/Hana-ame/udptun/Tools/debug"
 	"github.com/gorilla/websocket"
 )
 
@@ -102,7 +103,9 @@ type MyPipeBus struct {
 
 // Close 关闭总线，释放相关资源。
 func (b *MyPipeBus) Close() error {
+	const Tag = "MyPipeBus.Close"
 	if b.closed {
+		debug.E(Tag, "already closed")
 		return fmt.Errorf(ERR_BUS_CLOSED) // 如果总线已关闭，返回错误
 	}
 	b.closed = true

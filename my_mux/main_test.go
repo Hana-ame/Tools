@@ -344,3 +344,141 @@ func TestClient2(t *testing.T) {
 
 	time.Sleep(time.Minute)
 }
+
+func TestClient3(t *testing.T) {
+	handleClientConn := func(c *MyFrameConn) {
+		debug.T("handleClientConn", "initial")
+		for {
+			f, e := c.ReadFrame()
+			if e != nil {
+				debug.E("handleClientConn", e.Error())
+				if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+					return
+				}
+				continue
+			}
+			debug.I("client recv", string(f))
+		}
+	}
+
+	handleServer := func(server *MyServer) {
+		const Tag = "handleServer"
+		debug.T(Tag, "initial")
+
+		handleAcceptedConn := func(c *MyFrameConn) {
+			const Tag = "handleAcceptedConn"
+			debug.T(Tag, "initial")
+			for {
+				f, e := c.ReadFrame()
+				if e != nil {
+					debug.E(Tag, e.Error())
+					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+						return
+					}
+					continue
+				}
+				debug.I("serve recv", string(f))
+
+				n, e := c.WriteFrame(f)
+				if e != nil {
+					debug.E(Tag, n, e.Error())
+					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+						return
+					}
+					continue
+				}
+			}
+		}
+		go server.ReadDeamon()
+		for {
+			c := server.Accpet()
+			go handleAcceptedConn(c)
+			go func() {
+				const Tag = "ServerSending"
+				time.Sleep(time.Second)
+				debug.T(Tag, "closed?", c.closed)
+				_, e := c.WriteFrame([]byte("from server 1"))
+				if e != nil {
+					debug.E(Tag, e.Error())
+					return
+				}
+				time.Sleep(time.Second)
+				debug.T(Tag, "closed?", c.closed)
+				_, e = c.WriteFrame([]byte("from server 2"))
+				if e != nil {
+					debug.E(Tag, e.Error())
+					return
+				}
+				time.Sleep(time.Second)
+				debug.T(Tag, "closed?", c.closed)
+				_, e = c.WriteFrame([]byte("from server 3"))
+				if e != nil {
+					debug.E(Tag, e.Error())
+					return
+				}
+				time.Sleep(time.Second)
+				debug.T(Tag, "closed?", c.closed)
+				_, e = c.WriteFrame([]byte("from server 4"))
+				if e != nil {
+					debug.E(Tag, e.Error())
+					return
+				}
+			}()
+		}
+	}
+
+	handleClient := func(client *MyClient) {
+		const Tag = "handleClient"
+		debug.T(Tag, "initial")
+		go client.ReadDaemon()
+	}
+
+	// 这是一对bus，至少应该是正常传输的。
+	cb, sb := NewDebugPipeBusPair("bus")
+	// 这是server，listen在bus上然后地址是0
+	server := NewServer(sb, 0)
+	go handleServer(server)
+
+	client := NewClient(cb, 1)
+	go handleClient(client)
+
+	dialAndEcho := func(client *MyClient, append string) {
+		const Tag = "dialAndEcho"
+		c, e := client.Dial(0)
+		if e != nil {
+			debug.E(Tag, e.Error())
+			t.Error(e)
+		}
+		go handleClientConn(c)
+		time.Sleep(time.Second)
+		// _, e = c.WriteFrame([]byte("from client 1" + append))
+		// if e != nil {
+		// 	debug.E(Tag, e.Error())
+		// 	return
+		// }
+		// time.Sleep(time.Second)
+		// _, e = c.WriteFrame([]byte("from client 2" + append))
+		// if e != nil {
+		// 	debug.E(Tag, e.Error())
+		// 	return
+		// }
+		// time.Sleep(time.Second)
+		c.Close()
+		// _, e = c.WriteFrame([]byte("from client 3" + append))
+		// if e != nil {
+		// 	debug.E(Tag, e.Error())
+		// 	return
+		// }
+		// _, e = c.WriteFrame([]byte("from client 4" + append))
+		// if e != nil {
+		// 	debug.E(Tag, e.Error())
+		// 	return
+		// }
+	}
+	// go dialAndEcho(client, "aaa")
+	go dialAndEcho(client, "bbb")
+	// go dialAndEcho(client)
+	// go dialAndEcho(client)
+
+	time.Sleep(time.Minute)
+}

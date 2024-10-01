@@ -58,7 +58,13 @@ func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 
 // Close 关闭管道并广播唤醒所有等待的协程。
 func (p *MyPipe) Close() error {
+	p.L.Lock() // 锁定互斥锁
+	// 要sending最后一个package，这是为了正常关闭。
+	for p.f != nil && !p.closed {
+		p.Wait()
+	}
 	p.closed = true
+	p.L.Unlock()
 	p.Broadcast() // 广播信号
 	return nil
 }
