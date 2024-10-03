@@ -27,21 +27,21 @@ public class MyUtils {
             for (long i : arr)
                 list.add(i);
             return list;
-        }    
+        }
 
         public static ArrayList<Integer> asList(int[] arr) {
             ArrayList<Integer> list = new ArrayList<>(arr.length);
             for (int i : arr)
                 list.add(i);
             return list;
-        }   
+        }
 
         public static ArrayList<Short> asList(short[] arr) {
             ArrayList<Short> list = new ArrayList<>(arr.length);
             for (short i : arr)
                 list.add(i);
             return list;
-        }    
+        }
 
         public static ArrayList<Byte> asList(byte[] arr) {
             ArrayList<Byte> list = new ArrayList<>(arr.length);
@@ -87,37 +87,56 @@ public class MyUtils {
 
     // print
     public static void printList(List<?> a) {
+        System.out.printf("List<?>[ ");
         for (Object o : a) {
             System.out.printf("%s, ", o.toString());
         }
+        System.out.printf("]");
         System.out.println();
     }
 
-    public static void printArray(Object[] a) {
-        for (Object o : a) {
+    // public static void printArray(Object[] a) {
+    // System.out.printf("Object[ ");
+    // for (Object o : a) {
+    // System.out.printf("%s, ", o.toString());
+    // }
+    // System.out.printf("]");
+    // System.out.println();
+    // }
+
+    public static <T> void printArray(T[] a) {
+        System.out.printf("Object[ ");
+        for (T o : a) {
             System.out.printf("%s, ", o.toString());
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(char[] a) {
+        System.out.printf("char[ ");
         for (char o : a) {
             System.out.printf("%s, ", o);
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(int[] a) {
+        System.out.printf("int[ ");
         for (int o : a) {
             System.out.printf("%s, ", o);
         }
+        System.out.printf("]");
         System.out.println();
     }
 
     public static void printArray(long[] a) {
+        System.out.printf("long[ ");
         for (long o : a) {
             System.out.printf("%s, ", o);
         }
+        System.out.printf("]");
         System.out.println();
     }
 }

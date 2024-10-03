@@ -1,3 +1,6 @@
+// 为啥和MyUtils.java一样，么用到??
+// 而且还不是public。。
+
 package com.example.tools;
 
 import java.util.ArrayList;
