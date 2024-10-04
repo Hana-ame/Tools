@@ -24,7 +24,7 @@ type MyPipe struct {
 func (p *MyPipe) SendFrame(f MyFrame) (err error) {
 	p.L.Lock() // 锁定互斥锁
 	// 当帧不为空且管道未关闭时，等待
-	for p.f != nil && !p.closed {
+	for !(p.f == nil || p.closed) {
 		p.Wait()
 	}
 	if p.closed {
@@ -33,7 +33,7 @@ func (p *MyPipe) SendFrame(f MyFrame) (err error) {
 	p.f = f // 设置帧
 	p.L.Unlock()
 
-	p.Signal() // 唤醒等待的协程
+	p.Broadcast() // 唤醒等待的协程
 	return
 }
 
@@ -41,7 +41,7 @@ func (p *MyPipe) SendFrame(f MyFrame) (err error) {
 func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 	p.L.Lock() // 锁定互斥锁
 	// 当帧为空且管道未关闭时，等待
-	for p.f == nil && !p.closed {
+	for !(p.f != nil || p.closed) {
 		p.Wait()
 	}
 
@@ -52,7 +52,7 @@ func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 	p.f = nil // 清空帧
 	p.L.Unlock()
 
-	p.Signal() // 唤醒等待的协程
+	p.Broadcast() // 唤醒等待的协程
 	return f, err
 }
 
@@ -60,7 +60,7 @@ func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 func (p *MyPipe) Close() error {
 	p.L.Lock() // 锁定互斥锁
 	// 要sending最后一个package，这是为了正常关闭。
-	for p.f != nil && !p.closed {
+	for !(p.f == nil || p.closed) {
 		p.Wait()
 	}
 	p.closed = true

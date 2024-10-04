@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/Hana-ame/udptun/Tools/debug"
+	mymux "github.com/Hana-ame/udptun/Tools/my_mux"
 )
 
 func TestBuffer(t *testing.T) {
-	b := NewBuffer(8)
+	b := mymux.NewGBNBuffer(8)
 	go func() {
 		var i byte = 0
 		for {
@@ -45,7 +46,7 @@ func TestBuffer(t *testing.T) {
 }
 
 func TestBuffer2(t *testing.T) {
-	b := NewBuffer(8)
+	b := mymux.NewGBNBuffer(8)
 	go func() {
 		var i byte = 0
 		for {

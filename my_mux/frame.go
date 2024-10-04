@@ -23,6 +23,10 @@ func (cmd Command) String() string {
 		return "Request"
 	case Accept:
 		return "Acknowledge"
+	case Disorder:
+		return "Disorder"
+	case DisorderAcknowledge:
+		return "DisorderAcknowledge"
 	default:
 		return "Unknown"
 	}
@@ -50,7 +54,8 @@ const (
 	Close Command = 1 // 关闭命令
 	Aloha Command = 4 // Aloha 命令
 	// UDP 用于无序数据
-	Disorder Command = 1 << 4
+	Disorder            Command = 1 << 4
+	DisorderAcknowledge Command = 1<<4 | 1
 	// MUX 命令
 	Request Command = 1<<6 | 1 // 请求命令
 	Accept  Command = 1<<6 | 2 // 确认命令
@@ -113,9 +118,10 @@ func SprintFrame(f MyFrame) string {
 	if len(f) < FrameHeadLength {
 		return "" // 如果帧长度小于头部长度，则返回空字符串
 	}
-	return fmt.Sprintf("%d->%d:%d,%s, %s",
+	return fmt.Sprintf("%d->%d:%d,%s,[%d,%d], {%s}",
 		f.Source(), f.Destination(),
 		f.Port(), f.Command().String(),
+		f.SequenceNumber(), f.AcknowledgeNumber(),
 		f.Data())
 }
 

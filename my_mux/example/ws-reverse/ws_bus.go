@@ -19,7 +19,7 @@ type ConnWriter struct {
 }
 
 func (w *ConnWriter) WriteMessage(messageType int, data []byte) error {
-	const Tag = "ConnWriter.WriteMessage"
+	// const Tag = "ConnWriter.WriteMessage"
 	w.Lock()
 	defer w.Unlock()
 
@@ -32,7 +32,7 @@ type ConnReader struct {
 }
 
 func (r *ConnReader) ReadMessage() (messageType int, data []byte, err error) {
-	const Tag = "ConnWriter.WriteMessage"
+	// const Tag = "ConnWriter.WriteMessage"
 	r.Lock()
 	defer r.Unlock()
 
@@ -48,44 +48,44 @@ type Conn struct {
 	// accept or connect ws
 	// loader func() *websocket.Conn
 
-	sync.Mutex
+	*sync.Cond
 
-	closed bool
+	onError bool
+	closed  bool
 }
 
 func NewConn(c *websocket.Conn) *Conn {
 	return &Conn{
 		ConnReader: &ConnReader{Conn: c},
 		ConnWriter: &ConnWriter{Conn: c},
+		Cond:       sync.NewCond(&sync.Mutex{}),
 	}
 }
 
+// 大概有问题。
+func (c *Conn) WaitOnError() {
+	c.L.Lock()
+	c.onError = true
+	for c.onError {
+		c.Wait()
+	}
+	c.L.Unlock()
+}
+
 func (c *Conn) SetConn(conn *websocket.Conn) {
-	// c.Lock()
-	// defer c.Unlock()
+	c.L.Lock()
 
 	c.ConnWriter.Conn.Close()
 	c.ConnReader.Conn.Close()
 
 	c.ConnReader = &ConnReader{Conn: conn}
 	c.ConnWriter = &ConnWriter{Conn: conn}
+
+	c.onError = false
+
+	c.L.Unlock()
+	c.Broadcast()
 }
-
-// func (c *Conn) WriteMessage(messageType int, data []byte) error {
-// 	const Tag = "Conn.WriteMessage"
-// 	// c.Lock()
-// 	// defer c.Unlock()
-
-// 	return c.Conn.WriteMessage(messageType, data)
-// }
-
-// func (c *Conn) ReadMessage() (int, []byte, error) {
-// 	const Tag = "Conn.ReadMessage"
-// 	c.Lock()
-// 	defer c.Unlock()
-
-// 	return c.Conn.ReadMessage()
-// }
 
 func (c *Conn) Close() {
 	c.closed = true
@@ -93,64 +93,6 @@ func (c *Conn) Close() {
 	c.ConnWriter.Conn.Close()
 	c.ConnReader.Conn.Close()
 }
-
-type record struct {
-	id   uint8
-	data []byte
-}
-
-// // // 接续在Conn上，
-// type WsBus struct {
-// 	*Conn
-
-// 	// reading channel
-// 	nextReadId uint8
-
-// 	// writing channel
-// 	nextWriteId uint8 // this can be reset by nextReadId from remote
-// 	*Buffer           // SendFrame -> WriteMessage
-
-// 	sync.Cond
-// 	onError bool
-
-// 	receivingId    uint8
-// 	receivingValid bool
-// }
-
-// func NewWsBus(c *Conn, buffer *Buffer) *WsBus {
-// 	wsbus := &WsBus{
-// 		Conn:   c,
-// 		Buffer: buffer,
-// 		Cond:   *sync.NewCond(&sync.Mutex{}),
-// 	}
-// 	return wsbus
-// }
-
-// func (b *WsBus) ReadDeamon() {
-// 	for {
-// 		msgType, data, err := b.ReadMessage()
-// 		if err != nil {
-// 			b.L.Lock()
-// 			b.onError = true
-// 			for b.onError {
-// 				b.Wait()
-// 			}
-// 			b.L.Unlock()
-// 			continue
-// 		}
-// 		switch msgType {
-// 		case websocket.TextMessage: // control
-// 			if data[0] == 0 { // data[0] = "next is data", data[1] = the next frame's id
-// 				b.receivingId = data[1]
-// 				b.receivingValid = true
-// 			}
-// 		case websocket.BinaryMessage: // data
-// 			if b.receivingValid {
-// 				b.receivingValid = false
-// 			}
-// 		}
-// 	}
-// }
 
 // [0, id]  接收前
 // [data]
@@ -163,14 +105,15 @@ const (
 
 func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 	const Tag = "NewWsClient"
+	// cbus will return to client mux to use
 	cbus, sbus := mymux.NewPipeBusPair()
 
 	dialer := func() *websocket.Conn {
-		const Tag = "dialer"
+		// 	const Tag = "dialer"
 		for {
-			wsConn, _, err := websocket.DefaultDialer.Dial(dst, nil)
+			conn, _, err := websocket.DefaultDialer.Dial(dst, nil)
 			if err == nil {
-				return wsConn
+				return conn
 			}
 			debug.E(Tag, err.Error())
 		}
@@ -179,7 +122,9 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 	conn := NewConn(dialer())
 
 	var size uint8 = 64
-	buffer := NewBuffer(uint8(size))
+	buffer := mymux.NewGBNBuffer(uint8(size))
+
+	// onerr := false
 
 	// read channel
 	go func() {
@@ -190,6 +135,7 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 		for {
 			msgType, data, err := conn.ReadMessage()
 			if err != nil {
+				debug.E(Tag, err.Error())
 				conn.SetConn(dialer())
 				continue
 			}
@@ -197,6 +143,7 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 			case websocket.TextMessage:
 				switch data[0] {
 				case 1: // it is a acknowledge
+					buffer.SetRead(data[1]) // should be moded by size
 					buffer.SetTail(data[1]) // should be moded by size
 				case 0: //
 					if nextState != CLIENT_RECV_SHOULD_BE_ID {
@@ -209,6 +156,7 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 						nextState = CLIENT_RECV_SHOULD_BE_ID
 						continue loop
 					}
+					nextState = CLIENT_RECV_SHOULD_BE_DATA
 				}
 			case websocket.BinaryMessage:
 				if nextState != CLIENT_RECV_SHOULD_BE_DATA {
@@ -219,71 +167,135 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 				e := sbus.SendFrame(data)
 				if e != nil {
 					debug.E(Tag, e.Error())
+					continue
 				}
+
+				nextState = CLIENT_RECV_SHOULD_BE_ID
+				next++
+
+				conn.WriteMessage(websocket.TextMessage, []byte{1, next})
 			}
 		}
 	}()
 
 	// write channel
-	// go func() {
-	// 	const Tag = "client write channel"
-	// 	var next uint8 = 0
-	// loop:
-	// 	for {
-	// 		f, e := sbus.RecvFrame()
-	// 		t
-	// 		if e != nil {
-	// 			debug.E(Tag, e.Error())
-	// 			continue loop
-	// 		}
-	// 	}
-	// }()
+	// bus side
+	go func() {
+		const Tag = "client write channel bus side"
+		for {
+			f, e := sbus.RecvFrame()
+			if e != nil {
+				debug.E(Tag, e.Error())
+				continue
+			}
+
+			buffer.Offer(f)
+		}
+	}()
+
+	// conn side
+	go func() {
+		const Tag = "client write channel bus side"
+		for {
+			id, data, e := buffer.Read()
+			if !e {
+				debug.E(Tag, id, data, "not existed")
+			}
+			conn.WriteMessage(websocket.TextMessage, []byte{0, id})
+			conn.WriteMessage(websocket.BinaryMessage, data)
+		}
+	}()
 
 	return cbus
 }
 
-// // 守护进程。
-// func (b *WsBus) Deamon() {
-// }
+func NewWsServer(conn *Conn) mymux.MyBus {
+	const Tag = "NewWsServer"
+	// cbus will return to client mux to use
+	cbus, sbus := mymux.NewPipeBusPair()
 
-// func (b *WsBus) SendFrame(f *mymux.MyFrame) error {
-// 	messageType, data := b.Conn.ReadMessage()
-// 	if messageType == websocket.BinaryMessage {
-// 		b.Conn.WriteMessage(websocket.TextMessage)
-// 		return
-// 	} else if messageType == websocket.TextMessage {
-// 		// 回报接受到了
+	var size uint8 = 64
+	buffer := mymux.NewGBNBuffer(uint8(size))
 
-// 	}
-// }
+	// read channel
+	go func() {
+		const Tag = "server read channel"
+		var next uint8 = 0
+		var nextState = CLIENT_RECV_SHOULD_BE_ID
+	loop:
+		for {
+			msgType, data, err := conn.ReadMessage()
+			if err != nil {
+				debug.E(Tag, err.Error())
+				conn.WaitOnError()
+				continue
+			}
+			switch msgType {
+			case websocket.TextMessage:
+				switch data[0] {
+				case 1: // it is a acknowledge
+					buffer.SetRead(data[1]) // should be moded by size
+					buffer.SetTail(data[1]) // should be moded by size
+				case 0: //
+					if nextState != CLIENT_RECV_SHOULD_BE_ID {
+						conn.WriteMessage(websocket.TextMessage, []byte{1, next})
+						nextState = CLIENT_RECV_SHOULD_BE_ID
+						continue loop
+					}
+					if next != data[1] {
+						conn.WriteMessage(websocket.TextMessage, []byte{1, next})
+						nextState = CLIENT_RECV_SHOULD_BE_ID
+						continue loop
+					}
+					nextState = CLIENT_RECV_SHOULD_BE_DATA
+				}
+			case websocket.BinaryMessage:
+				if nextState != CLIENT_RECV_SHOULD_BE_DATA {
+					conn.WriteMessage(websocket.TextMessage, []byte{1, next})
+					nextState = CLIENT_RECV_SHOULD_BE_ID
+					continue loop
+				}
+				e := sbus.SendFrame(data)
+				if e != nil {
+					debug.E(Tag, e.Error())
+					continue
+				}
 
-// // MyWsBus 用于 WebSocket 连接的总线结构。
-// type MyWsBus struct {
-// 	*websocket.Conn
+				nextState = CLIENT_RECV_SHOULD_BE_ID
+				next++
 
-// 	sync.Mutex // 仅允许一个读取守护进程读取。
-// }
+				conn.WriteMessage(websocket.TextMessage, []byte{1, next})
+			}
+		}
+	}()
 
-// // RecvFrame 从 WebSocket 连接接收一帧数据。
-// func (b *MyWsBus) RecvFrame() (mymux.MyFrame, error) {
-// 	_, f, err := b.ReadMessage()
-// 	return mymux.MyFrame(f), err
-// }
+	// write channel
+	// bus side
+	go func() {
+		const Tag = "client write channel bus side"
+		for {
+			f, e := sbus.RecvFrame()
+			if e != nil {
+				debug.E(Tag, e.Error())
+				continue
+			}
 
-// // SendFrame 通过 WebSocket 发送一帧数据，并实现重传机制。
-// func (b *MyWsBus) SendFrame(f mymux.MyFrame) error {
-// 	const maxRetries = 3
-// 	var err error
+			buffer.Offer(f)
+		}
+	}()
 
-// 	for i := 0; i < maxRetries; i++ {
-// 		err = b.WriteMessage(websocket.BinaryMessage, f)
-// 		if err == nil {
-// 			return nil // 成功发送，返回 nil
-// 		}
+	// conn side
+	go func() {
+		const Tag = "client write channel bus side"
+		for {
+			id, data, e := buffer.Read()
+			if !e {
+				debug.E(Tag, id, data, "not existed")
+			}
+			conn.WriteMessage(websocket.TextMessage, []byte{0, id})
+			conn.WriteMessage(websocket.BinaryMessage, data)
+		}
+	}()
 
-// 		// 打印错误信息并等待一段时间重试
-// 		time.Sleep(time.Second) // 可以根据需要调整重试间隔
-// 	}
-
-// 	return err // 返回最后一次的错误
-// }
+	return cbus
+}

@@ -2,6 +2,7 @@ package wsreverse
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -65,4 +66,29 @@ func task(ctx context.Context, t *testing.T) {
 func TestConn(t *testing.T) {
 	a, _ := net.Dial("tcp", "localhost:8080")
 	a.Read(nil)
+}
+
+type a struct {
+	int
+}
+
+func (a a) Print() {
+	fmt.Println(a)
+	fmt.Println(a.int)
+}
+func (a *a) Printp() {
+	fmt.Println(a)
+	fmt.Println(a.int)
+}
+func TestDefer(t *testing.T) {
+	a := &a{1}
+	func() {
+		defer a.Print()  // {1}, 1
+		defer a.Printp() // &{2}, 2
+
+		a.int = 2
+
+		a.Print()  // {2}, 2
+		a.Printp() // &{2}, 2
+	}()
 }

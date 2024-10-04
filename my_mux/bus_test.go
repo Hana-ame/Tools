@@ -1,6 +1,12 @@
 package mymux
 
-import "testing"
+import (
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/Hana-ame/udptun/Tools/debug"
+)
 
 // not tested.
 func TestBus(t *testing.T) {
@@ -16,4 +22,28 @@ func TestBus(t *testing.T) {
 	_ = bus
 	_ = mux
 	_ = router
+}
+
+func TestReliableBus(t *testing.T) {
+	a, b := NewDebugPipeBusPair("123")
+	ra := NewReliableBus(a, 4)
+	rb := NewReliableBus(b, 4)
+	go func() {
+		// 创建一个字节数组
+		for i := 22; i < 1234; i++ {
+			// 将整数转换为字符串
+			str := strconv.Itoa(i)
+
+			ra.SendFrame(NewFrame(0, 0, 0, Disorder, 0, 0, []byte(str)))
+			time.Sleep(time.Second)
+		}
+	}()
+	go func() {
+		for {
+			f, e := rb.RecvFrame()
+			debug.I("rb", SprintFrame(f), e)
+			time.Sleep(time.Second)
+		}
+	}()
+	select {}
 }

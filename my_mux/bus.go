@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/Hana-ame/udptun/Tools/debug"
 	"github.com/gorilla/websocket"
@@ -138,4 +139,111 @@ func NewDebugPipeBusPair(tag string) (*MyPipeBus, *MyPipeBus) {
 	a2bBus := NewBusFromPipe(a2bReader, a2bWriter) // 创建 a 到 b 的总线
 	b2aBus := NewBusFromPipe(b2aReader, b2aWriter) // 创建 b 到 a 的总线
 	return a2bBus, b2aBus
+}
+
+type ReliableBus struct {
+	MyBus
+
+	f      MyFrame
+	e      error
+	nextId uint8
+
+	*Buffer
+	acknowledgeNumber uint8
+
+	*sync.Cond
+}
+
+func NewReliableBus(b MyBus, size uint8) *ReliableBus {
+	rb := &ReliableBus{
+		MyBus: b,
+
+		Buffer: NewGBNBuffer(size),
+
+		Cond: sync.NewCond(&sync.Mutex{}),
+	}
+
+	go rb.ReadDaemon()
+	go rb.WriteDeamon()
+	return rb
+}
+
+func (b *ReliableBus) SendFrame(f MyFrame) error {
+	if f.Command() != Disorder {
+		return b.MyBus.SendFrame(f)
+	}
+	b.Offer(f)
+	return nil
+}
+func (b *ReliableBus) RecvFrame() (MyFrame, error) {
+	b.L.Lock()
+	for !(b.f != nil || b.closed) {
+		b.Wait()
+	}
+	f, e := b.f, b.e
+	b.f, b.e = nil, nil
+	b.L.Unlock()
+
+	return f, e
+}
+
+func (b *ReliableBus) ReadDaemon() {
+	for {
+		f, e := b.MyBus.RecvFrame()
+
+		b.L.Lock()
+		for !(b.f == nil || b.closed) {
+			b.Wait()
+		}
+		if f.Command() == Disorder {
+			// 如果是disorder，那么在bus处处理。
+			if f.SequenceNumber() == b.nextId {
+				b.f, b.e = f, e
+				b.nextId++
+			}
+		}
+		if f.Command() == DisorderAcknowledge || f.Command() == Disorder {
+			if b.acknowledgeNumber-f.AcknowledgeNumber() > b.size {
+				b.acknowledgeNumber = f.AcknowledgeNumber()
+			}
+		} else {
+			b.f, b.e = f, e
+		}
+
+		b.L.Unlock()
+		b.Broadcast()
+	}
+}
+func (b *ReliableBus) WriteDeamon() {
+	const Tag = "ReliableBus.WriteDeamon"
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			f := NewFrame(0, 0, 0, DisorderAcknowledge, 0, b.nextId, nil)
+			e := b.MyBus.SendFrame(f)
+			if e != nil {
+				debug.E(Tag, e.Error())
+				continue
+			}
+			debug.T(Tag, b.acknowledgeNumber)
+			b.Buffer.SetTail(b.acknowledgeNumber) // 顺手在这里设置了
+		}
+	}()
+
+	for {
+		id, data, ok := b.Buffer.Read() // 在buffer里的一定是disorder
+		if !ok {
+			debug.E(Tag, id, data, ok)
+			continue
+		}
+		f := MyFrame(data)
+		f.SetSequenceNumber(id)
+		f.SetAcknowledgeNumber(b.nextId)
+
+		e := b.MyBus.SendFrame(f)
+		if e != nil {
+			debug.E(Tag, e.Error())
+			continue
+		}
+	}
 }
