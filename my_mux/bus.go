@@ -180,10 +180,12 @@ func (b *ReliableBus) RecvFrame() (MyFrame, error) {
 	for !(b.f != nil || b.closed) {
 		b.Wait()
 	}
+
 	f, e := b.f, b.e
 	b.f, b.e = nil, nil
-	b.L.Unlock()
 
+	b.L.Unlock()
+	b.Broadcast()
 	return f, e
 }
 
@@ -191,7 +193,7 @@ func (b *ReliableBus) ReadDaemon() {
 	const Tag = "ReliableBus.ReadDaemon"
 	for {
 		f, e := b.MyBus.RecvFrame()
-		debug.T(Tag, "接受到Frame", SprintFrame(f))
+		debug.T(Tag, "recv Frame", SprintFrame(f))
 		b.L.Lock()
 		for !(b.f == nil || b.closed) {
 			b.Wait()
