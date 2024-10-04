@@ -191,7 +191,7 @@ func (b *ReliableBus) ReadDaemon() {
 	const Tag = "ReliableBus.ReadDaemon"
 	for {
 		f, e := b.MyBus.RecvFrame()
-
+		debug.T(Tag, "接受到Frame", SprintFrame(f))
 		b.L.Lock()
 		for !(b.f == nil || b.closed) {
 			b.Wait()
@@ -201,6 +201,7 @@ func (b *ReliableBus) ReadDaemon() {
 			if f.SequenceNumber() == b.nextId {
 				b.f, b.e = f, e
 				b.nextId++
+				debug.T(Tag, "b.nextid = ", b.nextId)
 			}
 		}
 		if f.Command() == DisorderAcknowledge || f.Command() == Disorder {
