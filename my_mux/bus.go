@@ -149,7 +149,7 @@ type ReliableBus struct {
 	nextId uint8
 
 	*Buffer
-	acknowledgeNumber uint8
+	request uint8
 
 	*sync.Cond
 }
@@ -169,11 +169,11 @@ func NewReliableBus(b MyBus, size uint8) *ReliableBus {
 }
 
 func (b *ReliableBus) SendFrame(f MyFrame) error {
-	if f.Command() != Disorder {
-		return b.MyBus.SendFrame(f)
+	if f.Command() == Disorder || f.Command() == DisorderAcknowledge {
+		b.Offer(f)
+		return nil
 	}
-	b.Offer(f)
-	return nil
+	return b.MyBus.SendFrame(f)
 }
 func (b *ReliableBus) RecvFrame() (MyFrame, error) {
 	b.L.Lock()
@@ -188,6 +188,7 @@ func (b *ReliableBus) RecvFrame() (MyFrame, error) {
 }
 
 func (b *ReliableBus) ReadDaemon() {
+	const Tag = "ReliableBus.ReadDaemon"
 	for {
 		f, e := b.MyBus.RecvFrame()
 
@@ -203,8 +204,10 @@ func (b *ReliableBus) ReadDaemon() {
 			}
 		}
 		if f.Command() == DisorderAcknowledge || f.Command() == Disorder {
-			if b.acknowledgeNumber-f.AcknowledgeNumber() > b.size {
-				b.acknowledgeNumber = f.AcknowledgeNumber()
+			debug.T(Tag, b.request, " should set to ", f.AcknowledgeNumber())
+			if b.request-f.AcknowledgeNumber() > b.size {
+				debug.T(Tag, b.request, " set to ", f.AcknowledgeNumber())
+				b.request = f.AcknowledgeNumber()
 			}
 		} else {
 			b.f, b.e = f, e
@@ -222,11 +225,11 @@ func (b *ReliableBus) WriteDeamon() {
 			f := NewFrame(0, 0, 0, DisorderAcknowledge, 0, b.nextId, nil)
 			e := b.MyBus.SendFrame(f)
 			if e != nil {
-				debug.E(Tag, e.Error())
+				debug.E(Tag, "send frame error", e.Error())
 				continue
 			}
-			debug.T(Tag, b.acknowledgeNumber)
-			b.Buffer.SetTail(b.acknowledgeNumber) // 顺手在这里设置了
+			debug.T(Tag, "requesting", b.request)
+			b.Buffer.SetTail(b.request) // 顺手在这里设置了
 		}
 	}()
 
