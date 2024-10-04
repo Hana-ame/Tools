@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Hana-ame/udptun/Tools/debug"
 	"github.com/gorilla/websocket"
 )
 
@@ -106,7 +105,7 @@ type MyPipeBus struct {
 func (b *MyPipeBus) Close() error {
 	const Tag = "MyPipeBus.Close"
 	if b.closed {
-		debug.E(Tag, "already closed")
+		// 		debug.E(Tag, "already closed")
 		return fmt.Errorf(ERR_BUS_CLOSED) // 如果总线已关闭，返回错误
 	}
 	b.closed = true
@@ -193,7 +192,7 @@ func (b *ReliableBus) ReadDaemon() {
 	const Tag = "ReliableBus.ReadDaemon"
 	for {
 		f, e := b.MyBus.RecvFrame()
-		debug.T(Tag, "recv Frame", SprintFrame(f))
+		// 		debug.T(Tag, "recv Frame", SprintFrame(f))
 		b.L.Lock()
 		for !(b.f == nil || b.closed) {
 			b.Wait()
@@ -203,13 +202,13 @@ func (b *ReliableBus) ReadDaemon() {
 			if f.SequenceNumber() == b.nextId {
 				b.f, b.e = f, e
 				b.nextId++
-				debug.T(Tag, "b.nextid = ", b.nextId)
+				// 				debug.T(Tag, "b.nextid = ", b.nextId)
 			}
 		}
 		if f.Command() == DisorderAcknowledge || f.Command() == Disorder {
-			debug.T(Tag, b.request, " should set to ", f.AcknowledgeNumber())
+			// 			debug.T(Tag, b.request, " should set to ", f.AcknowledgeNumber())
 			if b.request-f.AcknowledgeNumber() > b.size {
-				debug.T(Tag, b.request, " set to ", f.AcknowledgeNumber())
+				// 				debug.T(Tag, b.request, " set to ", f.AcknowledgeNumber())
 				b.request = f.AcknowledgeNumber()
 			}
 		} else {
@@ -228,10 +227,10 @@ func (b *ReliableBus) WriteDeamon() {
 			f := NewFrame(0, 0, 0, DisorderAcknowledge, 0, b.nextId, nil)
 			e := b.MyBus.SendFrame(f)
 			if e != nil {
-				debug.E(Tag, "send frame error", e.Error())
+				// 				debug.E(Tag, "send frame error", e.Error())
 				continue
 			}
-			debug.T(Tag, "requesting", b.request)
+			// 			debug.T(Tag, "requesting", b.request)
 			b.Buffer.SetTail(b.request) // 顺手在这里设置了
 		}
 	}()
@@ -239,7 +238,7 @@ func (b *ReliableBus) WriteDeamon() {
 	for {
 		id, data, ok := b.Buffer.Read() // 在buffer里的一定是disorder
 		if !ok {
-			debug.E(Tag, id, data, ok)
+			// 			debug.E(Tag, id, data, ok)
 			continue
 		}
 		f := MyFrame(data)
@@ -248,7 +247,7 @@ func (b *ReliableBus) WriteDeamon() {
 
 		e := b.MyBus.SendFrame(f)
 		if e != nil {
-			debug.E(Tag, e.Error())
+			// 			debug.E(Tag, e.Error())
 			continue
 		}
 	}
