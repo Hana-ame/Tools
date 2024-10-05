@@ -74,22 +74,55 @@ func (b *MyConnBus) SendFrame(f MyFrame) error {
 }
 
 // MyWsBus 用于 WebSocket 连接的总线结构。
+type MyWsBusReader struct {
+	*websocket.Conn
+
+	sync.Mutex
+}
+
+// MyWsBus 用于 WebSocket 连接的总线结构。
+type MyWsBusWriter struct {
+	*websocket.Conn
+
+	sync.Mutex
+}
+
 type MyWsBus struct {
 	*websocket.Conn
+
+	*MyWsBusReader
+	*MyWsBusWriter
 
 	sync.Mutex // 仅允许一个读取守护进程读取。
 }
 
+func NewWsBus(c *websocket.Conn) MyBus {
+	// func NewWsBus(c *websocket.Conn) *MyWsBus {
+	return &MyWsBus{
+		Conn:          c,
+		MyWsBusReader: &MyWsBusReader{Conn: c},
+		MyWsBusWriter: &MyWsBusWriter{Conn: c},
+	}
+}
+
 // RecvFrame 从 WebSocket 连接接收一帧数据。
-func (b *MyWsBus) RecvFrame() (MyFrame, error) {
+func (b *MyWsBusReader) RecvFrame() (MyFrame, error) {
+	b.Lock()
+	defer b.Unlock()
 	_, f, err := b.ReadMessage()
 	return MyFrame(f), err
 }
 
 // SendFrame 通过 WebSocket 发送一帧数据。
-func (b *MyWsBus) SendFrame(f MyFrame) error {
+func (b *MyWsBusWriter) SendFrame(f MyFrame) error {
+	b.Lock()
+	defer b.Unlock()
 	err := b.WriteMessage(websocket.BinaryMessage, f)
 	return err
+}
+
+func (b *MyWsBus) Close() error {
+	return b.Conn.Close()
 }
 
 // MyPipeBus 本地管道总线结构。
