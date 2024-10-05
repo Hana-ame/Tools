@@ -33,7 +33,7 @@ func (s *MyServer) ReadDeamon() error {
 	defer s.Unlock()
 	for {
 		f, err := s.RecvFrame()
-		if err != nil && (err.Error() == ERR_BUS_CLOSED || err.Error() == ERR_PIPE_CLOSED) {
+		if err != nil && (ErrorIsClosed(err)) {
 			s.Close()
 			return err
 		}
@@ -50,7 +50,7 @@ func (s *MyServer) ReadDeamon() error {
 					// bus对面是client conn
 					for {
 						f, err := b.RecvFrame()
-						if err != nil && (err.Error() == ERR_BUS_CLOSED || err.Error() == ERR_PIPE_CLOSED) {
+						if err != nil && (ErrorIsClosed(err)) {
 							s.Remove(tag)
 						}
 						s.SendFrame(f)

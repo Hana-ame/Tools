@@ -91,7 +91,7 @@ import (
 // 		f, e := c.ReadFrame()
 // 		if e != nil {
 // 			debug.E("handleAcceptedConn", e.Error())
-// 			if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+// 			if ErrorIsClosed(e){
 // 				return
 // 			}
 // 			continue
@@ -130,7 +130,7 @@ func TestClient(t *testing.T) {
 			f, e := c.ReadFrame()
 			if e != nil {
 				debug.E("handleClientConn", e.Error())
-				if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+				if ErrorIsClosed(e) {
 					return
 				}
 				continue
@@ -150,7 +150,7 @@ func TestClient(t *testing.T) {
 				f, e := c.ReadFrame()
 				if e != nil {
 					debug.E(Tag, e.Error())
-					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+					if ErrorIsClosed(e) {
 						return
 					}
 					continue
@@ -253,7 +253,7 @@ func TestClient2(t *testing.T) {
 			f, e := c.ReadFrame()
 			if e != nil {
 				debug.E("handleClientConn", e.Error())
-				if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+				if ErrorIsClosed(e) {
 					return
 				}
 				continue
@@ -273,7 +273,7 @@ func TestClient2(t *testing.T) {
 				f, e := c.ReadFrame()
 				if e != nil {
 					debug.E(Tag, e.Error())
-					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+					if ErrorIsClosed(e) {
 						return
 					}
 					continue
@@ -283,7 +283,7 @@ func TestClient2(t *testing.T) {
 				n, e := c.WriteFrame(f)
 				if e != nil {
 					debug.E(Tag, n, e.Error())
-					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED {
+					if ErrorIsClosed(e) {
 						return
 					}
 					continue
@@ -352,7 +352,7 @@ func TestClient3(t *testing.T) {
 			f, e := c.ReadFrame()
 			if e != nil {
 				debug.E("handleClientConn", e.Error())
-				if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+				if ErrorIsClosed(e) {
 					return
 				}
 				continue
@@ -372,7 +372,7 @@ func TestClient3(t *testing.T) {
 				f, e := c.ReadFrame()
 				if e != nil {
 					debug.E(Tag, e.Error())
-					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+					if ErrorIsClosed(e) {
 						return
 					}
 					continue
@@ -382,7 +382,7 @@ func TestClient3(t *testing.T) {
 				n, e := c.WriteFrame(f)
 				if e != nil {
 					debug.E(Tag, n, e.Error())
-					if e.Error() == ERR_BUS_CLOSED || e.Error() == ERR_PIPE_CLOSED || e.Error() == ERR_CONN_CLOSED {
+					if ErrorIsClosed(e) {
 						return
 					}
 					continue

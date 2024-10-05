@@ -24,6 +24,7 @@ func TestBus(t *testing.T) {
 	_ = router
 }
 
+// 正常情况下能够传输的。
 func TestReliableBus(t *testing.T) {
 	a, b := NewDebugPipeBusPair("123")
 	ra := NewReliableBus(a, 4)

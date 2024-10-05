@@ -2,6 +2,7 @@ package remoteclient
 
 import (
 	"io"
+	"log"
 	"net"
 	"net/http"
 
@@ -45,10 +46,47 @@ func HandleWebSocket(c *gin.Context) {
 	debug.I(Tag, "accept a new conn and set")
 }
 
+func Server(conn *wsreverse.Conn) mymux.MyBus {
+	const Tag = "ws server"
+	cbus, sbus := mymux.NewPipeBusPair()
+	// conn -> bus
+	go func() {
+		for {
+			_, data, err := conn.ReadMessage()
+			if err != nil {
+				debug.E(Tag, err.Error())
+				conn.WaitOnError()
+				continue
+			}
+			sbus.SendFrame(data)
+		}
+	}()
+	// bus -> conn
+	go func() {
+		for {
+			f, e := sbus.RecvFrame()
+			if e != nil {
+				debug.E(Tag, e.Error())
+			}
+
+			e = conn.WriteMessage(websocket.BinaryMessage, f)
+			for e != nil {
+				debug.E(Tag, e.Error())
+				conn.WaitOnError()
+				e = conn.WriteMessage(websocket.BinaryMessage, f)
+			}
+		}
+	}()
+	return cbus
+
+}
+
 func init() {
 	const Tag = "remote-client"
-	bus := wsreverse.NewWsServer(Conn)
-	client := mymux.NewClient(bus, 5)
+	bus := Server(Conn)
+
+	var addr mymux.Addr = 5
+	client := mymux.NewClient(bus, addr)
 
 	listener, err := net.Listen("tcp", "127.24.10.4:8080")
 	debug.E(Tag, err.Error())
@@ -67,14 +105,30 @@ func init() {
 			continue
 		}
 
-		go forward(conn, muxc)
+		go handle(muxc, conn)
 
 	}
 }
 
-func forward(c net.Conn, muxc *mymux.MyFrameConn) {
-	muxs := &mymux.MyFrameConnStreamr{MyFrameConn: muxc}
-	io.Copy(muxs, c)	
-	io.Copy(c, muxs)	
-	
+func handle(nc *mymux.MyFrameConn, lc net.Conn) {
+	sc := &mymux.MyFrameConnStreamer{MyFrameConn: nc}
+
+	// 从 lc 读取数据并写入到 sc
+	go func() {
+		defer lc.Close() // 确保连接在结束时关闭
+		if _, err := io.Copy(sc, lc); err != nil {
+			log.Println("Error copying from lc to sc:", err)
+			return
+		}
+	}()
+
+	// 从 sc 读取数据并写入到 lc
+	go func() {
+		defer nc.Close() // 确保 nc 在结束时关闭
+		if _, err := io.Copy(lc, sc); err != nil {
+			log.Println("Error copying from sc to lc:", err)
+			return
+		}
+	}()
+
 }

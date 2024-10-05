@@ -2,7 +2,6 @@ package mymux
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -12,7 +11,7 @@ import (
 )
 
 const (
-	ERR_BUS_CLOSED = "my bus already closed" // 总线关闭错误信息
+	ERR_BUS_CLOSED Error = "my bus already closed" // 总线关闭错误信息
 )
 
 // MyBus 接口定义了读取和写入总线的功能，并包含关闭功能。
@@ -103,10 +102,10 @@ type MyPipeBus struct {
 
 // Close 关闭总线，释放相关资源。
 func (b *MyPipeBus) Close() error {
-	const Tag = "MyPipeBus.Close"
+	// const Tag = "MyPipeBus.Close"
 	if b.closed {
 		// 		debug.E(Tag, "already closed")
-		return fmt.Errorf(ERR_BUS_CLOSED) // 如果总线已关闭，返回错误
+		return ERR_BUS_CLOSED
 	}
 	b.closed = true
 	b.MyBusReader.Close() // 关闭读取器
@@ -140,6 +139,8 @@ func NewDebugPipeBusPair(tag string) (*MyPipeBus, *MyPipeBus) {
 	return a2bBus, b2aBus
 }
 
+// 在正常情况下能够传输 见test
+// 如果有什么问题遇到的时候再来debug
 type ReliableBus struct {
 	MyBus
 
@@ -164,6 +165,7 @@ func NewReliableBus(b MyBus, size uint8) *ReliableBus {
 
 	go rb.ReadDaemon()
 	go rb.WriteDeamon()
+	go rb.AcknowledgeDeamon()
 	return rb
 }
 
@@ -179,7 +181,10 @@ func (b *ReliableBus) RecvFrame() (MyFrame, error) {
 	for !(b.f != nil || b.closed) {
 		b.Wait()
 	}
-
+	if b.closed {
+		b.L.Unlock()
+		return b.f, ERR_BUS_CLOSED
+	}
 	f, e := b.f, b.e
 	b.f, b.e = nil, nil
 
@@ -189,13 +194,17 @@ func (b *ReliableBus) RecvFrame() (MyFrame, error) {
 }
 
 func (b *ReliableBus) ReadDaemon() {
-	const Tag = "ReliableBus.ReadDaemon"
+	// const Tag = "ReliableBus.ReadDaemon"
 	for {
 		f, e := b.MyBus.RecvFrame()
 		// 		debug.T(Tag, "recv Frame", SprintFrame(f))
 		b.L.Lock()
 		for !(b.f == nil || b.closed) {
 			b.Wait()
+		}
+		if b.closed {
+			b.L.Unlock()
+			return
 		}
 		if f.Command() == Disorder {
 			// 如果是disorder，那么在bus处处理。
@@ -210,6 +219,7 @@ func (b *ReliableBus) ReadDaemon() {
 			if b.request-f.AcknowledgeNumber() > b.size {
 				// 				debug.T(Tag, b.request, " set to ", f.AcknowledgeNumber())
 				b.request = f.AcknowledgeNumber()
+				b.Buffer.SetTail(b.request)
 			}
 		} else {
 			b.f, b.e = f, e
@@ -220,24 +230,14 @@ func (b *ReliableBus) ReadDaemon() {
 	}
 }
 func (b *ReliableBus) WriteDeamon() {
-	const Tag = "ReliableBus.WriteDeamon"
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			f := NewFrame(0, 0, 0, DisorderAcknowledge, 0, b.nextId, nil)
-			e := b.MyBus.SendFrame(f)
-			if e != nil {
-				// 				debug.E(Tag, "send frame error", e.Error())
-				continue
-			}
-			// 			debug.T(Tag, "requesting", b.request)
-			b.Buffer.SetTail(b.request) // 顺手在这里设置了
-		}
-	}()
+	// const Tag = "ReliableBus.WriteDeamon"
 
 	for {
 		id, data, ok := b.Buffer.Read() // 在buffer里的一定是disorder
 		if !ok {
+			if b.closed {
+				return
+			}
 			// 			debug.E(Tag, id, data, ok)
 			continue
 		}
@@ -247,8 +247,36 @@ func (b *ReliableBus) WriteDeamon() {
 
 		e := b.MyBus.SendFrame(f)
 		if e != nil {
+			if b.closed {
+				return
+			}
 			// 			debug.E(Tag, e.Error())
 			continue
 		}
 	}
+}
+
+func (b *ReliableBus) AcknowledgeDeamon() {
+	for {
+		time.Sleep(time.Second)
+		f := NewFrame(0, 0, 0, DisorderAcknowledge, 0, b.nextId, nil)
+		e := b.MyBus.SendFrame(f)
+		if e != nil {
+			if b.closed {
+				return
+			}
+			// 				debug.E(Tag, "send frame error", e.Error())
+			continue
+		}
+		// 			debug.T(Tag, "requesting", b.request)
+		b.Buffer.SetTail(b.request) // 顺手在这里设置了
+	}
+}
+
+func (b *ReliableBus) Close() error {
+	e := b.MyBus.Close()
+	b.Buffer.Close()
+	b.closed = true
+	b.Broadcast()
+	return e
 }

@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	ERR_CONN_CLOSED = "my frame conn closed"
+	ERR_CONN_CLOSED Error = "my frame conn closed"
 )
 
-func ErrorIsClosed(err error) bool {
-	e := err.Error()
-	return e == ERR_BUS_CLOSED || e == ERR_PIPE_CLOSED || e == ERR_CONN_CLOSED
+func ErrorIsClosed(e error) bool {
+	err := Error(e.Error())
+	return err == ERR_BUS_CLOSED || err == ERR_PIPE_CLOSED || err == ERR_CONN_CLOSED
 }
 
 type MyFrameConn struct {
@@ -66,7 +66,7 @@ func (c *MyFrameConn) WriteFrame(p []byte) (n int, err error) {
 func (c *MyFrameConn) ReadFrame() ([]byte, error) {
 	const Tag = "MyFrameConn.ReadFrame"
 	if c.closed {
-		return nil, fmt.Errorf(ERR_CONN_CLOSED)
+		return nil, (ERR_CONN_CLOSED)
 	}
 
 	f, err := c.MyBus.RecvFrame()
@@ -76,7 +76,7 @@ func (c *MyFrameConn) ReadFrame() ([]byte, error) {
 	debug.T(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, f.Command().String())
 	if f.Command() == Close {
 		defer c.Close()
-		return nil, fmt.Errorf(ERR_CONN_CLOSED)
+		return nil, (ERR_CONN_CLOSED)
 	}
 	debug.T(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, string(f.Data()))
 	return f.Data(), nil
@@ -89,7 +89,7 @@ func (c *MyFrameConn) Close() error {
 	defer debug.D(Tag, c.localAddr, "<-", c.remoteAddr, ":", c.port, "closed")
 
 	if c.closed {
-		return fmt.Errorf(ERR_CONN_CLOSED)
+		return (ERR_CONN_CLOSED)
 	}
 	c.SendFrame(NewCtrlFrame(c.localAddr, c.remoteAddr, c.port, Close, 0, 0))
 	// time.Sleep(time.Second) // it seems that close cannot send, so sleep and
@@ -118,23 +118,26 @@ func (c *MyFrameConn) SetWriteDeadline(t time.Time) error {
 }
 
 // 插口，专门把FreamConn转换为io.Streamer
-type MyFrameConnStreamr struct {
+type MyFrameConnStreamer struct {
 	*MyFrameConn
 
 	rb []byte
 }
 
-func (c *MyFrameConnStreamr) Write(p []byte) (n int, err error) {
+func (c *MyFrameConnStreamer) Write(p []byte) (n int, err error) {
 	return c.WriteFrame(p)
 }
 
-func (c *MyFrameConnStreamr) Read(p []byte) (n int, err error) {
+func (c *MyFrameConnStreamer) Read(p []byte) (n int, err error) {
 	if len(c.rb) == 0 {
 		c.rb, err = c.ReadFrame()
+		if err != nil {
+			return
+		}
 	}
 	n = copy(p, c.rb)
 	c.rb = c.rb[n:]
-	return n, nil
+	return
 }
 
 // 这里开始没什么关系，可能用到TCP的东西再说。

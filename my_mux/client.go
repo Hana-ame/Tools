@@ -13,7 +13,7 @@ type portMap [32]byte
 
 // ContainsPort 检查指定端口是否被占用。
 func (m *portMap) ContainsPort(i uint8) bool {
-	return 0 != m[i/8]&(1<<(i%8))
+	return m[i/8]&(1<<(i%8)) != 0
 }
 
 // SetPort 设置指定端口为占用状态。
@@ -82,7 +82,7 @@ func (c *MyClient) ReadDaemon() error {
 
 	for {
 		f, err := c.RecvFrame() // 接收帧
-		if err != nil && (err.Error() == ERR_BUS_CLOSED || err.Error() == ERR_PIPE_CLOSED) {
+		if err != nil && (err == ERR_BUS_CLOSED || err == ERR_PIPE_CLOSED) {
 			c.Close()
 			return err
 		}
@@ -127,12 +127,12 @@ func (s *MyClient) Dial(dst Addr) (*MyFrameConn, error) {
 		// bus对面是client conn
 		for {
 			f, err := b.RecvFrame() // 接收帧
-			if err != nil && (err.Error() == ERR_BUS_CLOSED || err.Error() == ERR_PIPE_CLOSED) {
+			if err != nil && (err == ERR_BUS_CLOSED || err == ERR_PIPE_CLOSED) {
 				s.Remove(tag)      // 移除标签
 				s.RemovePort(port) // 移除端口
 			}
 			err = s.SendFrame(f) // 转发帧
-			if err != nil && (err.Error() == ERR_BUS_CLOSED || err.Error() == ERR_PIPE_CLOSED) {
+			if err != nil && (err == ERR_BUS_CLOSED || err == ERR_PIPE_CLOSED) {
 				s.Remove(tag)      // 移除标签
 				s.RemovePort(port) // 移除端口
 			}

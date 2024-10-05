@@ -1,14 +1,19 @@
 package mymux
 
 import (
-	"fmt"
 	"sync"
 
 	log "github.com/Hana-ame/udptun/Tools/debug"
 )
 
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
 const (
-	ERR_PIPE_CLOSED = "my pipe closed" // 管道关闭错误信息
+	ERR_PIPE_CLOSED Error = "my pipe closed" // 管道关闭错误信息
 )
 
 // MyPipe 定义了一个管道结构，用于在读取和写入之间传递数据。
@@ -28,7 +33,7 @@ func (p *MyPipe) SendFrame(f MyFrame) (err error) {
 		p.Wait()
 	}
 	if p.closed {
-		err = fmt.Errorf(ERR_PIPE_CLOSED) // 如果管道已关闭，返回错误
+		err = ERR_PIPE_CLOSED
 	}
 	p.f = f // 设置帧
 	p.L.Unlock()
@@ -46,7 +51,7 @@ func (p *MyPipe) RecvFrame() (f MyFrame, err error) {
 	}
 
 	if p.closed {
-		err = fmt.Errorf(ERR_PIPE_CLOSED) // 如果管道已关闭，返回错误
+		err = ERR_PIPE_CLOSED
 	}
 	f = p.f   // 获取帧
 	p.f = nil // 清空帧
