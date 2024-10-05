@@ -12,9 +12,9 @@ import (
 func TestMutex(t *testing.T) {
 	reader, writer := NewPipe()           // 创建读写管道
 	bus := NewBusFromPipe(reader, writer) // 从管道创建总线
-	reader.Lock()                         // 锁定读取器
-	bus.Lock()                            // 锁定总线
-	fmt.Println("never")                  // 这行代码不会被执行，因为锁定后没有解锁
+	// reader.Lock()                         // 锁定读取器
+	bus.Lock()           // 锁定总线
+	fmt.Println("never") // 这行代码不会被执行，因为锁定后没有解锁
 }
 
 // TestCond 测试条件变量的工作原理。

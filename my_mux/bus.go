@@ -19,6 +19,8 @@ type MyBus interface {
 	MyBusReader
 	MyBusWriter
 
+	sync.Locker // 仅允许一个读取守护进程读取。
+
 	io.Closer
 }
 
@@ -32,8 +34,6 @@ type MyBusWriter interface {
 // MyBusReader 接口定义了接收帧的功能，提供锁功能以确保线程安全，并包含关闭功能。
 type MyBusReader interface {
 	RecvFrame() (MyFrame, error)
-
-	sync.Locker // 仅允许一个读取守护进程读取。
 
 	io.Closer
 }
@@ -131,6 +131,8 @@ type MyPipeBus struct {
 	MyBusWriter
 
 	closed bool // 标记总线是否已关闭
+
+	sync.Mutex
 }
 
 // Close 关闭总线，释放相关资源。
@@ -312,4 +314,12 @@ func (b *ReliableBus) Close() error {
 	b.closed = true
 	b.Broadcast()
 	return e
+}
+
+func (b *ReliableBus) Lock() {
+	b.MyBus.Lock()
+}
+
+func (b *ReliableBus) UnLock() {
+	b.MyBus.Unlock()
 }

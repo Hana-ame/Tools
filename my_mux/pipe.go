@@ -75,7 +75,7 @@ func (p *MyPipe) Close() error {
 }
 
 // NewPipe 创建一个新的管道，返回读取和写入接口。
-func NewPipe() (MyBusReader, MyBusWriter) {
+func NewPipe() (MyBus, MyBus) {
 	pipe := &MyPipe{Cond: sync.NewCond(&sync.Mutex{})}
 	return pipe, pipe // 返回同一个管道的读写接口
 }

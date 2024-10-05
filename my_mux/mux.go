@@ -78,7 +78,7 @@ func (m *MyMuxServer) Accept() *MyConn {
 }
 
 // ReadDaemon 读取并处理连接的帧。
-func (m *MyMuxServer) ReadDaemon(c MyBusReader) {
+func (m *MyMuxServer) ReadDaemon(c MyBus) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -178,7 +178,7 @@ func (m *MyMuxClient) Dial(dst Addr) (*MyConn, error) {
 }
 
 // ReadDaemon 读取并处理连接的帧。
-func (m *MyMuxClient) ReadDaemon(c MyBusReader) {
+func (m *MyMuxClient) ReadDaemon(c MyBus) {
 	c.Lock()
 	defer c.Unlock()
 
