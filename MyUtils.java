@@ -1,6 +1,7 @@
 package com.example.tools;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 // import java.util.Arrays;
 import java.util.List;
 
@@ -82,32 +83,48 @@ public class MyUtils {
             List<T> list = java.util.Arrays.asList(arr);
             return (ArrayList<T>) list;
         }
+        public static <T> LinkedList<T> asLinkedList(T[] arr) {
+            LinkedList<T> list = new LinkedList<>();
+            for (T e : arr) {
+                list.add(e);
+            }
+            return (LinkedList<T>) list;
+        }
 
     }
 
     // print
     public static void printList(List<?> a) {
-        System.out.printf("List<?>[ ");
+        String firstClassName = "?";
+        if (!a.isEmpty()) {
+            firstClassName = a.get(0).getClass().getName();
+        }
+        System.out.printf("List<%s>[ ", firstClassName);
         for (Object o : a) {
-            System.out.printf("%s, ", o.toString());
+            String currentClassName = o.getClass().getName();
+            System.out.printf(o.toString());
+            if (!currentClassName.equals(firstClassName))
+                System.out.printf("<%s>, ", currentClassName);
+            else
+                System.out.printf(", ");
         }
         System.out.printf("]");
         System.out.println();
     }
-
-    // public static void printArray(Object[] a) {
-    // System.out.printf("Object[ ");
-    // for (Object o : a) {
-    // System.out.printf("%s, ", o.toString());
-    // }
-    // System.out.printf("]");
-    // System.out.println();
-    // }
-
-    public static <T> void printArray(T[] a) {
-        System.out.printf("Object[ ");
+    
+    public static <T> void printArray(T[] a) {        
+        String firstClassName = "Object";
+        if (a.length > 0) {
+            firstClassName = a[0].getClass().getName();
+        }
+        System.out.printf("%s[ ", firstClassName);
         for (T o : a) {
-            System.out.printf("%s, ", o.toString());
+            String currentClassName = o.getClass().getName();
+            System.out.printf(o.toString());
+            if (!currentClassName.equals(firstClassName))
+                System.out.printf("<%s>, ", currentClassName);
+            else
+                System.out.printf(", ");
         }
         System.out.printf("]");
         System.out.println();
@@ -138,5 +155,12 @@ public class MyUtils {
         }
         System.out.printf("]");
         System.out.println();
+    }
+
+    public static void main(String[] args) {
+        List<Integer> a = new ArrayList<>();
+        printList(a);
+        a.add(1);
+        printList(a);
     }
 }
