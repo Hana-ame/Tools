@@ -40,11 +40,11 @@ function ItemList() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-4">
         {items.map((item, index) => (
           <div
             key={index}
-            className="relative border border-gray-300 rounded-lg p-4 shadow-md"
+            className="relative inline-block border border-gray-300 rounded-lg p-4 shadow-md whitespace-nowrap"
           >
             <button
               onClick={() => handleRemoveItem(index)}
