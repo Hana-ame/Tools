@@ -9,19 +9,23 @@ def set_title(title: str):
     # windows
     # subprocess.call(["title", title])
 
-def parse_args(selector: Callable[[str], bool]) -> str:
+def parse_args(selector: Callable[[str], bool]) -> str | None:
     for arg in sys.argv:
         if selector(arg):
             return arg
+    return None
 
 def args_filter(function: Callable[[str], bool]) -> Iterator[str]:
     return filter(function, sys.argv)
 
-def parse_fn(selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x) -> str:
+def parse_fn(selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x) -> str | None:
     fn = os.path.basename(sys.argv[0])
-    for s in fn.split('.'):
+    args = fn.split('.')
+    args.reverse()
+    for s in args:
         if selector(s):
             return parser(s)
+    return None
 
         
 # def print_type(v: any):
