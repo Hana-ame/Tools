@@ -2,6 +2,7 @@ import subprocess
 import sys
 import os
 import re
+import json
 from typing import Callable, List, Iterator
 
 def set_title(title: str):
@@ -27,23 +28,62 @@ def parse_fn(selector: Callable[[str], bool], parser: Callable[[str], str] = lam
             return parser(s)
     return None
 
-        
+def parse_startswith(s: str, prefix: str):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return None
+
+def parse_endswith(s: str, surfix: str):
+    if s.endswith(surfix):
+        return s[:-len(surfix)]
+    return None
+
+def load_json_file(filepath):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        # 加载 JSON 文件并更新到 data 字典
+        json_data = json.load(f)
+    return json_data
+
+def load_json_files(folder_path):
+    data = {}
+    
+    # 遍历文件夹中的所有文件
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.json'):
+            fn = filename[:-len('.json')]
+            file_path = os.path.join(folder_path, filename)
+            with open(file_path, 'r', encoding='utf-8') as f:
+                # 加载 JSON 文件并更新到 data 字典
+                json_data = json.load(f)
+                data[fn] = json_data
+
+    return data
 # def print_type(v: any):
 #     print(type(v)) # <class 'function'>
 
 if __name__ == '__main__':
-    pattern = r"hello$"
-    pattern = r"world"
-    string = "hello$ world"
-    print(re.match(pattern, string) is False)
-    print(re.search(pattern, string) is False)
-    print(re.findall(pattern, string) is None)
+    d = load_json_file("../dicts/file1.json")
+    print(d)
+    d = load_json_files("../dicts")
+    print(d)
 
-    if re.search(pattern, string):
-        print('...')
+    if (s := parse_endswith("dsfsdf__", "__")) is not None:
+        print(s)
+    else:
+        print("s is None")
+    if (s := parse_endswith("dsfsdf", "__")) is not None:
+        print(s)
+    else:
+        print("s is None")
     
-    s = parse_fn(lambda x: x.endswith('s'))
-    print(s)
+    
+    if (s := parse_startswith("__dsfsdf", "__")) is not None:
+        print(s)
+    else:
+        print("s is None")
+    
+    if (s := parse_startswith("dsfsdf__", "__")) is not None:
+        print(s)
+    else:
+        print("s is None")
 
-    s = args_filter(lambda x : True)
-    print(s)
