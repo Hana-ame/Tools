@@ -9,11 +9,7 @@ def sub(key: str, fn="default"):
 
 def renew_lastrow(row: Series, lastrow: Series):
   # for cols in row.
-  # if add or remove key, it will make errors (by gpt)
-  # print(lastrow.index)
+  # if add or remove key, it will make errors (by gpt), for dict
   for k in lastrow.index:
-    # print(k)
-    # print(k, row[k] , row[k] is None, lastrow[k] , lastrow[k] is None)
     lastrow[k] = row[k] or lastrow[k]
-    # print(k, lastrow[k] is None)
   return lastrow
