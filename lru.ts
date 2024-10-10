@@ -104,3 +104,6 @@ class LRUCache<K, V> {
     return;
   }
 }
+
+
+export {LRUCache}
