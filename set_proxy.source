@@ -1,3 +1,0 @@
-export HTTP_PROXY=http://DESKTOP-LLULJ2Q.mshome.net:10809
-export HTTPS_PROXY=http://DESKTOP-LLULJ2Q.mshome.net:10809
-git config --global http.proxy http://DESKTOP-LLULJ2Q.mshome.net:10809
