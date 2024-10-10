@@ -12,10 +12,15 @@ def set_title(title: str):
     # subprocess.call(["title", title])
 
 
-def parse_args(selector: Callable[[str], bool]) -> str | None:
+# [parser(s) for s in filter(selector, argv)]
+
+
+def parse_args(
+    selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x
+) -> str | None:
     for arg in sys.argv:
         if selector(arg):
-            return arg
+            return parser(arg)
     return None
 
 
@@ -91,12 +96,11 @@ if __name__ == "__main__":
     else:
         print("s is None")
 
-    
     if (s := parse_endswith("dsfsdf", ["123", "14", "__"])) is not None:
         print(s)
     else:
         print("s is None")
-        
+
     if (s := parse_endswith("dsfsdf__", ["123", "14", "__"])) is not None:
         print(s)
     else:
