@@ -39,7 +39,7 @@ class FileStringList(list[str]):
     def __enter__(self):
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
+    def __exit__(self, exception_type=None, exception_value=None, exception_traceback=None):
         self.write()
 
     def write(self):
