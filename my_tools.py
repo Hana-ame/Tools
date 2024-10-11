@@ -91,12 +91,11 @@ if __name__ == "__main__":
     else:
         print("s is None")
 
-    
     if (s := parse_endswith("dsfsdf", ["123", "14", "__"])) is not None:
         print(s)
     else:
         print("s is None")
-        
+
     if (s := parse_endswith("dsfsdf__", ["123", "14", "__"])) is not None:
         print(s)
     else:
