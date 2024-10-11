@@ -28,7 +28,7 @@ def main():
     config = read_config("blog.yaml")
     folders = get_folders(config)
     tags = get_tags(config)
-    all_metadata = []
+    all_metadata: List[FileMetadata] = []
 
     for folder in folders:
         dir_path = folder['dir']
@@ -52,9 +52,10 @@ def main():
 
     dist_path = config['dist']
     for metadata in all_metadata:
+        title = metadata.title
         md_file_path = metadata.filepath
         output_html_path = os.path.join(dist_path,"article" ,f"{metadata.sha1sum}.html")
-        convert_md_to_html(md_file_path, output_html_path)
+        convert_md_to_html(title, md_file_path, output_html_path)
 
     
     generate_index([], all_metadata, os.path.join(dist_path, "index.html"))

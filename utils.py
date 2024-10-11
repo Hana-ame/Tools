@@ -1,10 +1,6 @@
-from dataclasses import dataclass, field
-from datetime import datetime
 from typing import List
-import os
+
 import hashlib
-import yaml
-import markdown
 
 def compute_sha1(file_path: str) -> str:
     """计算给定文件的SHA1哈希值"""
@@ -13,6 +9,10 @@ def compute_sha1(file_path: str) -> str:
         while chunk := f.read(8192):  # 逐块读取文件
             sha1.update(chunk)
     return sha1.hexdigest()
+
+
+from dataclasses import dataclass, field
+from datetime import datetime
 
 @dataclass
 class FileMetadata:
@@ -33,6 +33,7 @@ class FileMetadata:
             "title": self.title
         }
 
+import os
 
 def get_file_metadata(file_path: str, tags: List[str]) -> FileMetadata:
     """获取文件的元数据，包括文件夹路径名作为标签"""
@@ -68,6 +69,7 @@ def get_file_metadata(file_path: str, tags: List[str]) -> FileMetadata:
     )
 
     return file_metadata
+
 def process_files_in_directory(directory: str, tags: List[str]) -> List[FileMetadata]:
     """处理指定目录中的所有文件并返回元数据"""
     metadata_list = []
@@ -86,9 +88,8 @@ def process_files_in_directory(directory: str, tags: List[str]) -> List[FileMeta
     
     return metadata_list
 
-
-
 # yaml
+import yaml
 
 # read config
 # see blog_example.yaml
@@ -99,30 +100,55 @@ def read_config(config_file: str) -> dict:
     return config
 
 
-#  markdown
-def convert_md_to_html(md_file_path: str, output_html_path: str):
-    """将 Markdown 文件转换为 HTML 并保存"""
-    # 检查文件扩展名
-    _, file_extension = os.path.splitext(md_file_path)
-    if file_extension.lower() != '.md':
-        raise ValueError("提供的文件不是一个 Markdown 文件。请确保文件扩展名为 .md")
+# markdown extension
+import markdown
 
-    # 读取 Markdown 文件内容
-    with open(md_file_path, 'r', encoding='utf-8') as md_file:
-        md_content = md_file.read()
+class UppercaseExtension(markdown.Extension):
+    def extendMarkdown(self, md):
+        # 注册一个新的转换器
+        md.preprocessors.register(UppercasePreprocessor(md), 'uppercase', 175)
 
-    # 转换为 HTML
-    html_content = markdown.markdown(md_content)
+class UppercasePreprocessor(markdown.preprocessors.Preprocessor):
+    def run(self, lines):
+        # 将所有行转换为大写
+        return [line.upper() for line in lines]
 
-    # 保存到 HTML 文件
-    with open(output_html_path, 'w', encoding='utf-8') as html_file:
-        html_file.write(html_content)
+def makeExtension(**kwargs):
+    return UppercaseExtension(**kwargs)
 
-    print(f"已将 Markdown 文件 '{md_file_path}' 转换为 HTML 并保存为 '{output_html_path}'")
+class LaTeXExtension(markdown.Extension):
+    def extendMarkdown(self, md):
+        # 注册一个新的内联模式处理器
+        LATEX_PATTERN = r'\$([^$]+)\$'  # 匹配 $...$ 形式的LaTeX
+        md.inlinePatterns.register(LaTeXInlineProcessor(LATEX_PATTERN, md), 'latex', 175)
+
+from markdown.inlinepatterns import InlineProcessor
+class LaTeXInlineProcessor(InlineProcessor):
+    def handleMatch(self, m, data):
+        latex = m.group(1)
+        # 将LaTeX包装在MathJax可以识别的标签中
+        html = fr'<span class="math inline">\({latex}\)</span>'
+        return html, m.start(0), m.end(0)
+
+def makeExtension(**kwargs):
+    return LaTeXExtension(**kwargs)
 
 if __name__ == "__main__":
-    
-    # 使用示例
-    md_file_path = 'example.md'  # 输入 Markdown 文件路径
-    output_html_path = 'output.html'  # 输出 HTML 文件路径
-    convert_md_to_html(md_file_path, output_html_path)
+    # 使用自定义插件
+    md = markdown.Markdown(extensions=['fenced_code', 'codehilite', 'sane_lists', 'tables', LaTeXExtension()])
+    text = "This is an inline LaTeX formula: $E = mc^2$"
+    html = md.convert(text)
+
+    print(html)
+    print("\nTo properly render the LaTeX, you need to include MathJax in your HTML:")
+    print('<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>')
+    print('<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>')
+
+if __name__ == "__main__":
+    # 使用自定义插件
+    md = markdown.Markdown(extensions=['fenced_code', 'codehilite', "sane_lists", "tables",UppercaseExtension()])
+    text = "Hello, World!  \nThis is a test."
+    html = md.convert(text)
+
+    print(html)
+
