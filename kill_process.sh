@@ -2,10 +2,10 @@
 # usage: bash kill_process.sh [port_number]
 
 # Define the port number you want to search for
-PORT_NUMBER="$1"
+# PORT_NUMBER="$1"
 
 # Find the PID of the process using the specified port
-PID=$(lsof -t -i :$PORT_NUMBER)
+PID=$(lsof -t -i @[2001:470:c:6c::3]:22)
 
 if [ -z "$PID" ]; then
   echo "No process found listening on port $PORT_NUMBER."
