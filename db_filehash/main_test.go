@@ -1,7 +1,7 @@
 package db
 
 import (
-	// _ "github.com/Hana-ame/udptun/Tools/db_filehash"
+	// _ "github.com/Hana-ame/Hana-ame/swagger/Tools/db_filehash"
 	"database/sql"
 	"fmt"
 	"log"

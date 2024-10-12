@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Hana-ame/udptun/Tools/debug"
+	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
 )
 
 // not tested.

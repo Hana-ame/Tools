@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Hana-ame/udptun/Tools/orderedmap"
+	"github.com/Hana-ame/Hana-ame/swagger/Tools/orderedmap"
 )
 
 // this function receive json request.

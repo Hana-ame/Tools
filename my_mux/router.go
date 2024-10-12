@@ -1,7 +1,7 @@
 package mymux
 
 import (
-	tools "github.com/Hana-ame/udptun/Tools"
+	tools "github.com/Hana-ame/Hana-ame/swagger/Tools"
 )
 
 // TODO
