@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
+	"github.com/Hana-ame/fedi-antenna/Tools/debug"
 )
 
 // not tested.

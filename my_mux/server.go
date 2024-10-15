@@ -1,8 +1,8 @@
 package mymux
 
 import (
-	tools "github.com/Hana-ame/Hana-ame/swagger/Tools"
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
+	tools "github.com/Hana-ame/fedi-antenna/Tools"
+	"github.com/Hana-ame/fedi-antenna/Tools/debug"
 )
 
 type MyServer struct {

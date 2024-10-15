@@ -3,7 +3,7 @@ package mymux
 import (
 	"sync"
 
-	log "github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
+	log "github.com/Hana-ame/fedi-antenna/Tools/debug"
 )
 
 type Error string

@@ -6,9 +6,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
-	mymux "github.com/Hana-ame/Hana-ame/swagger/Tools/my_mux"
-	wsreverse "github.com/Hana-ame/Hana-ame/swagger/Tools/my_mux/example/ws-reverse"
+	"github.com/Hana-ame/fedi-antenna/Tools/debug"
+	mymux "github.com/Hana-ame/fedi-antenna/Tools/my_mux"
+	wsreverse "github.com/Hana-ame/fedi-antenna/Tools/my_mux/example/ws-reverse"
 	"github.com/gorilla/websocket"
 )
 

@@ -9,7 +9,7 @@ import (
 	"log"
 	"sync"
 
-	tools "github.com/Hana-ame/Hana-ame/swagger/Tools"
+	tools "github.com/Hana-ame/fedi-antenna/Tools"
 )
 
 // 定义标签的长度
