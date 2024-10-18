@@ -83,6 +83,7 @@ public class MyUtils {
             List<T> list = java.util.Arrays.asList(arr);
             return (ArrayList<T>) list;
         }
+
         public static <T> LinkedList<T> asLinkedList(T[] arr) {
             LinkedList<T> list = new LinkedList<>();
             for (T e : arr) {
@@ -91,6 +92,82 @@ public class MyUtils {
             return (LinkedList<T>) list;
         }
 
+    }
+
+    public static class Debug {
+
+        // print
+        public static void List(List<?> a) {
+            String firstClassName = "?";
+            if (!a.isEmpty()) {
+                firstClassName = a.get(0).getClass().getName();
+            }
+            System.out.printf("List<%s>[ ", firstClassName);
+            for (Object o : a) {
+                String currentClassName = o.getClass().getName();
+                System.out.printf(o.toString());
+                if (!currentClassName.equals(firstClassName))
+                    System.out.printf("<%s>, ", currentClassName);
+                else
+                    System.out.printf(", ");
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
+
+        public static <T> void Array(T[] a) {
+            String firstClassName = "Object";
+            if (a.length > 0) {
+                firstClassName = a[0].getClass().getName();
+            }
+            System.out.printf("%s[ ", firstClassName);
+            for (T o : a) {
+                String currentClassName = o.getClass().getName();
+                System.out.printf(o.toString());
+                if (!currentClassName.equals(firstClassName))
+                    System.out.printf("<%s>, ", currentClassName);
+                else
+                    System.out.printf(", ");
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
+
+        public static void Array(char[] a) {
+            System.out.printf("char[ ");
+            for (char o : a) {
+                System.out.printf("%s, ", o);
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
+
+        public static void Array(int[] a) {
+            System.out.printf("int[ ");
+            for (int o : a) {
+                System.out.printf("%s, ", o);
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
+
+        public static void Array(long[] a) {
+            System.out.printf("long[ ");
+            for (long o : a) {
+                System.out.printf("%s, ", o);
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
+
+        public static void Array(boolean[] a) {
+            System.out.printf("boolean[ ");
+            for (long o : a) {
+                System.out.printf("%s, ", o);
+            }
+            System.out.printf("]");
+            System.out.println();
+        }
     }
 
     // print
@@ -111,8 +188,8 @@ public class MyUtils {
         System.out.printf("]");
         System.out.println();
     }
-    
-    public static <T> void printArray(T[] a) {        
+
+    public static <T> void printArray(T[] a) {
         String firstClassName = "Object";
         if (a.length > 0) {
             firstClassName = a[0].getClass().getName();
