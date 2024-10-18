@@ -1,4 +1,9 @@
+# python
 __pycache__
+build
+dist
+*.spec
+
 
 time.txt
 
