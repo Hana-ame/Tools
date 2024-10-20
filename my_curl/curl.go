@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"strconv"
 )
@@ -21,7 +22,14 @@ func (h *Header) String() string {
 
 type Headers []*Header
 
-func Curl(method string, agent string, headers Headers, cookie string, url string, bodyReader io.ReadCloser, argv ...string) (statusCode int, body []byte, err error) {
+func Get(agent string, headers Headers, cookie string, url string, argv ...string) (statusCode int, body []byte, err error) {
+	return Curl(http.MethodGet, agent, headers, cookie, url, nil, argv...)
+}
+func Post(agent string, headers Headers, cookie string, url string, bodyReader io.Reader, argv ...string) (statusCode int, body []byte, err error) {
+	return Curl(http.MethodPost, agent, headers, cookie, url, bodyReader, argv...)
+}
+
+func Curl(method string, agent string, headers Headers, cookie string, url string, bodyReader io.Reader, argv ...string) (statusCode int, body []byte, err error) {
 	argv = append(argv, "-X", method)
 	if agent != "" {
 		argv = append(argv, "-A", agent)
