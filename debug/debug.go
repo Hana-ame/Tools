@@ -9,8 +9,38 @@ import (
 	"reflect"
 	"runtime"
 
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 	"github.com/fatih/color"
 )
+
+func OrderedMap(o *orderedmap.OrderedMap) {
+	if o == nil {
+		fmt.Printf("%v\n", o)
+	} else {
+		orderedMap(*o, "")
+	}
+}
+
+func orderedMap(o orderedmap.OrderedMap, intent string) {
+	for _, k := range o.Keys() {
+		v, _ := o.Get(k)
+		if oo, ok := v.(orderedmap.OrderedMap); ok {
+			fmt.Printf("%s%s : \n", intent, k)
+			orderedMap(oo, intent+"  ")
+		} else if ol, ok := v.([]any); ok {
+			fmt.Printf("%s%s : \n", intent, k)
+			for _, olv := range ol {
+				if oo, ok := olv.(orderedmap.OrderedMap); ok {
+					orderedMap(oo, intent+"  ")
+				} else {
+					fmt.Printf("%s  %v\n", intent, olv)
+				}
+			}
+		} else {
+			fmt.Printf("%s%s : %v\n", intent, k, v)
+		}
+	}
+}
 
 func DeepPrint(v any, indent string) {
 	rv := reflect.ValueOf(v)
