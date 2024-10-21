@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from .wsmux.utils import calculate_file_hash
+from utils import calculate_file_hash
 import zipfile
 from datetime import datetime
 
