@@ -14,7 +14,7 @@ def set_title(title: str):
 
 # [parser(s) for s in filter(selector, argv)]
 
-
+# 筛选args
 def parse_args(
     selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x
 ) -> str | None:
@@ -23,11 +23,12 @@ def parse_args(
             return parser(arg)
     return None
 
-
+# 把argv的内容通过function筛选之后返回一个列表, 用来筛param文件名用的吧
 def args_filter(function: Callable[[str], bool]) -> Iterator[str]:
     return filter(function, sys.argv)
 
 
+# 给文件名用的, 得到里面的参数
 def parse_fn(
     selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x
 ) -> str | None:
@@ -39,7 +40,7 @@ def parse_fn(
             return parser(s)
     return None
 
-
+# 通用, 如果prefix是s的开头, 那么就返回s去掉prefix的部分, 否则None
 def parse_startswith(s: str, prefix: str | List[str]) -> str | None:
     if isinstance(prefix, str):
         if s.startswith(prefix):
@@ -51,7 +52,7 @@ def parse_startswith(s: str, prefix: str | List[str]) -> str | None:
             return string
     return None
 
-
+# 通用, 如果surfix是s的结尾, 那么就返回s去掉prefix的部分, 否则None
 def parse_endswith(s: str, surfix: str | List[str]) -> str | None:
     if isinstance(surfix, str):
         if s.endswith(surfix):
