@@ -14,6 +14,28 @@ def set_title(title: str):
 
 # [parser(s) for s in filter(selector, argv)]
 
+
+def parse_flag_bool(flag: str):
+    return flag in sys.argv
+
+
+def parse_flag_param(
+    flag: str,
+    selector: Callable[[str], bool] = lambda x: x,
+    parser: Callable[[str], str] = lambda x: x,
+):
+    for i, arg in enumerate(sys.argv):
+        param = parse_startswith(arg, [flag + "=", flag])
+        if param is None:
+            continue
+        if selector(param):
+            return parser(param)
+        param = sys.argv[i + 1]
+        if selector(param):
+            return parser(param)
+    pass
+
+
 # 筛选args
 def parse_args(
     selector: Callable[[str], bool], parser: Callable[[str], str] = lambda x: x
@@ -22,6 +44,7 @@ def parse_args(
         if selector(arg):
             return parser(arg)
     return None
+
 
 # 把argv的内容通过function筛选之后返回一个列表, 用来筛param文件名用的吧
 def args_filter(function: Callable[[str], bool]) -> Iterator[str]:
@@ -40,6 +63,7 @@ def parse_fn(
             return parser(s)
     return None
 
+
 # 通用, 如果prefix是s的开头, 那么就返回s去掉prefix的部分, 否则None
 def parse_startswith(s: str, prefix: str | List[str]) -> str | None:
     if isinstance(prefix, str):
@@ -51,6 +75,7 @@ def parse_startswith(s: str, prefix: str | List[str]) -> str | None:
         if (string := parse_startswith(s, p)) is not None:
             return string
     return None
+
 
 # 通用, 如果surfix是s的结尾, 那么就返回s去掉prefix的部分, 否则None
 def parse_endswith(s: str, surfix: str | List[str]) -> str | None:
@@ -92,17 +117,4 @@ def load_json_files(folder_path):
 #     print(type(v)) # <class 'function'>
 
 if __name__ == "__main__":
-    if (s := parse_startswith("__dsfsdf", ["123", "14", "__"])) is not None:
-        print(s)
-    else:
-        print("s is None")
-
-    if (s := parse_endswith("dsfsdf", ["123", "14", "__"])) is not None:
-        print(s)
-    else:
-        print("s is None")
-
-    if (s := parse_endswith("dsfsdf__", ["123", "14", "__"])) is not None:
-        print(s)
-    else:
-        print("s is None")
+    print(parse_flag_param("--a-flag"))
