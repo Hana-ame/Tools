@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	db "github.com/Hana-ame/fedi-antenna/Tools/db_filehash"
-	wsmux "github.com/Hana-ame/fedi-antenna/Tools/ws_mux"
+	db "github.com/Hana-ame/udptun/Tools/db_filehash"
+	wsmux "github.com/Hana-ame/udptun/Tools/ws_mux"
 
 	"github.com/gorilla/websocket"
 )

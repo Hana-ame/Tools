@@ -62,6 +62,7 @@ const (
 )
 
 // MyFrame 定义了一个帧类型，基于字节切片。
+// src, src, dst, dst, port, cmd, seqn, ackn, data...
 type MyFrame []byte
 
 // NewCtrlFrame 创建一个新的控制帧。
@@ -126,6 +127,7 @@ func SprintFrame(f MyFrame) string {
 }
 
 // Tag 方法获取帧的标签。
+// src, src, dst, dst, port
 func (f MyFrame) Tag() MyTag {
 	var tag MyTag
 	copy(tag[:], f[:TagLength]) // 复制前 TagLength 字节作为标签

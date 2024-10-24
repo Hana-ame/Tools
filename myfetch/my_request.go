@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 )
 
 // requests

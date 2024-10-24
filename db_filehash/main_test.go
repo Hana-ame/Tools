@@ -1,7 +1,7 @@
 package db
 
 import (
-	// _ "github.com/Hana-ame/fedi-antenna/Tools/db_filehash"
+	// _ "github.com/Hana-ame/udptun/Tools/db_filehash"
 	"database/sql"
 	"fmt"
 	"log"

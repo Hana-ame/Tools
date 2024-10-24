@@ -1,7 +1,7 @@
 package mymux
 
 import (
-	tools "github.com/Hana-ame/fedi-antenna/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
 )
 
 // TODO
