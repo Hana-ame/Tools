@@ -9,7 +9,7 @@ import (
 	"log"
 	"sync"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
 )
 
 // 定义标签的长度

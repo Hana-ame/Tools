@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	log "github.com/Hana-ame/api-pack/Tools/debug"
+	log "github.com/Hana-ame/udptun/Tools/debug"
 )
 
 type Error string
