@@ -26,7 +26,25 @@ func TestCurl2(t *testing.T) {
 		},
 	}
 	cookie := ""
-	code, body, err := Curl("GET", headers, cookie, "https://getip.moonchan.xyz/echo/1", nil)
+	code, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil)
+	fmt.Println(err)
+	fmt.Println(string(body))
+	fmt.Println(code)
+}
+
+func TestCurl3(t *testing.T) {
+	headers := Headers{
+		&Header{
+			Key:   "21",
+			Value: "21",
+		},
+		&Header{
+			Key:   "121",
+			Value: "212",
+		},
+	}
+	cookie := ""
+	code, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil, "-o", "result.txt")
 	fmt.Println(err)
 	fmt.Println(string(body))
 	fmt.Println(code)
@@ -52,4 +70,12 @@ func TestXxx(t *testing.T) {
 	// 打印正常输出
 	fmt.Println(string(output))
 
+}
+
+func TestA(t *testing.T) {
+	a := func(s ...string) {
+		fmt.Println(s) // []
+		fmt.Println(len(s)) // 0
+	}
+	a()
 }

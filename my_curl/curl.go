@@ -1,3 +1,5 @@
+// @241015
+
 package mycurl
 
 import (
@@ -19,9 +21,11 @@ func (h *Header) String() string {
 
 type Headers []*Header
 
-func Curl(method string, headers Headers, cookie string, url string, bodyReader io.ReadCloser) (statusCode int, body []byte, err error) {
-	argv := make([]string, 0, 16)
+func Curl(method string, agent string, headers Headers, cookie string, url string, bodyReader io.ReadCloser, argv ...string) (statusCode int, body []byte, err error) {
 	argv = append(argv, "-X", method)
+	if agent != "" {
+		argv = append(argv, "-A", agent)
+	}
 
 	if bodyReader != nil {
 		body, err = io.ReadAll(bodyReader)
@@ -60,7 +64,7 @@ func curl(argv ...string) (statusCode int, body []byte, err error) {
 		return
 	}
 	errstr := stderr.String()
-	if len(errstr)>0 {
+	if len(errstr) > 0 {
 		err = fmt.Errorf("%s", errstr)
 	}
 	// 打印正常输出
