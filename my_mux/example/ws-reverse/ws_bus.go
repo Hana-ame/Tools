@@ -5,8 +5,8 @@ package wsreverse
 import (
 	"time"
 
-	"github.com/Hana-ame/api-pack/Tools/debug"
-	mymux "github.com/Hana-ame/api-pack/Tools/my_mux"
+	"github.com/Hana-ame/udptun/Tools/debug"
+	mymux "github.com/Hana-ame/udptun/Tools/my_mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,7 +19,7 @@ const (
 	CLIENT_RECV_SHOULD_BE_DATA
 )
 
-func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
+func NewWsClient(dst string, timeout time.Duration) mymux.Bus {
 	const Tag = "NewWsClient"
 	// cbus will return to client mux to use
 	cbus, sbus := mymux.NewPipeBusPair()
@@ -125,7 +125,7 @@ func NewWsClient(dst string, timeout time.Duration) mymux.MyBus {
 	return cbus
 }
 
-func NewWsServer(conn *Conn) mymux.MyBus {
+func NewWsServer(conn *Conn) mymux.Bus {
 	const Tag = "NewWsServer"
 	// cbus will return to client mux to use
 	cbus, sbus := mymux.NewPipeBusPair()

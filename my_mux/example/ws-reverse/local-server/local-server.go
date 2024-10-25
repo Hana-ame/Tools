@@ -6,15 +6,15 @@ import (
 	"log"
 	"net"
 
-	"github.com/Hana-ame/api-pack/Tools/debug"
-	mymux "github.com/Hana-ame/api-pack/Tools/my_mux"
-	wsreverse "github.com/Hana-ame/api-pack/Tools/my_mux/example/ws-reverse"
+	"github.com/Hana-ame/udptun/Tools/debug"
+	mymux "github.com/Hana-ame/udptun/Tools/my_mux"
+	wsreverse "github.com/Hana-ame/udptun/Tools/my_mux/example/ws-reverse"
 	"github.com/gorilla/websocket"
 )
 
 var Conn *wsreverse.Conn
 
-func Client(conn *wsreverse.Conn, dst string) mymux.MyBus {
+func Client(conn *wsreverse.Conn, dst string) mymux.Bus {
 	const Tag = "ws client"
 	cbus, sbus := mymux.NewPipeBusPair()
 	// conn -> bus

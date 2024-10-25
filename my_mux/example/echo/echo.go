@@ -1,17 +1,17 @@
 package echo
 
 import (
-	"github.com/Hana-ame/api-pack/Tools/debug"
-	mymux "github.com/Hana-ame/api-pack/Tools/my_mux"
+	"github.com/Hana-ame/udptun/Tools/debug"
+	mymux "github.com/Hana-ame/udptun/Tools/my_mux"
 )
 
 // not tested.
-func Echo(b mymux.MyBus, receiveFrameDebuger, sendFrameDebuger func(mymux.MyFrame)) {
+func Echo(b mymux.Bus, receiveFrameDebuger, sendFrameDebuger func(mymux.MyFrame)) {
 	const Tag = "Echo"
 	for {
 		rf, e := b.RecvFrame()
 		if e != nil {
-			debug.E(Tag, e.Error())
+			debug.E(Tag, e.Error())Frame
 			continue
 		}
 

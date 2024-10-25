@@ -7,7 +7,7 @@ import (
 // TestCtrlFrame 测试 MyFrame 结构的各个方法。
 func TestCtrlFrame(t *testing.T) {
 	// 创建一个示例 CtrlFrame 数据
-	frame := MyFrame{0x01, 0x02, 0x03, 0x04, 0x7F, 0x00, 0x01}
+	frame := Frame{0x01, 0x02, 0x03, 0x04, 0x7F, 0x00, 0x01}
 
 	// 测试 Source 方法
 	if got := frame.Source(); got != 0x0102 {
