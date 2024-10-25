@@ -90,3 +90,11 @@ func ParsePrivateKey(privateKeyPem []byte) (*rsa.PrivateKey, error) {
 	}
 	return pk, nil
 }
+
+func ReadKeyFromFile(fn string) (*rsa.PrivateKey, error) {
+	pem, err := os.ReadFile(fn)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePrivateKey(pem)
+}
