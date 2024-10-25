@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	tools "github.com/Hana-ame/Hana-ame/swagger/Tools"
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
+	tools "github.com/Hana-ame/fedi-antenna/Tools"
+	"github.com/Hana-ame/fedi-antenna/Tools/debug"
 )
 
 // portMap 用于管理端口的使用情况，使用位图实现。

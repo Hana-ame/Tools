@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/orderedmap"
+	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
 
 	"github.com/gin-gonic/gin"
 )

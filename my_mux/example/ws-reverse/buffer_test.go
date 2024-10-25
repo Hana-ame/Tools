@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Hana-ame/Hana-ame/swagger/Tools/debug"
-	mymux "github.com/Hana-ame/Hana-ame/swagger/Tools/my_mux"
+	"github.com/Hana-ame/fedi-antenna/Tools/debug"
+	mymux "github.com/Hana-ame/fedi-antenna/Tools/my_mux"
 )
 
 func TestBuffer(t *testing.T) {
