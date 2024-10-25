@@ -5,7 +5,6 @@ package mycurl
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
 	"strconv"
@@ -63,23 +62,23 @@ func (h Headers) LoadFromText(headers string) Headers {
 func Get(agent string, headers Headers, cookie string, url string, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
 	return Curl(http.MethodGet, agent, headers, cookie, url, nil, argv...)
 }
-func Post(agent string, headers Headers, cookie string, url string, bodyReader io.Reader, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
-	return Curl(http.MethodPost, agent, headers, cookie, url, bodyReader, argv...)
+func Post(agent string, headers Headers, cookie string, url string, requestBody []byte, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
+	return Curl(http.MethodPost, agent, headers, cookie, url, requestBody, argv...)
 }
 
-func Curl(method string, agent string, headers Headers, cookie string, url string, bodyReader io.Reader, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
+func Curl(method string, agent string, requestHeaders Headers, cookie string, url string, requestBody []byte, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
 	argv = append(argv, "-X", method)
 	if agent != "" {
 		argv = append(argv, "-A", agent)
 	}
 
-	if bodyReader != nil {
-		body, err = io.ReadAll(bodyReader)
-		if err != nil {
-			return
-		}
-	}
-	for _, header := range headers {
+	// if bodyReader != nil {
+	// 	body, err = io.ReadAll(bodyReader)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// }
+	for _, header := range requestHeaders {
 		argv = append(argv, "-H", header.String())
 	}
 	if cookie != "" {
