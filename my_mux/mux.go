@@ -51,16 +51,13 @@ func (m *Mux) Close() error {
 	m.ConcurrentHashMap.ForEach(func(_ byte, bus Bus) {
 		bus.Close()
 	})
-	m.L.Lock()
 	m.closed = true
-	m.L.Unlock()
-	m.Signal()
+	m.Broadcast()
 	return nil
 }
 func (m *Mux) AddBus(port byte, bus Bus) error {
 	m.Put(port, bus)
 	go func() {
-		defer debug.T("mux", "close")
 		defer bus.Close()
 		for {
 			f, err := bus.RecvFrame()
@@ -77,6 +74,16 @@ func (m *Mux) AddBus(port byte, bus Bus) error {
 			m.Signal()
 		}
 	}()
+	return nil
+}
+func (m *Mux) RemoveBus(port byte) error {
+	bus, ok := m.Get(port)
+	if !ok {
+		return ERR_CLOSED
+	}
+	bus.Close()
+	m.Remove(port)
+
 	return nil
 }
 
