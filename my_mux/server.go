@@ -1,8 +1,8 @@
 package mymux
 
 import (
-	tools "github.com/Hana-ame/udptun/Tools"
-	"github.com/Hana-ame/udptun/Tools/debug"
+	tools "github.com/Hana-ame/api-pack/Tools"
+	"github.com/Hana-ame/api-pack/Tools/debug"
 )
 
 type MyServer struct {
