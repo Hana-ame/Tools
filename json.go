@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Hana-ame/fedi-antenna/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 )
 
 // this function receive json request.
