@@ -4,14 +4,42 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strings"
 	"testing"
+
+	tools "github.com/Hana-ame/api-pack/Tools"
 )
 
+func TestSlice(t *testing.T) {
+	s := "HTTP/2 302 "
+	// b := []byte(s)
+	ss := strings.Split(s, " ")
+	fmt.Println(ss)
+	ts := tools.Slice[string](ss)
+	fmt.Println(ts)
+	cs := ts.GetOrDefault(1, "0")
+	fmt.Println(cs)
+
+}
+
 func TestCurl(t *testing.T) {
-	code, body, err := curl("https://google.com")
+	code, headers, body, err := curl("https://google.com")
+	fmt.Println(err)
+	fmt.Println(err)
+
+	for _, header := range headers {
+		fmt.Println(header.String())
+	}
+	fmt.Println(err)
+	fmt.Println(err)
 	fmt.Println(err)
 	fmt.Println(string(body))
+	fmt.Println(err)
+	fmt.Println(err)
 	fmt.Println(code)
+	fmt.Println(err)
+	fmt.Println(err)
+
 }
 
 func TestCurl2(t *testing.T) {
@@ -26,7 +54,7 @@ func TestCurl2(t *testing.T) {
 		},
 	}
 	cookie := ""
-	code, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil)
+	code, _, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil)
 	fmt.Println(err)
 	fmt.Println(string(body))
 	fmt.Println(code)
@@ -44,7 +72,7 @@ func TestCurl3(t *testing.T) {
 		},
 	}
 	cookie := ""
-	code, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil, "-o", "result.txt")
+	code, _, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil, "-o", "result.txt")
 	fmt.Println(err)
 	fmt.Println(string(body))
 	fmt.Println(code)
@@ -74,7 +102,7 @@ func TestXxx(t *testing.T) {
 
 func TestA(t *testing.T) {
 	a := func(s ...string) {
-		fmt.Println(s) // []
+		fmt.Println(s)      // []
 		fmt.Println(len(s)) // 0
 	}
 	a()
