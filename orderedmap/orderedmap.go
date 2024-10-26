@@ -3,6 +3,7 @@ package orderedmap
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"reflect"
 	"sort"
 )
@@ -298,4 +299,28 @@ func (o OrderedMap) MarshalJSON() ([]byte, error) {
 	}
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
+}
+
+// not tested
+func (o OrderedMap) Reader() (io.Reader, error) {
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	encoder := json.NewEncoder(&buf)
+	encoder.SetEscapeHTML(o.escapeHTML)
+	for i, k := range o.keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		// add key
+		if err := encoder.Encode(k); err != nil {
+			return nil, err
+		}
+		buf.WriteByte(':')
+		// add value
+		if err := encoder.Encode(o.values[k]); err != nil {
+			return nil, err
+		}
+	}
+	buf.WriteByte('}')
+	return &buf, nil
 }
