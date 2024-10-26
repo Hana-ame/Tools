@@ -42,9 +42,10 @@ func (a *BusAccpeter) Close() error {
 }
 
 func NewBusAccepter() *BusAccpeter {
-	return &BusAccpeter{
+	a := &BusAccpeter{
 		Cond: sync.NewCond(&sync.Mutex{}),
 	}
+	return a
 }
 
 type Node struct {

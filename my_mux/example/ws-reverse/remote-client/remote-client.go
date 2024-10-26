@@ -110,7 +110,7 @@ func init() {
 	}
 }
 
-func handle(nc *mymux.MyFrameConn, lc net.Conn) {
+func handle(nc *mymux.FrameConn, lc net.Conn) {
 	sc := &mymux.MyFrameConnStreamer{MyFrameConn: nc}
 
 	// 从 lc 读取数据并写入到 sc
