@@ -5,14 +5,14 @@ import "sync"
 // ConcurrentHashMap 是一个线程安全的映射，支持泛型类型
 type ConcurrentHashMap[K comparable, V any] struct {
 	m map[K]V
-	sync.RWMutex
+	*sync.RWMutex
 }
 
 // NewConcurrentHashMap 创建一个新的 ConcurrentHashMap 实例
 func NewConcurrentHashMap[K comparable, V any]() *ConcurrentHashMap[K, V] {
 	return &ConcurrentHashMap[K, V]{
 		m:       make(map[K]V),
-		RWMutex: sync.RWMutex{},
+		RWMutex: &sync.RWMutex{},
 	}
 }
 
