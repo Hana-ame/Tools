@@ -22,3 +22,6 @@ nohup.out
 
 *.zip
 *.exe
+
+# node 
+node_modules

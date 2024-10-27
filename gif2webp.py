@@ -12,10 +12,10 @@ def progress(arg):
     seq[0].save( arg + ".webp", save_all=True, append_images = seq[1:], quality=50, method=6)
 
 for arg in sys.argv:
-        try:
-            progress(arg)
-        except Exception as e:
-            print(str(e))
-            time.sleep(1)
-        finally:
-            pass
+    try:
+        progress(arg)
+    except Exception as e:
+        print(str(e))
+        time.sleep(1)
+    finally:
+        pass
