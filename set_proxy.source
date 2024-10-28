@@ -1,7 +1,19 @@
+# export HTTP_PROXY=http://localhost:10809
+# export http_proxy=http://localhost:10809
+# export HTTPS_PROXY=http://localhost:10809
+# export https_proxy=http://localhost:10809
+# export SOCKS_PROXY=localhost:10808
+# export socks_proxy=localhost:10808
+# git config --global http.proxy http://localhost:10809
+# npm config set proxy http://localhost:10809
+# npm config set https-proxy http://localhost:10809
+
 export HTTP_PROXY=http://DESKTOP-LLULJ2Q.mshome.net:10809
 export http_proxy=http://DESKTOP-LLULJ2Q.mshome.net:10809
-export https_proxy=http://DESKTOP-LLULJ2Q.mshome.net:10809
 export HTTPS_PROXY=http://DESKTOP-LLULJ2Q.mshome.net:10809
+export https_proxy=http://DESKTOP-LLULJ2Q.mshome.net:10809
+export SOCKS_PROXY=DESKTOP-LLULJ2Q.mshome.net:10808
+export socks_proxy=DESKTOP-LLULJ2Q.mshome.net:10808
 git config --global http.proxy http://DESKTOP-LLULJ2Q.mshome.net:10809
 npm config set proxy http://DESKTOP-LLULJ2Q.mshome.net:10809
 npm config set https-proxy http://DESKTOP-LLULJ2Q.mshome.net:10809
