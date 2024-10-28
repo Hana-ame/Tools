@@ -130,7 +130,9 @@ func (n *Node) Dial(dst, src Addr, port byte) (Bus, error) {
 	bus, ret := NewBusPair()
 	n.AddBus(port, bus)
 
-	return ret, nil
+	return NewBusOnClose(ret, func() error {
+		return n.RemoveBus(port)
+	}), nil
 }
 
 func NewNode() *Node {

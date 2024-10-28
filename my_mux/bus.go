@@ -83,3 +83,27 @@ func NewBusPair() (Bus, Bus) {
 	r1, w0 := NewPipe()
 	return &RawBus{r0, w0}, &RawBus{r1, w1}
 }
+
+type BusOnClose struct {
+	Bus
+	onClose func() error
+}
+
+func NewBusOnClose(bus Bus, onClose func() error) *BusOnClose {
+	return &BusOnClose{
+		Bus:     bus,
+		onClose: onClose,
+	}
+}
+
+func (b *BusOnClose) Close() error {
+	be := b.Close()
+	oe := b.onClose()
+	if oe != nil {
+		return oe
+	}
+	if be != nil {
+		return be
+	}
+	return nil
+}
