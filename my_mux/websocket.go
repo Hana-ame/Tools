@@ -1,50 +1,56 @@
 package mymux
 
 import (
-	"sync"
-
 	"github.com/gorilla/websocket"
 )
 
-func Websocket(wc *websocket.Conn, node Node) error {
-	var err error
-	cond := sync.NewCond(&sync.Mutex{})
-	go func() {
-		err = WebsocketReadCopy(wc, node)
-		cond.Signal()
-	}()
-	go func() {
-		err = WebsocketWriteCopy(wc, node)
-		cond.Signal()
-	}()
-
-	cond.Wait()
-	wc.Close()
-
-	return err
+type WebSocketNode struct {
+	reading bool
+	writing bool
+	Conn    *websocket.Conn
+	Node    // 假设 Node 是一个定义好的接口或结构体
 }
 
-func WebsocketReadCopy(wc *websocket.Conn, node Node) error {
-	for {
-		_, p, err := wc.ReadMessage()
+func (n *WebSocketNode) SetConn(c *websocket.Conn) {
+	n.Conn = c
+}
+
+func (n *WebSocketNode) SetReading(f bool) {
+	n.reading = f
+}
+
+func (n *WebSocketNode) SetWriting(f bool) {
+	n.writing = f
+}
+
+func (n *WebSocketNode) ReadCopy() error {
+	defer n.SetReading(false)
+	n.reading = true
+	for n.reading {
+		_, p, err := n.Conn.ReadMessage()
 		if err != nil {
 			return err
 		}
-		err = node.SendFrame(p)
+		err = n.SendFrame(p)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
 }
-func WebsocketWriteCopy(wc *websocket.Conn, node Node) error {
-	for {
-		f, err := node.RecvFrame()
+
+func (n *WebSocketNode) WriteCopy() error {
+	defer n.SetWriting(false)
+	n.writing = true
+	for n.writing {
+		f, err := n.RecvFrame()
 		if err != nil {
 			return err
 		}
-		err = wc.WriteMessage(websocket.BinaryMessage, f)
+		err = n.Conn.WriteMessage(websocket.BinaryMessage, f)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
 }
