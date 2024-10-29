@@ -46,8 +46,8 @@ func TestFC2(t *testing.T) {
 
 	go func() {
 		for {
-			b := n1.Accept()
-			fc := NewFrameConn(b, 0, 0, 0)
+			b, port := n1.Accept()
+			fc := NewFrameConn(b, 0, 0, port)
 			go read(fc)
 		}
 	}()

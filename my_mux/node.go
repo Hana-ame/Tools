@@ -9,26 +9,30 @@ import (
 
 type BusAccpeter struct {
 	Bus
+	port byte
 	*sync.Cond
 
 	closed bool
 }
 
-func (a *BusAccpeter) AcceptableBus(b Bus) {
+func (a *BusAccpeter) AcceptableBus(b Bus, port byte) {
 	a.L.Lock()
 	for a.Bus != nil && !a.closed {
 		a.Wait()
 	}
 	a.Bus = b
+	a.port = port
 	a.L.Unlock()
 	a.Signal()
 }
-func (a *BusAccpeter) Accept() (b Bus) {
+
+func (a *BusAccpeter) Accept() (b Bus, port byte) {
 	a.L.Lock()
 	for a.Bus == nil && !a.closed {
 		a.Wait()
 	}
 	b = a.Bus
+	port = a.port
 	a.Bus = nil
 	a.L.Unlock()
 	a.Signal()
@@ -74,7 +78,7 @@ func (n *Node) SendFrame(f Frame) error {
 		}
 		bus, ret := NewBusPair()
 		n.AddBus(f.Port(), bus)
-		n.AcceptableBus(ret)
+		n.AcceptableBus(ret, f.Port())
 		return nil
 	}
 	// 这里没有的话返回close
@@ -118,7 +122,7 @@ func (n *Node) Close() error {
 func (n *Node) Dial(dst, src Addr, port byte) (Bus, error) {
 	bus, ok := n.Get(port)
 	if ok {
-		return bus, fmt.Errorf("exist")
+		return nil, fmt.Errorf("exist")
 	}
 	n.L.Lock()
 	for n.f != nil && !n.closed {

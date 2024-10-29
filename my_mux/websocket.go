@@ -8,7 +8,9 @@ type WebSocketNode struct {
 	reading bool
 	writing bool
 	Conn    *websocket.Conn
-	Node    // 假设 Node 是一个定义好的接口或结构体
+
+	f    Frame
+	Node // 假设 Node 是一个定义好的接口或结构体
 }
 
 func (n *WebSocketNode) SetConn(c *websocket.Conn) {
@@ -39,18 +41,22 @@ func (n *WebSocketNode) ReadCopy() error {
 	return nil
 }
 
-func (n *WebSocketNode) WriteCopy() error {
+func (n *WebSocketNode) WriteCopy() (err error) {
 	defer n.SetWriting(false)
 	n.writing = true
 	for n.writing {
-		f, err := n.RecvFrame()
+		if n.f == nil {
+			n.f, err = n.RecvFrame()
+			if err != nil {
+				return err
+			}
+		}
+
+		err = n.Conn.WriteMessage(websocket.BinaryMessage, n.f)
 		if err != nil {
 			return err
 		}
-		err = n.Conn.WriteMessage(websocket.BinaryMessage, f)
-		if err != nil {
-			return err
-		}
+		n.f = nil
 	}
 	return nil
 }

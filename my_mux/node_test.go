@@ -20,7 +20,7 @@ func TestNode(t *testing.T) {
 	go func() {
 		i := 1
 		for {
-			b := n0.Accept()
+			b, _ := n0.Accept()
 			go Helper(strconv.Itoa(i)).ReadBus(b)
 			i++
 		}
@@ -119,7 +119,7 @@ func TestNodeEcho2(t *testing.T) {
 	go func() {
 		i := 1
 		for {
-			b := n0.Accept()
+			b, _ := n0.Accept()
 			go Helper(strconv.Itoa(i)).CopyWithHandler(b, b, func(f Frame) Frame {
 				// debug.I("", f.String())
 				return f
@@ -165,7 +165,7 @@ func TestNodeEcho(t *testing.T) {
 	go func() {
 		i := 1
 		for {
-			b := n0.Accept()
+			b, _ := n0.Accept()
 			go Helper(strconv.Itoa(i)).Copy(b, b)
 			// i++
 		}
