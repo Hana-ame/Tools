@@ -26,6 +26,7 @@ func (f *fetcher) Do(req *http.Request) (*http.Response, error) {
 	clientPool := f.clientPool
 	defaultHeader := f.header
 
+	// 如果没有被指定过，那么defaultHeader中有的东西就放进去
 	for k, vs := range defaultHeader {
 		if req.Header.Get(k) == "" {
 			for _, v := range vs {
@@ -64,10 +65,12 @@ func SetDefaultHeader(header http.Header) {
 	DefaultFetcher.SetDefaultHeader(header)
 }
 
+// 使用默认Fetcher进行http访问
 func Do(req *http.Request) (*http.Response, error) {
 	return DefaultFetcher.Do(req)
 }
 
+// 使用默认Fetcher进行http访问
 func Fetch(method, url string, header http.Header, body io.Reader) (*http.Response, error) {
 	return DefaultFetcher.Fetch(method, url, header, body)
 }

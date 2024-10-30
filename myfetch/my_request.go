@@ -5,7 +5,6 @@ package myfetch
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,41 +35,39 @@ func NewRequest(method, url string, header http.Header, body io.Reader) (*http.R
 }
 
 // 下面的不知道是啥东西。没实现吧。
+// 应该是合并到URLEncodedForm里面了
+// func BuildPlainReader(s any) io.Reader {
+// 	switch v := s.(type) {
+// 	case string:
+// 		return strings.NewReader(v)
+// 	case []byte:
+// 		return bytes.NewReader(v)
+// 	}
+// 	return nil
+// }
 
-func BuildPlainReader(s any) io.Reader {
-	switch v := s.(type) {
-	case string:
-		return strings.NewReader(v)
-	case []byte:
-		return bytes.NewReader(v)
-	}
-	return nil
-}
-
-// convert
+// support string, []byte, map[string]string, map[string][]string, url.Value, OrderedMap
 type URLEncodedForm struct {
 	data any
-	// Reader() (io.Reader, error)
 }
 
 func (f *URLEncodedForm) Reader() (io.Reader, error) {
-	buf := &bytes.Buffer{}
 
 	switch bv := f.data.(type) {
 	case string:
-		buf.WriteString(bv)
+		return strings.NewReader(bv), nil
 	case []byte:
-		buf.Write(bv)
+		return bytes.NewReader(bv), nil
 	case map[string]string:
 		data := make(url.Values)
 		for k, v := range bv {
 			data.Set(k, v)
 		}
-		buf.WriteString(data.Encode())
+		return strings.NewReader(data.Encode()), nil
 	case map[string][]string:
-		buf.WriteString(url.Values(bv).Encode())
+		return strings.NewReader(url.Values(bv).Encode()), nil
 	case url.Values:
-		buf.WriteString(bv.Encode())
+		return strings.NewReader(url.Values(bv).Encode()), nil
 	case *orderedmap.OrderedMap:
 		data := make(url.Values)
 		for _, k := range bv.Keys() {
@@ -81,21 +78,21 @@ func (f *URLEncodedForm) Reader() (io.Reader, error) {
 				data[k] = sv
 			}
 		}
-		buf.WriteString(data.Encode())
+		return strings.NewReader(data.Encode()), nil
 	default:
-		return buf, fmt.Errorf("unknown urlencoded type: %T", f.data)
+		return nil, fmt.Errorf("unknown urlencoded type: %T", f.data)
 	}
 
-	return buf, nil
 }
 
 // Apply application/x-www-form-urlencoded
+// support string, []byte, map[string]string, map[string][]string, url.Value, OrderedMap
 func BuildURLEncodedFormReader(data any) (io.Reader, error) {
 	return (&URLEncodedForm{data: data}).Reader()
 }
 
-func BuildJsonReader(data any) (io.Reader, error) {
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(data)
-	return b, err
-}
+// func BuildJsonReader(data any) (io.Reader, error) {
+// 	b := new(bytes.Buffer)
+// 	err := json.NewEncoder(b).Encode(data)
+// 	return b, err
+// }
