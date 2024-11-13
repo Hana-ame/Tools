@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/azure-go/Tools/orderedmap"
 )
 
 // requests
@@ -67,11 +67,11 @@ func (f *URLEncodedForm) Reader() (io.Reader, error) {
 	case map[string][]string:
 		return strings.NewReader(url.Values(bv).Encode()), nil
 	case url.Values:
-		return strings.NewReader(url.Values(bv).Encode()), nil
+		return strings.NewReader(bv.Encode()), nil
 	case *orderedmap.OrderedMap:
 		data := make(url.Values)
 		for _, k := range bv.Keys() {
-			switch v, _ := bv.Get(k); sv := v.(type) {
+			switch v, _ := bv.Get(k); sv := v.(type) { // switched v
 			case string:
 				data.Set(k, sv)
 			case []string:

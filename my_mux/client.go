@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/debug"
+	tools "github.com/Hana-ame/azure-go/Tools"
+	"github.com/Hana-ame/azure-go/Tools/debug"
 )
 
 // portMap 用于管理端口的使用情况，使用位图实现。
