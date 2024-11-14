@@ -4,4 +4,5 @@
 while true
 do
   ncat -$1vlp 1935 -c "ncat a.rtmp.youtube.com 1935"
+  sleep 30
 done
