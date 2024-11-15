@@ -1,1 +1,1 @@
-ssh -o "ProxyCommand=nc -X5 -x $SOCKS_PROXY %h %p" $1
+ssh -o "ProxyCommand=nc -X5 -x $SOCKS_PROXY %h %p" -o ServerAliveInterval=30 $@
