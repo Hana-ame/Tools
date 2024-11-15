@@ -2,10 +2,12 @@ package tools
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 // WriteJSONToFile 将数据序列化为 JSON 并写入指定文件
@@ -42,4 +44,14 @@ func WriteReaderToFile(filename string, reader io.Reader) (err error) {
 	w := bufio.NewWriter(f)
 	_, err = io.Copy(w, reader)
 	return
+}
+
+func WriteStringToFile(filename, s string) (err error) {
+	reader := strings.NewReader(s)
+	return WriteReaderToFile(filename, reader)
+}
+
+func WriteDataToFile(filename string, data []byte) (err error) {
+	reader := bytes.NewReader(data)
+	return WriteReaderToFile(filename, reader)
 }
