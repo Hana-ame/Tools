@@ -1,4 +1,4 @@
-package handlerFunc
+package handler
 
 import (
 	"io"
@@ -63,12 +63,3 @@ func ProxyAll() gin.HandlerFunc {
 		}
 	}
 }
-
-// func main() {
-// 	r := gin.Default()
-
-// 	// 代理所有路径
-// 	r.Any("/*path", Proxy())
-
-// 	r.Run(":8080")
-// }
