@@ -1,6 +1,7 @@
 package mymux
 
 import (
+	"io"
 	"sync"
 
 	log "github.com/Hana-ame/api-pack/Tools/debug"
@@ -15,6 +16,13 @@ func (e Error) Error() string {
 const (
 	ERR_PIPE_CLOSED Error = "my pipe closed" // 管道关闭错误信息
 )
+
+type IPipe[T any] interface {
+	Send(data T) (err error)
+	Recv() (data T, err error)
+
+	io.Closer
+}
 
 // MyPipe 定义了一个管道结构，用于在读取和写入之间传递数据。
 type MyPipe struct {

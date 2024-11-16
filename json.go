@@ -23,7 +23,6 @@ func ReadJsonFile(fn string) (*orderedmap.OrderedMap, error) {
 	return o, err
 }
 
-
 func ReaderToJson(reader io.Reader) (*orderedmap.OrderedMap, error) {
 	o := orderedmap.New()
 	err := json.NewDecoder(reader).Decode(&o)
@@ -38,7 +37,7 @@ func BytesToJson(b []byte) (*orderedmap.OrderedMap, error) {
 	return ReaderToJson(bytes.NewReader(b))
 }
 
-func OpenFileToJson(fn string) (*orderedmap.OrderedMap, error) {
+func ReadFileToJson(fn string) (*orderedmap.OrderedMap, error) {
 	f, err := os.Open(fn)
 	if err != nil {
 		return nil, err
