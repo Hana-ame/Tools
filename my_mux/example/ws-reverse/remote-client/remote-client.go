@@ -6,9 +6,9 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Hana-ame/api-pack/Tools/debug"
-	mymux "github.com/Hana-ame/api-pack/Tools/my_mux"
-	wsreverse "github.com/Hana-ame/api-pack/Tools/my_mux/example/ws-reverse"
+	"github.com/Hana-ame/azure-go/Tools/debug"
+	mymux "github.com/Hana-ame/azure-go/Tools/my_mux"
+	wsreverse "github.com/Hana-ame/azure-go/Tools/my_mux/example/ws-reverse"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
