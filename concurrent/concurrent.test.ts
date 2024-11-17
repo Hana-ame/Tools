@@ -1,4 +1,3 @@
-import { promiseHooks } from "v8";
 import { worker } from "./concurrent";
 
 test('test concurrent', async () => {
