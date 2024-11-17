@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,13 +11,9 @@ var headers = ([]string{
 	"Accept",
 	"Authorization",
 
-	"X-Content-Type",
-	"X-Content-Length",
-
 	"X-Host",
 	"X-Origin",
 	"X-Referer",
-	"X-Cookie",
 
 	"X-Requested-With",
 
@@ -38,7 +33,8 @@ func CORSMiddleware() gin.HandlerFunc {
 
 		c.Header("Access-Control-Allow-Origin", origin) // 或者指定特定的源
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD")
-		c.Header("Access-Control-Allow-Headers", strings.Join(headers, ", "))
+		// c.Header("Access-Control-Allow-Headers", strings.Join(headers, ", "))
+		c.Header("Access-Control-Allow-Headers", c.GetHeader("access-control-request-headers"))
 		c.Header("Access-Control-Allow-Credentials", "true") // 允许cookie传递
 
 		// 处理预检请求

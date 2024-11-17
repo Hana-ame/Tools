@@ -32,6 +32,21 @@ func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
 	return s[index]
 }
 
+func (s Slice[T]) Last() T {
+	return s[len(s)-1]
+}
+
+func (s Slice[T]) Push(e T) Slice[T] {
+	s = append(s, e)
+	return s
+}
+
+func (s Slice[T]) Pop() T {
+	e := s.Last()
+	s = s[:len(s)-1]
+	return e
+}
+
 // func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
 // 	if index < 0 || len(s) >= index {
 // 		return defaultValue
