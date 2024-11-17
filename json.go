@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Hana-ame/azure-go/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 // this function receive json request.

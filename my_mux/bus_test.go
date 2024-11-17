@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Hana-ame/azure-go/Tools/debug"
+	"github.com/Hana-ame/api-pack/Tools/debug"
 )
 
 // not tested.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tools "github.com/Hana-ame/azure-go/Tools"
+	tools "github.com/Hana-ame/api-pack/Tools"
 )
 
 func TestSlice(t *testing.T) {

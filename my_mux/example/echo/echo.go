@@ -1,8 +1,8 @@
 package echo
 
 import (
-	"github.com/Hana-ame/azure-go/Tools/debug"
-	mymux "github.com/Hana-ame/azure-go/Tools/my_mux"
+	"github.com/Hana-ame/api-pack/Tools/debug"
+	mymux "github.com/Hana-ame/api-pack/Tools/my_mux"
 )
 
 // not tested.

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	db "github.com/Hana-ame/azure-go/Tools/db_filehash"
-	wsmux "github.com/Hana-ame/azure-go/Tools/ws_mux"
+	db "github.com/Hana-ame/api-pack/Tools/db_filehash"
+	wsmux "github.com/Hana-ame/api-pack/Tools/ws_mux"
 
 	"github.com/gorilla/websocket"
 )
