@@ -22,6 +22,7 @@ const CustomImage = forwardRef<HTMLImageElement, CustomImageProps>((props, ref) 
     if (props.referer) {
         url.searchParams.set('proxy_referer', props.referer);   
     }
+    // eslint-disable-next-line jsx-a11y/alt-text
     return <img ref={ref} {...props} src={url.toString()} />;
     // 为了消掉提示要这么做的，有什么大病吧。
     // const alt = props.alt || "";
