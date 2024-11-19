@@ -4,3 +4,7 @@
 [submodule "bulletin"]
 	path = bulletin
 	url = git@github.com:Hana-ame/hugo-blog.git
+[submodule "notes"]
+	path = notes
+	url = git@github.com:Hana-ame/Hana-ame
+	branch = notes
