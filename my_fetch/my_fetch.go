@@ -48,6 +48,8 @@ func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) 
 	return f.Do(req)
 }
 
+// defaultHeader是Fetch的时候没指定的话会加上的东西
+// clientPool是fetch的时候选用的client集合
 func NewFetcher(defaultHeader http.Header, clientPool *clientPool) *fetcher {
 	if clientPool == nil {
 		clientPool = DefaultClientPool

@@ -1,4 +1,4 @@
-// azure
+// 曾经在azure用过，现在用LRU了
 // deprecated@24.11.13
 
 package tools
