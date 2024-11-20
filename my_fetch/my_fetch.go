@@ -10,6 +10,7 @@ import (
 )
 
 type fetcher struct {
+	count      int
 	header     http.Header
 	clientPool *clientPool
 }
@@ -20,9 +21,12 @@ func (f *fetcher) SetDefaultHeader(header http.Header) {
 
 func (f *fetcher) SetClientPool(clientPool *clientPool) {
 	f.clientPool = clientPool
+	f.count = 0
 }
 
 func (f *fetcher) Do(req *http.Request) (*http.Response, error) {
+	f.count++
+
 	clientPool := f.clientPool
 	defaultHeader := f.header
 
@@ -46,6 +50,10 @@ func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) 
 	}
 
 	return f.Do(req)
+}
+
+func (f *fetcher) Count() int {
+	return f.count
 }
 
 // defaultHeader是Fetch的时候没指定的话会加上的东西
