@@ -4,10 +4,11 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 )
 
-func NewV6Client(ip net.IP) *http.Client {
+func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 	tr := &http.Transport{
 		DialContext: (&net.Dialer{ // dialer
 			// LocalAddr 用于指定本地 IP 地址
@@ -24,8 +25,11 @@ func NewV6Client(ip net.IP) *http.Client {
 			},
 		}).DialContext,
 	}
+	if cookieJar == nil {
+		cookieJar = jar
+	}
 	return &http.Client{
 		Transport: tr,
-		Jar:       jar,
+		Jar:       cookieJar,
 	}
 }
