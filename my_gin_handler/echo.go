@@ -13,6 +13,8 @@ import (
 )
 
 func EchoJSON(c *gin.Context) {
+	c.Header("X-Debug-Request-Host", c.Request.Host)     // 要设置 Host $http_host
+	c.Header("X-Debug-Header-Host", c.GetHeader("Host")) // never
 
 	o := orderedmap.New()
 	for k, v := range c.Request.Header {
@@ -25,6 +27,8 @@ func EchoJSON(c *gin.Context) {
 }
 
 func Echo(c *gin.Context) {
+	c.Header("X-Debug-Request-Host", c.Request.Host)     // 要设置 Host $http_host
+	c.Header("X-Debug-Header-Host", c.GetHeader("Host")) // never
 
 	println := func(format string, a ...any) {
 		str := fmt.Sprintf(format, a...)
