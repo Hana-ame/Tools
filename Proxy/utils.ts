@@ -40,3 +40,11 @@ export function fetchWithProxy(
 
   return fetch(endpoint, init); // 使用更新后的 init 进行 fetch
 }
+
+export function getProxyURL(input: string) {
+  if (input === "") return input;
+  const url = new URL(input);
+  url.searchParams.set('proxy_host', url.hostname); // 替换为实际的 proxy_host 值
+  url.hostname = END_POINT;
+  return url.toString();
+}
