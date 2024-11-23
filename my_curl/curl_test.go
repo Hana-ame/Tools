@@ -54,7 +54,8 @@ func TestCurl2(t *testing.T) {
 		},
 	}
 	cookie := ""
-	code, _, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil)
+	code, rh, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil)
+	fmt.Println(rh)
 	fmt.Println(err)
 	fmt.Println(string(body))
 	fmt.Println(code)
@@ -72,7 +73,9 @@ func TestCurl3(t *testing.T) {
 		},
 	}
 	cookie := ""
-	code, _, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil, "-o", "result.txt")
+	code, rh, body, err := Curl("GET", "", headers, cookie, "https://getip.moonchan.xyz/echo", nil, "-o", "result.txt")
+	// 加了result。txt所以不显示的。2
+	fmt.Println(rh)
 	fmt.Println(err)
 	fmt.Println(string(body))
 	fmt.Println(code)
