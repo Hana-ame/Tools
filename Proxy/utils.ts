@@ -42,6 +42,7 @@ export function fetchWithProxy(
 }
 
 export function getProxyURL(input: string) {
+  console.log(input)
   if (input === "") return input;
   const url = new URL(input);
   url.searchParams.set('proxy_host', url.hostname); // 替换为实际的 proxy_host 值
