@@ -7,4 +7,6 @@ export function truncateString(str: string, num: number) {
   };
   
   
-  
+export function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
