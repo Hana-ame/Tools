@@ -14,7 +14,7 @@ func (h Header) Add(key, value string) {
 }
 
 func (h Header) GetAllKeys() []string {
-	s := make([]string, len(h.Header))
+	s := make([]string, 0, len(h.Header))
 	for k := range h.Header {
 		s = append(s, k)
 	}
