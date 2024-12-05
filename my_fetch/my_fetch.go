@@ -1,3 +1,4 @@
+// 写坏了，只能用最原始的client。
 // gin-pack @ 2024-04-06
 // @ 2023-12-21
 // azure-go @ 2023-12-21
@@ -10,6 +11,7 @@ import (
 )
 
 type fetcher struct {
+	count      int
 	header     http.Header
 	clientPool *clientPool
 }
@@ -20,9 +22,12 @@ func (f *fetcher) SetDefaultHeader(header http.Header) {
 
 func (f *fetcher) SetClientPool(clientPool *clientPool) {
 	f.clientPool = clientPool
+	f.count = 0
 }
 
 func (f *fetcher) Do(req *http.Request) (*http.Response, error) {
+	f.count++
+
 	clientPool := f.clientPool
 	defaultHeader := f.header
 
@@ -48,6 +53,12 @@ func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) 
 	return f.Do(req)
 }
 
+func (f *fetcher) Count() int {
+	return f.count
+}
+
+// defaultHeader是Fetch的时候没指定的话会加上的东西
+// clientPool是fetch的时候选用的client集合
 func NewFetcher(defaultHeader http.Header, clientPool *clientPool) *fetcher {
 	if clientPool == nil {
 		clientPool = DefaultClientPool

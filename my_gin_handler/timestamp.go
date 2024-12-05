@@ -1,4 +1,4 @@
-package handlerFunc
+package handler
 
 import (
 	"net/http"
@@ -7,18 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-// func main() {
-// 	router := gin.Default()
-
-// 	router.GET("/timestamp", GetTimestamp)
-// 	router.GET("/timestamp/s", GetTimestampSeconds)
-// 	router.GET("/timestamp/ms", GetTimestampMilliseconds)
-// 	router.GET("/timestamp/us", GetTimestampMicroseconds)
-// 	router.GET("/timestamp/ns", GetTimestampNanoseconds)
-
-// 	router.Run()
-// }
 
 func GetTimestamp(c *gin.Context) {
 	ts := float64(time.Now().UnixNano()) * (float64(65536) / float64(1_000_000))

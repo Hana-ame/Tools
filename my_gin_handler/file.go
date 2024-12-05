@@ -1,6 +1,6 @@
 // 24-09-21 @ gin-pack
 
-package handlerFunc
+package handler
 
 import (
 	"io"
