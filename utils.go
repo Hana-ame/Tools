@@ -10,7 +10,7 @@ func Seprate(separator, data []byte) ([]byte, []byte, error) {
 	index := bytes.Index(data, separator)
 	if index == -1 {
 		err := fmt.Errorf("%s", data)
-		return data, data, err
+		return nil, nil, err
 	}
 	return data[:index], data[index+len(separator):], nil
 }

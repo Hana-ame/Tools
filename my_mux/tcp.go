@@ -8,6 +8,7 @@ import (
 	"github.com/Hana-ame/udptun/Tools/debug"
 )
 
+// 这个是放Node之间连接的，其实加上router的话可能没法用
 type TCPNode struct {
 	reading bool
 	writing bool

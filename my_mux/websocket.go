@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// 这个是放Node之间连接的，其实加上router的话可能没法用
 type WebSocketNode struct {
 	reading bool
 	writing bool
