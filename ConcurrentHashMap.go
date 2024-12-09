@@ -48,7 +48,7 @@ func (m *ConcurrentHashMap[K, V]) Put(key K, value V) {
 	m.m[key] = value
 }
 
-// PutIfAbsent 如果键不存在，则插入键值对
+// ture = 插入成功,  false = 插入失败
 func (m *ConcurrentHashMap[K, V]) PutIfAbsent(key K, value V) bool {
 	m.Lock()
 	defer m.Unlock()
