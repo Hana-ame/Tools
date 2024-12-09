@@ -31,6 +31,10 @@ public class ModInteger {
     value = n % C;
   }
   
+  public ModInteger(ModInteger n) {
+    value = n.getValue();
+  }
+  
   public int getValue() {
     return value % C;
   }
