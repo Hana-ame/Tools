@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tools "github.com/Hana-ame/udptun/Tools"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 )
 
 func TestSlice(t *testing.T) {
