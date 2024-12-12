@@ -5,14 +5,14 @@ import "sync"
 // ConcurrentHashMap 是一个线程安全的映射，支持泛型类型
 type ConcurrentHashMap[K comparable, V any] struct {
 	m map[K]V
-	sync.RWMutex
+	*sync.RWMutex
 }
 
-// NewConcurrentHashMap 创建一个新的 LockedMap 实例
+// NewConcurrentHashMap 创建一个新的 ConcurrentHashMap 实例
 func NewConcurrentHashMap[K comparable, V any]() *ConcurrentHashMap[K, V] {
 	return &ConcurrentHashMap[K, V]{
 		m:       make(map[K]V),
-		RWMutex: sync.RWMutex{},
+		RWMutex: &sync.RWMutex{},
 	}
 }
 
@@ -31,6 +31,16 @@ func (m *ConcurrentHashMap[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
+func (m *ConcurrentHashMap[K, V]) GetOrDefault(key K, defaultValue V) V {
+	m.RLock()
+	defer m.RUnlock()
+	v, ok := m.m[key]
+	if !ok {
+		return defaultValue
+	}
+	return v
+}
+
 // Put 插入键值对
 func (m *ConcurrentHashMap[K, V]) Put(key K, value V) {
 	m.Lock()
@@ -38,19 +48,15 @@ func (m *ConcurrentHashMap[K, V]) Put(key K, value V) {
 	m.m[key] = value
 }
 
-// PutIfAbsent 如果键不存在，则插入键值对
+// ture = 插入成功,  false = 插入失败
 func (m *ConcurrentHashMap[K, V]) PutIfAbsent(key K, value V) bool {
 	m.Lock()
 	defer m.Unlock()
-
-	// 检查键是否存在
 	if _, exists := m.m[key]; exists {
-		return false // 键已存在，返回 false
+		return false
 	}
-
-	// 键不存在，插入键值对
 	m.m[key] = value
-	return true // 返回 true 表示插入成功
+	return true
 }
 
 // Remove 根据键删除元素
@@ -61,16 +67,12 @@ func (m *ConcurrentHashMap[K, V]) Remove(key K) {
 }
 
 // ForEach 遍历映射并对每个键值对调用处理函数
-// handler 是一个函数，接收键和值并执行操作。
 func (m *ConcurrentHashMap[K, V]) ForEach(handler func(key K, value V)) {
 	if handler == nil {
-		return // 如果处理函数为 nil，直接返回
+		return
 	}
-
-	m.RLock()         // 获取读取锁，确保安全访问
-	defer m.RUnlock() // 确保在函数结束时释放锁
-
-	// 遍历映射中的每个键值对并调用处理函数
+	m.RLock()
+	defer m.RUnlock()
 	for key, value := range m.m {
 		handler(key, value)
 	}
@@ -81,4 +83,31 @@ func (m *ConcurrentHashMap[K, V]) Size() int {
 	m.RLock()
 	defer m.RUnlock()
 	return len(m.m)
+}
+
+// ConcurrentHashSet 是一个线程安全的集合，通过继承 ConcurrentHashMap 实现
+type ConcurrentHashSet[K comparable] struct {
+	ConcurrentHashMap[K, struct{}]
+}
+
+// NewConcurrentHashSet 创建一个新的 ConcurrentHashSet 实例
+func NewConcurrentHashSet[K comparable]() *ConcurrentHashSet[K] {
+	return &ConcurrentHashSet[K]{
+		ConcurrentHashMap: *NewConcurrentHashMap[K, struct{}](),
+	}
+}
+
+// Add 向集合中添加元素
+func (s *ConcurrentHashSet[K]) Add(key K) {
+	s.Put(key, struct{}{})
+}
+
+// ForEach 遍历集合并对每个元素调用处理函数
+func (s *ConcurrentHashSet[K]) ForEach(handler func(key K)) {
+	if handler == nil {
+		return
+	}
+	s.ConcurrentHashMap.ForEach(func(key K, _ struct{}) {
+		handler(key)
+	})
 }

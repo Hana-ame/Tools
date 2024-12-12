@@ -13,6 +13,8 @@ import (
 // for image encode to blurhash
 
 func DecodeResponseToImage(r *http.Response) (image.Image, error) {
+	defer r.Body.Close()
+
 	switch r.Header.Get("Content-Type") {
 	// case "image/x-icon":
 	// 	return ico.Decode(r.Body)
@@ -23,7 +25,7 @@ func DecodeResponseToImage(r *http.Response) (image.Image, error) {
 	case "image/gif":
 		return gif.Decode(r.Body)
 	default:
-		return nil, fmt.Errorf("not supported yed")
+		return nil, fmt.Errorf("not supported yet")
 	}
 }
 
