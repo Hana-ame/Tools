@@ -3,6 +3,8 @@
 package handler
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"io"
 	"log"
 	"net/http"
@@ -44,7 +46,7 @@ func UploadFile(c *gin.Context) {
 	})
 }
 
-// by gpt, not reviewed.
+// UploadFiles 处理文件上传并将文件保存到 /uploads/[sha1sum]/[filename]
 func UploadFiles(c *gin.Context) {
 	// 获取所有上传的文件
 	form, err := c.MultipartForm()
@@ -60,10 +62,32 @@ func UploadFiles(c *gin.Context) {
 
 	// 遍历文件并保存
 	for _, file := range files {
-		// 指定保存路径
-		savePath := path.Join("uploads", file.Filename)
+		// 计算文件的 SHA1 校验和
+		fileContent, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "打开文件失败: " + err.Error()})
+			return
+		}
+		defer fileContent.Close()
+
+		hasher := sha1.New()
+		if _, err := io.Copy(hasher, fileContent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "计算 SHA1 失败: " + err.Error()})
+			return
+		}
+
+		// 获取 SHA1 值并生成新的文件夹路径
+		sha1sum := hex.EncodeToString(hasher.Sum(nil))
+		dirPath := path.Join("uploads", sha1sum) // 使用 SHA1 值作为文件夹名
+
+		// 创建目录
+		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败: " + err.Error()})
+			return
+		}
 
 		// 保存文件
+		savePath := path.Join(dirPath, file.Filename) // 完整的文件保存路径
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "保存文件失败: " + err.Error()})
 			return
