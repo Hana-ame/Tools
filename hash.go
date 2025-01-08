@@ -6,10 +6,11 @@ package tools
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
 )
 
-func Hash(s string, SALT string) string {
-	hash := sha256.Sum256([]byte(s + SALT))
+func Hash(s ...string) string {
+	hash := sha256.Sum256([]byte(strings.Join(s, "")))
 	hashString := fmt.Sprintf("%x", hash)
 	return hashString
 }

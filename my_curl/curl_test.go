@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 )
 
 func TestSlice(t *testing.T) {

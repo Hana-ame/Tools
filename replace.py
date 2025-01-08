@@ -32,9 +32,11 @@ def replace_go_file(file_path, module_name):
   with open(file_path, "r", encoding="utf8") as f:
     file_content = f.read()
 
-  # Replace import paths with the correct module name
+  # Regular expression to match import paths with or without alias
   updated_content = re.sub(
-    r'"(.*?)/Tools(.*?)"', rf'"{module_name}/Tools\2"', file_content
+    r'(\s*[a-zA-Z0-9_]*\s*["\'])((.*?)/Tools(.*?))(["\'])',
+    rf'\1{module_name}/Tools\4\5',
+    file_content
   )
 
   with open(file_path, "w", encoding="utf8") as f:
