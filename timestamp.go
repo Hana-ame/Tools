@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+func Now() int64 {
+	ts := (((time.Now().UnixNano()) / 100_000) << 16) / 10
+	return (int64(ts))
+}
+
 var mu sync.Mutex
 var lastTime int64
 var lastSequence int64
