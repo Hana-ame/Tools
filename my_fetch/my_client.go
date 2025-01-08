@@ -31,5 +31,8 @@ func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 	return &http.Client{
 		Transport: tr,
 		Jar:       cookieJar,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // 返回错误以阻止重定向
+		},
 	}
 }

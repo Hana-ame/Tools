@@ -47,6 +47,15 @@ func (s Slice[T]) FirstNonDefaultValue(defaultValue T) T {
 	return defaultValue
 }
 
+func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
+	for _, v := range s {
+		if filter(v) {
+			return v, nil
+		}
+	}
+	return defaultValue, fmt.Errorf("null")
+}
+
 // func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
 // 	if index < 0 || len(s) >= index {
 // 		return defaultValue
