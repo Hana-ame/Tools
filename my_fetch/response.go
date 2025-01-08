@@ -43,3 +43,18 @@ func ResponseToReader(r *http.Response) (reader io.Reader, err error) {
 		return r.Body, nil
 	}
 }
+
+func URLToJSON(url string) (o *orderedmap.OrderedMap, err error) {
+	resp, err := Fetch(http.MethodGet, url, nil, nil)
+	if err != nil {
+		return
+	}
+	return ResponseToObject(resp)
+}
+func URLToJSONArray(url string) (arr []*orderedmap.OrderedMap, err error) {
+	resp, err := Fetch(http.MethodGet, url, nil, nil)
+	if err != nil {
+		return
+	}
+	return ResponseToObjectArray(resp)
+}

@@ -12,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type FileUploadHandler struct{}
+
 // servefile
 func FileHandler(filepath func() string) func(c *gin.Context) {
 	return func(c *gin.Context) {

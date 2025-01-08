@@ -2,6 +2,7 @@ package tools
 
 import "net/http"
 
+// 防止添加""作为header的外包装
 type Header struct {
 	http.Header
 }

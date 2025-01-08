@@ -8,6 +8,8 @@ package myfetch
 import (
 	"io"
 	"net/http"
+
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 type fetcher struct {
@@ -42,7 +44,6 @@ func (f *fetcher) Do(req *http.Request) (*http.Response, error) {
 	return clientPool.Client().Do(req)
 }
 
-// this function make a request and return a response
 func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) (*http.Response, error) {
 
 	req, err := NewRequest(method, url, header, body)
@@ -51,6 +52,36 @@ func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) 
 	}
 
 	return f.Do(req)
+}
+
+func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Reader) (*orderedmap.OrderedMap, error) {
+
+	req, err := NewRequest(method, url, header, body)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := f.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return ResponseToObject(resp)
+}
+
+func (f *fetcher) FetchJSONArray(method, url string, header http.Header, body io.Reader) ([]*orderedmap.OrderedMap, error) {
+
+	req, err := NewRequest(method, url, header, body)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := f.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return ResponseToObjectArray(resp)
 }
 
 func (f *fetcher) Count() int {
@@ -84,4 +115,12 @@ func Do(req *http.Request) (*http.Response, error) {
 // 使用默认Fetcher进行http访问
 func Fetch(method, url string, header http.Header, body io.Reader) (*http.Response, error) {
 	return DefaultFetcher.Fetch(method, url, header, body)
+}
+
+func FetchJSON(method, url string, header http.Header, body io.Reader) (*orderedmap.OrderedMap, error) {
+	return DefaultFetcher.FetchJSON(method, url, header, body)
+}
+
+func FetchJSONArray(method, url string, header http.Header, body io.Reader) ([]*orderedmap.OrderedMap, error) {
+	return DefaultFetcher.FetchJSONArray(method, url, header, body)
 }
