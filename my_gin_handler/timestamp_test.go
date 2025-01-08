@@ -3,6 +3,7 @@ package handler
 import (
 	"testing"
 
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	"github.com/Hana-ame/neo-moonchan/Tools/debug"
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,7 @@ func TestTimestamp(t *testing.T) {
 func TestNewTimeStamp(t *testing.T) {
 	var la int64
 	for i := 0; i < 200000; i++ {
-		a := NewTimeStamp()
+		a := tools.NewTimeStamp()
 		// fmt.Println(a)
 		if la == a {
 			debug.F("equal")

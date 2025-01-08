@@ -5,14 +5,128 @@ package handler
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	"github.com/gin-gonic/gin"
 )
+
+// curl -x "" -X PUT http://127.24.7.29:8080/api/file/upload -T README.md
+// {"id":113794146377662464,"path":"113/794/146377662464"}
+// curl -x "" http://127.24.7.29:8080/api/file/113/794/146377662464/README.md -v
+type FileServer struct {
+	// 文件保存的位置，是前缀
+	Path string
+}
+
+type FileMetaData struct {
+	ID       int64
+	MIMEType string
+	FileName string
+	Size     int64
+}
+
+func (s *FileServer) Upload(c *gin.Context) {
+
+	id := tools.NewTimeStamp()
+
+	idString := strconv.Itoa(int(id))
+	pathArray := []string{idString[0:3], idString[3:6], idString[6:]}
+	path := strings.Join(pathArray, "/")
+	if err := os.MkdirAll(filepath.Join(s.Path, pathArray[0], pathArray[1]), 0755); err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	extensions, _ := mime.ExtensionsByType(tools.Or(c.ContentType(), "application/octet-stream"))
+
+	metaData := &FileMetaData{
+		ID:       id,
+		MIMEType: tools.Or(c.ContentType(), "application/octet-stream"),
+		FileName: idString + tools.NewSlice(extensions...).FirstNonDefaultValue(""),
+		Size:     c.Request.ContentLength,
+	}
+
+	if err := tools.SaveStructToJsonFile(metaData, filepath.Join(s.Path, pathArray[0], pathArray[1], pathArray[2]+".metadata.json")); err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	gzipFile, err := os.Create(filepath.Join(s.Path, pathArray[0], pathArray[1], metaData.FileName))
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	defer gzipFile.Close()
+
+	// gzipWriter := gzip.NewWriter(gzipFile)
+	// defer gzipWriter.Close()
+	gzipWriter := gzipFile // 跳过压缩，没用
+
+	// 使用 io.Copy 将输入文件内容写入到 gzip 压缩写入器中
+	n, err := io.Copy(gzipWriter, c.Request.Body)
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	if n != c.Request.ContentLength {
+		c.Header("X-Error", fmt.Sprintf("n = %d, expected %d", n, metaData.Size))
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]any{
+		"id":   id,
+		"path": path,
+	})
+}
+
+func (s *FileServer) Get(c *gin.Context) {
+	pathArray := strings.Split(c.Param("path"), "/")
+	if len(pathArray) < 4 {
+		c.Header("X-Error", fmt.Sprintf("len(pathArray)  = %d, expected 3 or 4", len(pathArray)))
+		c.AbortWithStatus(http.StatusNotFound)
+	}
+
+	metadata := new(FileMetaData)
+	if err := tools.ReadJsonFileToStruct(filepath.Join(s.Path, pathArray[1], pathArray[2], pathArray[3]+".metadata.json"), &metadata); err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	gzipFile, err := os.Open(filepath.Join(s.Path, pathArray[1], pathArray[2], metadata.FileName))
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	defer gzipFile.Close()
+
+	// gzipReader, err := gzip.NewReader(gzipFile)
+	// if err != nil {
+	// 	c.Header("X-Error", err.Error())
+	// 	c.AbortWithStatus(http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer gzipReader.Close()
+	gzipReader := gzipFile // 跳过压缩，没用
+
+	c.DataFromReader(http.StatusOK, metadata.Size, metadata.MIMEType, gzipReader, map[string]string{"Content-Disposition": "inline"})
+}
 
 // servefile
 func FileHandler(filepath func() string) func(c *gin.Context) {

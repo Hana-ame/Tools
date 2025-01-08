@@ -3,52 +3,38 @@ package handler
 import (
 	"net/http"
 	"strconv"
-	"sync"
-	"time"
+
+	timestamp "github.com/Hana-ame/neo-moonchan/Tools" // 替换为你的项目路径
 
 	"github.com/gin-gonic/gin"
 )
 
-var mu sync.Mutex
-var lastTime int64
-var lastSequence int64
-
-func NewTimeStamp() int64 {
-	mu.Lock()
-	defer mu.Unlock()
-	now := time.Now().UnixMilli() << 16
-
-	if now == lastTime {
-		lastSequence += 1
-	} else {
-		// fmt.Println(lastSequence)
-		lastTime = now
-		lastSequence = 0
-	}
-	return now + lastSequence
-}
-
 func GetTimestamp(c *gin.Context) {
-	ts := float64(time.Now().UnixNano()) * (float64(65536) / float64(1_000_000))
+	ts := timestamp.GetTimestamp()
 	c.String(http.StatusOK, strconv.Itoa(int(ts)))
 }
 
 func GetTimestampSeconds(c *gin.Context) {
-	ts := (time.Now().Unix())
+	ts := timestamp.GetTimestampSeconds()
 	c.String(http.StatusOK, strconv.Itoa(int(ts)))
 }
 
 func GetTimestampMilliseconds(c *gin.Context) {
-	ts := (time.Now().UnixNano()) / 1e6
+	ts := timestamp.GetTimestampMilliseconds()
 	c.String(http.StatusOK, strconv.Itoa(int(ts)))
 }
 
 func GetTimestampMicroseconds(c *gin.Context) {
-	ts := (time.Now().UnixNano()) / 1e3
+	ts := timestamp.GetTimestampMicroseconds()
 	c.String(http.StatusOK, strconv.Itoa(int(ts)))
 }
 
 func GetTimestampNanoseconds(c *gin.Context) {
-	ts := (time.Now().UnixNano())
+	ts := timestamp.GetTimestampNanoseconds()
 	c.String(http.StatusOK, strconv.Itoa(int(ts)))
+}
+
+func NewTimeStamp(c *gin.Context) {
+	ts := timestamp.NewTimeStamp()
+	c.String(http.StatusOK, strconv.FormatInt(ts, 10))
 }

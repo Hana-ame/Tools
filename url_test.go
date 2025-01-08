@@ -24,3 +24,9 @@ func TestURLParams(t *testing.T) {
 	fmt.Println("Updated URL:", parsedURL.String())
 
 }
+
+// func TestAnd(t *testing.T) {
+// 	var a *testing.B
+// 	aa := And(a, 123)
+// 	fmt.Println(aa)
+// }
