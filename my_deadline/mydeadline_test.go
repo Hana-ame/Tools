@@ -1,4 +1,4 @@
-package mydeadline
+package deadline
 
 import (
 	"fmt"

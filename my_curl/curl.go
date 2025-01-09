@@ -1,6 +1,6 @@
 // @241015
 
-package mycurl
+package curl
 
 import (
 	"bytes"
