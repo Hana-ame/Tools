@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"testing"
@@ -29,4 +30,31 @@ func TestURLParams(t *testing.T) {
 // 	var a *testing.B
 // 	aa := And(a, 123)
 // 	fmt.Println(aa)
+// }
+
+func TestSlice(t *testing.T) {
+	var s []int
+	var js []byte
+	s = nil
+	fmt.Printf("%v\n", s) // []
+	for k, v := range s { // ok
+		fmt.Printf("%v, %v\n", k, v)
+	}
+	js, _ = json.Marshal(s)
+	fmt.Printf("%s\n", js) // null
+
+	s = []int{}
+	fmt.Printf("%v\n", s) // []
+	for k, v := range s { // ok
+		fmt.Printf("%v, %v\n", k, v)
+	}
+	js, _ = json.Marshal(s)
+	fmt.Printf("%s\n", js) // []
+
+}
+
+// func TestPop(t *testing.T) {
+// 	is := NewSlice(1, 2, 3)
+// 	is.Pop()
+// 	fmt.Println(is)
 // }

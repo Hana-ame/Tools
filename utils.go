@@ -26,3 +26,31 @@ func Or[T comparable](e, d T) T {
 // 	}
 // 	return a.(T)
 // }
+
+type result[T any] struct {
+	result T
+	err    error
+	// defaultResult T
+}
+
+func Match[T any](r T, err error) *result[T] {
+	return &result[T]{
+		result: r,
+		err:    err,
+	}
+}
+
+func (r *result[T]) GetOrDefault(defaultValue T) T {
+	if r.err != nil {
+		return defaultValue
+	}
+	return r.result
+}
+
+func (r *result[T]) IgnoreError() T {
+	return r.result
+}
+
+func (r *result[T]) Error() error {
+	return r.err
+}
