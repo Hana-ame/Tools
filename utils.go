@@ -1,13 +1,27 @@
 package tools
 
-type FuncWrapper[T any] func() (T, error)
-
-func (w *FuncWrapper[T]) DefautValue(defaultValue T) T {
-	v, e := (*w)()
-	if e != nil {
-		return defaultValue
+func NewFuncWrapper[T any](result T, err error) *FuncWrapper[T] {
+	return &FuncWrapper[T]{
+		result: result,
+		err:    err,
 	}
-	return v
+}
+
+type FuncWrapper[T any] struct {
+	result T
+	err    error
+}
+
+func (w *FuncWrapper[T]) Then(handler func(result T)) *FuncWrapper[T] {
+	if w.err == nil {
+		handler(w.result)
+	}
+	return w
+}
+
+func (w *FuncWrapper[T]) Catch(handler func(err error)) *FuncWrapper[T] {
+	handler(w.err)
+	return w
 }
 
 // 用法同 a || b

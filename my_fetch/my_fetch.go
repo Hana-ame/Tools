@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 type fetcher struct {
@@ -86,6 +86,9 @@ func (f *fetcher) FetchJSONArray(method, url string, header http.Header, body io
 
 func (f *fetcher) Count() int {
 	return f.count
+}
+func (f *fetcher) AddCount(n int) {
+	f.count += n
 }
 
 // defaultHeader是Fetch的时候没指定的话会加上的东西

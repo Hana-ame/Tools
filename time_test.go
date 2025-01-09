@@ -1,14 +1,13 @@
 package tools
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
 
 func TestTimestamp(t *testing.T) {
-	a := Now()
-	fmt.Println(a)
+	// a := Now()
+	// fmt.Println(a)
 }
 
 func TestTimestampForManyTimes(t *testing.T) {
