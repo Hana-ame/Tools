@@ -1,3 +1,6 @@
+// 这东西真的能用吗
+// 本来是为了合并postform方法和json方法的.
+
 package tools
 
 import (

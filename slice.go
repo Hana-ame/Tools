@@ -23,28 +23,28 @@ func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
 	return s[index]
 }
 
-func (s Slice[T]) Last() T {
-	return s[len(s)-1]
-}
+// func (s Slice[T]) Last() T {
+// 	return s[len(s)-1]
+// }
 
-func (s Slice[T]) Push(e T) Slice[T] {
-	s = append(s, e)
-	return s
-}
+// func (s Slice[T]) Push(e T) Slice[T] {
+// 	s = append(s, e)
+// 	return s
+// }
 
-func (s Slice[T]) Pop() T {
-	e := s.Last()
-	s = s[:len(s)-1]
-	return e
-}
+// func (s Slice[T]) Pop() (Slice[T], T) {
+// 	e := s.Last()
+// 	s = s[:len(s)-1]
+// 	return s, e
+// }
 
-func (s Slice[T]) FirstNonDefaultValue(defaultValue T) T {
+func (s Slice[T]) FirstUnequal(v T) T {
 	for _, e := range s {
-		if e != defaultValue {
+		if e != v {
 			return e
 		}
 	}
-	return defaultValue
+	return v
 }
 
 func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {

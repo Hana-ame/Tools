@@ -53,7 +53,7 @@ func (s *FileServer) Upload(c *gin.Context) {
 	metaData := &FileMetaData{
 		ID:       id,
 		MIMEType: tools.Or(c.ContentType(), "application/octet-stream"),
-		FileName: idString + tools.NewSlice(extensions...).FirstNonDefaultValue(""),
+		FileName: idString + tools.NewSlice(extensions...).FirstUnequal(""),
 		Size:     c.Request.ContentLength,
 	}
 

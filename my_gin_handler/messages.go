@@ -21,17 +21,27 @@ type message struct {
 
 // :receiver
 func SendMsg(c *gin.Context) {
-	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstNonDefaultValue("")
-	sender := tools.NewSlice[string](c.GetString("sender"), c.Param("sender"), c.Query("sender"), c.GetHeader("X-Forwarded-For")).FirstNonDefaultValue("")
+	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
+	sender := tools.NewSlice[string](c.GetString("sender"), c.Param("sender"), c.Query("sender"), c.GetHeader("X-Forwarded-For")).FirstUnequal("")
+
+	id := tools.NewTimeStamp()
+
+	blob, err := c.GetRawData()
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
+
+	o := orderedmap.New()
+	if err := json.Unmarshal(blob, &o); err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
 
 	if err := db.Exec(func(tx *sql.Tx) error {
+
 		query := `INSERT INTO messages (id, receiver, sender, payload) VALUES ($1, $2, $3, $4);`
-		id := tools.NewTimeStamp()
-		blob, err := c.GetRawData()
-		if err != nil {
-			return err
-		}
-		if _, err := tx.Exec(query, id, receiver, sender, blob); err != nil {
+		if _, err := tx.Exec(query, id, receiver, sender, tools.Match(json.Marshal(o)).GetOrDefault([]byte(`""`))); err != nil {
 			return err
 		}
 		return tx.Commit()
@@ -47,13 +57,13 @@ func SendMsg(c *gin.Context) {
 // ?after
 // ?limit
 func ReceiveMsg(c *gin.Context) {
-	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstNonDefaultValue("")
-	afterString := tools.NewSlice[string](c.GetString("after"), c.Param("after"), c.Query("after")).FirstNonDefaultValue("")
+	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
+	afterString := tools.NewSlice[string](c.GetString("after"), c.Param("after"), c.Query("after")).FirstUnequal("")
 	after, err := strconv.Atoi(afterString)
 	if err != nil {
 		after = 0
 	}
-	limitString := tools.NewSlice[string](c.GetString("limit"), c.Param("limit"), c.Query("limit")).FirstNonDefaultValue("")
+	limitString := tools.NewSlice[string](c.GetString("limit"), c.Param("limit"), c.Query("limit")).FirstUnequal("")
 	limit, err := strconv.Atoi(limitString)
 	if err != nil {
 		limit = 10
