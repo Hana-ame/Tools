@@ -1,4 +1,5 @@
 # what is this.
+# 改用bash了, awk之类的.
 
 fn = '/home/admin/access.log'
 

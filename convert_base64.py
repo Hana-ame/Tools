@@ -1,3 +1,6 @@
+# usage: py convert_base64.py [file] ...
+# see output: [file].py
+
 import os
 import sys
 import base64
