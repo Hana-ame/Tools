@@ -22,6 +22,7 @@ func (h Header) GetAllKeys() []string {
 	return s
 }
 
+// 仅为了防止“”作为header被添加
 func NewHeader(header http.Header) Header {
 	if header == nil {
 		header = http.Header{}
