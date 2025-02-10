@@ -4,6 +4,10 @@
 // "X-Referer",
 // 这些会替换那些不让传的，Host是这里设定的
 export const END_POINT = "proxy.moonchan.xyz"
+// 目前访问的时候有挺多问题的
+// 比如host没有port，忘记后端哪边改了没有了
+
+
 
 export function fetchWithProxy(
   input: string | URL,
