@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 	_ "github.com/joho/godotenv/autoload"
 
 	_ "github.com/lib/pq"
@@ -16,8 +16,8 @@ import (
 
 func TestConnection(t *testing.T) {
 	connStr := os.Getenv("CONN_STR")
-
-	for i := 0; i < 200; i++ {
+	log.Println(connStr)
+	for i := 0; i < 2; i++ {
 		// 连接到 PostgreSQL 数据库
 		db, err := sql.Open("postgres", connStr)
 		if err != nil {
