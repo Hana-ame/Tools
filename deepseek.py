@@ -51,7 +51,7 @@ def update_record(record_id: str, ipv6:str):
     
     data = {
         "type": "AAAA",
-        "name": "desktop.d.moonchan.xyz",
+        "name": "laptop.d.moonchan.xyz",
         "content": ipv6,
         "ttl": 60,
         "proxied": False
