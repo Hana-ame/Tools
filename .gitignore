@@ -6,3 +6,12 @@ time.txt
 blog.yaml
 *.json
 *.html
+
+
+build
+dist
+*.spec
+
+congtent.txt
+
+.env

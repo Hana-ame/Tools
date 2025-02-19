@@ -1,3 +1,6 @@
+# build
+直接在ps当中`./build.sh`就行（笔记本）
+
 # 基于python的markdown静态blog部署
 
 ## 寻思

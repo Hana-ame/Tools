@@ -8,28 +8,40 @@ def generate_index(tags_list: List[str], metadata_list: List[FileMetadata], outp
         f.write("<html lang='zh'>\n")
         f.write("<head>\n")
         f.write("<meta charset='UTF-8'>\n")
+        f.write("<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n")  # 添加视口标签
         f.write("<title>文章列表</title>\n")
-        f.write("<link rel='stylesheet' type='text/css' href='styles.css'>\n")  # 引用外部 CSS 文件
+        f.write("<link rel='stylesheet' type='text/css' href='styles.css'>\n")
         f.write("</head>\n")
         f.write("<body>\n")
+        f.write("<div class='container'>\n")  # 添加容器包裹内容
+        
         # 生成标签目录
-        f.write("<h2>标签目录</h2>\n")
-        f.write("<ul>\n")
+        f.write("<section class='tags-section'>\n")
+        f.write("<h2>📁 标签目录</h2>\n")
+        f.write("<div class='tag-list'>\n")
         for tag in tags_list:
-            f.write(f"<li><a href='/tag/{tag}'>{tag}</a></li>\n")
-        f.write("</ul>\n")
+            f.write(f"<a class='tag-item' href='/tag/{tag}'>{tag}</a>\n")
+        f.write("</div>\n")
+        f.write("</section>\n")
 
         # 生成文章列表
-        f.write("<h2>文章列表</h2>\n")
-        f.write("<table>\n")
-        f.write("<tr><th>标题</th><th>创建日期</th><th>最后更新</th></tr>\n")  # 添加最后更新列
+        f.write("<section class='articles-section'>\n")
+        f.write("<h2>📝 最新文章</h2>\n")
+        f.write("<div class='table-container'>\n")  # 表格容器用于响应式
+        f.write("<table class='article-table'>\n")
+        f.write("<thead><tr><th>标题</th><th>创建日期</th><th>最后更新</th></tr></thead>\n")
+        f.write("<tbody>\n")
         for metadata in metadata_list:
-            f.write(f"<tr><td class='title'><a href='/article/{metadata.sha1sum}.html'>{metadata.title}</a></td><td class='date'>{metadata.create_date}</td><td class='last-updated'>{metadata.edit_date}</td></tr>\n")
+            f.write(f"<tr><td><a class='article-title' href='/article/{metadata.sha1sum}.html'>{metadata.title}</a></td>"
+                    f"<td class='date'>{metadata.create_date}</td><td class='date'>{metadata.edit_date}</td></tr>\n")
+        f.write("</tbody>\n")
         f.write("</table>\n")
+        f.write("</div>\n")
+        f.write("</section>\n")
 
+        f.write("</div>\n")  # 容器结束
         f.write("</body>\n")
         f.write("</html>\n")
-
 
 #  markdown
 

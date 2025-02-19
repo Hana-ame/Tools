@@ -3,6 +3,7 @@
 from utils import *
 from page import *
 import json
+from compile_markdown_to_html import compile_markdown_to_html
 
 def save_to_json(metadata_list: List[FileMetadata], json_file: str):
     """将文件元数据保存到JSON文件"""
@@ -55,7 +56,8 @@ def main():
         title = metadata.title
         md_file_path = metadata.filepath
         output_html_path = os.path.join(dist_path,"article" ,f"{metadata.sha1sum}.html")
-        convert_md_to_html(title, md_file_path, output_html_path)
+        # convert_md_to_html(title, md_file_path, output_html_path)
+        compile_markdown_to_html(title, md_file_path, output_html_path)
 
     
     generate_index([], all_metadata, os.path.join(dist_path, "index.html"))
@@ -68,3 +70,5 @@ if __name__ == "__main__":
     # md_file_path = 'example.md'  # 输入 Markdown 文件路径
     # output_html_path = 'output.html'  # 输出 HTML 文件路径
     # convert_md_to_html(md_file_path, output_html_path)
+
+#end
