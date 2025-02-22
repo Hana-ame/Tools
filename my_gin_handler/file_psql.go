@@ -1,6 +1,7 @@
 // 需要在psql中创建表 id - mime_type
 // 需要指定 CONN_STR
 // 可选 UPLOAD_PATH
+// ~~超过1m就会520~~ 是nginx设置，但是nginx设置好了cloudflare对于大文件上传也是恨得很
 
 package handler
 
@@ -125,7 +126,7 @@ func UploadFilePsql(c *gin.Context) {
 
 	tx.Commit()
 	c.JSON(http.StatusOK, map[string]any{
-		"id": id,
+		"id": idStr,
 	})
 }
 

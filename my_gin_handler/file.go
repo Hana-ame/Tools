@@ -213,3 +213,16 @@ func UploadFiles(c *gin.Context) {
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{"message": "文件上传成功", "files": savedFiles})
 }
+
+func File(path string) func(c *gin.Context) {
+	return func(c *gin.Context) {
+
+		// 确保文件存在且可读
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+			return
+		}
+
+		c.File(path)
+	}
+}
