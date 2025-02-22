@@ -1,6 +1,10 @@
 package tools
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 // 防止添加""作为header的外包装
 type Header struct {
@@ -28,4 +32,15 @@ func NewHeader(header http.Header) Header {
 		header = http.Header{}
 	}
 	return Header{Header: header}
+}
+
+func CopyHeader(c *gin.Context, header http.Header) {
+	for k, vs := range header {
+		if c.Writer.Header().Get(k) != "" {
+			continue
+		}
+		for _, v := range vs {
+			c.Writer.Header().Add(k, v)
+		}
+	}
 }
