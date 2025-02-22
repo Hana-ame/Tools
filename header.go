@@ -34,6 +34,7 @@ func NewHeader(header http.Header) Header {
 	return Header{Header: header}
 }
 
+// 只影响尚未设置的.
 func CopyHeader(c *gin.Context, header http.Header) {
 	for k, vs := range header {
 		if c.Writer.Header().Get(k) != "" {
