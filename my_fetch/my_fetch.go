@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 type fetcher struct {
