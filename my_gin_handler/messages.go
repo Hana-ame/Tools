@@ -2,27 +2,25 @@ package handler
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
-	"strconv"
 
 	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	"github.com/Hana-ame/neo-moonchan/Tools/db"
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 	"github.com/gin-gonic/gin"
 )
 
 type message struct {
-	ID       int                    `json:"id"`
-	Receiver string                 `json:"receiver"`
-	Sender   string                 `json:"sender"`
-	Payload  *orderedmap.OrderedMap `json:"payload"`
+	ID       string `json:"id"`
+	Receiver string `json:"receiver"`
+	Sender   string `json:"sender"`
+	Payload  []byte `json:"payload"`
 }
 
-// :receiver
+// :receiver ?receiver
+// :sender ?sender X-Forwarded-For
 func SendMsg(c *gin.Context) {
-	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
-	sender := tools.NewSlice[string](c.GetString("sender"), c.Param("sender"), c.Query("sender"), c.GetHeader("X-Forwarded-For")).FirstUnequal("")
+	receiver := tools.NewSlice(c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
+	sender := tools.NewSlice(c.GetString("sender"), c.Param("sender"), c.Query("sender"), c.GetHeader("X-Forwarded-For")).FirstUnequal("")
 
 	id := tools.NewTimeStamp()
 
@@ -32,22 +30,23 @@ func SendMsg(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
 
-	o := orderedmap.New()
-	if err := json.Unmarshal(blob, &o); err != nil {
-		c.Header("X-Error", err.Error())
-		c.AbortWithStatus(http.StatusBadRequest)
-	}
+	// o := orderedmap.New()
+	// if err := json.Unmarshal(blob, &o); err != nil {
+	// 	c.Header("X-Error", err.Error())
+	// 	c.AbortWithStatus(http.StatusBadRequest)
+	// }
 
 	if err := db.Exec(func(tx *sql.Tx) error {
 
 		query := `INSERT INTO messages (id, receiver, sender, payload) VALUES ($1, $2, $3, $4);`
-		if _, err := tx.Exec(query, id, receiver, sender, tools.Match(json.Marshal(o)).GetOrDefault([]byte(`""`))); err != nil {
+		if _, err := tx.Exec(query, id, receiver, sender, blob); err != nil {
 			return err
 		}
 		return tx.Commit()
 	}); err != nil {
 		c.Header("X-Error", err.Error())
 		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
 
 	c.AbortWithStatus(http.StatusNoContent)
@@ -57,17 +56,11 @@ func SendMsg(c *gin.Context) {
 // ?after
 // ?limit
 func ReceiveMsg(c *gin.Context) {
-	receiver := tools.NewSlice[string](c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
-	afterString := tools.NewSlice[string](c.GetString("after"), c.Param("after"), c.Query("after")).FirstUnequal("")
-	after, err := strconv.Atoi(afterString)
-	if err != nil {
-		after = 0
-	}
-	limitString := tools.NewSlice[string](c.GetString("limit"), c.Param("limit"), c.Query("limit")).FirstUnequal("")
-	limit, err := strconv.Atoi(limitString)
-	if err != nil {
-		limit = 10
-	}
+	receiver := tools.NewSlice(c.GetString("receiver"), c.Param("receiver"), c.Query("receiver")).FirstUnequal("")
+	afterString := tools.NewSlice(c.GetString("after"), c.Param("after"), c.Query("after")).FirstUnequal("")
+	after := tools.Atoi(afterString, 0)
+	limitString := tools.NewSlice(c.GetString("limit"), c.Param("limit"), c.Query("limit")).FirstUnequal("")
+	limit := tools.Atoi(limitString, 10)
 	if limit <= 0 || limit > 100 {
 		limit = 10
 	}
@@ -83,13 +76,13 @@ func ReceiveMsg(c *gin.Context) {
 
 		for rows.Next() {
 			var msg message
-			var blob []byte
-			if err := rows.Scan(&msg.ID, &msg.Receiver, &msg.Sender, &blob); err != nil {
+			// var blob []byte
+			if err := rows.Scan(&msg.ID, &msg.Receiver, &msg.Sender, &msg.Payload); err != nil {
 				return err
 			}
-			if err := json.Unmarshal(blob, &msg.Payload); err != nil {
-				return err
-			}
+			// if err := json.Unmarshal(blob, &msg.Payload); err != nil {
+			// 	return err
+			// }
 
 			messages = append(messages, msg)
 		}
@@ -101,7 +94,8 @@ func ReceiveMsg(c *gin.Context) {
 	}); err != nil {
 		c.Header("X-Error", err.Error())
 		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
 
-	c.JSON(http.StatusOK, messages)
+	c.JSONP(http.StatusOK, messages)
 }

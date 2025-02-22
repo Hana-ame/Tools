@@ -47,6 +47,8 @@ type result[T any] struct {
 	// defaultResult T
 }
 
+// catch一个单输出+error的function，并且
+// 返回一个result，result有几个方法，可以在一行里面处理
 func Match[T any](r T, err error) *result[T] {
 	return &result[T]{
 		result: r,

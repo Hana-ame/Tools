@@ -45,6 +45,11 @@ func CORSMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 将HEAD请求转换为GET请求
+		// if c.Request.Method == http.MethodHead {
+		// 	c.Request.Method = http.MethodGet
+		// }
+
 		c.Next() // 继续处理请求
 
 		// 为什么自带的方法这么贵物

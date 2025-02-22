@@ -215,7 +215,15 @@ func UploadFiles(c *gin.Context) {
 }
 
 func File(path string) func(c *gin.Context) {
+	// fileInfo, err := os.Stat(path)
+	// mimeType := mime.TypeByExtension(filepath.Ext(path)) // 输出: image/jpeg
 	return func(c *gin.Context) {
+		// 获取文件信息
+		// if err != nil {
+		// 	c.Header("X-Error", err.Error())
+		// 	c.AbortWithStatus(http.StatusNotFound)
+		// 	return
+		// }
 
 		// 确保文件存在且可读
 		if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -223,6 +231,26 @@ func File(path string) func(c *gin.Context) {
 			return
 		}
 
-		c.File(path)
+		origin := c.Request.Header.Get("Origin")
+		if origin == "" {
+			origin = "*"
+		}
+
+		c.Header("X-Frame-Options", "")
+		c.Header("X-Frame-Options", "ALLOW-FROM "+origin)
+		c.Header("Content-Security-Policy", "frame-src "+origin)
+
+		c.File(path) // "X-Frame-Options” 一直 DENY
+
+		// fileReader, err := os.Open(path)
+		// if err != nil {
+		// 	c.Header("X-Error", err.Error())
+		// 	c.AbortWithStatus(http.StatusNotFound)
+		// 	return
+		// }
+		// defer fileReader.Close()
+
+		// c.DataFromReader(http.StatusOK, fileInfo.Size(), mimeType, fileReader, map[string]string{"Content-Disposition": "inline"})
+
 	}
 }

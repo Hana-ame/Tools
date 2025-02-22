@@ -23,9 +23,9 @@ func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
 	return s[index]
 }
 
-// func (s Slice[T]) Last() T {
-// 	return s[len(s)-1]
-// }
+func (s Slice[T]) Last() T {
+	return s[len(s)-1]
+}
 
 // func (s Slice[T]) Push(e T) Slice[T] {
 // 	s = append(s, e)
