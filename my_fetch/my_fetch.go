@@ -65,12 +65,17 @@ func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Read
 
 	if req.Header.Get("Accept") == "" {
 		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Accept", "application/activity+json")
+		req.Header.Add("Accept", "application/ld+json")
 	}
-
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Add("User-Agent", "myfetch/1.0.0")
+	}
 	resp, err := f.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	return ResponseToObject(resp)
 }
