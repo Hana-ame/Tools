@@ -10,6 +10,7 @@ import (
 	"strconv"
 )
 
+// @deprecated
 func DefaultValue[T any](f func() (T, error), defaultValue T) T {
 	if v, e := f(); e == nil {
 		return v
@@ -33,33 +34,33 @@ func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 }
 
 // marshal private key to pem format
-func MarshalPrivateKey(privateKey *rsa.PrivateKey) ([]byte, error) {
+func MarshalPrivateKey(privateKey *rsa.PrivateKey) (privateKeyPem []byte, err error) {
 	bytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
 		return bytes, err
 	}
-	privatePem := pem.EncodeToMemory(
+	privateKeyPem = pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "PRIVATE KEY",
 			Bytes: bytes,
 		},
 	)
-	return privatePem, nil
+	return
 }
 
 // marshal public key to pem format
-func MarshalPublicKey(publicKey *rsa.PublicKey) ([]byte, error) {
+func MarshalPublicKey(publicKey *rsa.PublicKey) (publicKeyPem []byte, err error) {
 	bytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
 		return bytes, err
 	}
-	publicPem := pem.EncodeToMemory(
+	publicKeyPem = pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "PUBLIC KEY",
 			Bytes: bytes,
 		},
 	)
-	return publicPem, nil
+	return
 }
 
 // parse pem string to public key

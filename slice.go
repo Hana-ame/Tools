@@ -62,3 +62,15 @@ func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
 // 	}
 // 	return s[index]
 // }
+
+func MoveToFirstInPlace[T comparable](arr []T, target T) {
+	for i, v := range arr {
+		if v == target && i != 0 {
+			// 将目标元素冒泡到首位
+			for j := i; j > 0; j-- {
+				arr[j], arr[j-1] = arr[j-1], arr[j]
+			}
+			return
+		}
+	}
+}
