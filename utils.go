@@ -63,7 +63,7 @@ func (r *result[T]) GetOrDefault(defaultValue T) T {
 	return r.result
 }
 
-func (r *result[T]) IgnoreError() T {
+func (r *result[T]) Result() T {
 	return r.result
 }
 
