@@ -13,6 +13,10 @@ type Pair struct {
 	value interface{}
 }
 
+func NewPair(key string, value interface{}) *Pair {
+	return &Pair{key, value}
+}
+
 func (kv *Pair) Key() string {
 	return kv.key
 }

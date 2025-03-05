@@ -86,3 +86,11 @@ func ReadJsonFileToStruct(filePath string, data interface{}) error {
 
 	return nil
 }
+
+func OrderedMap(kvArray Slice[*orderedmap.Pair]) *orderedmap.OrderedMap {
+	o := orderedmap.New()
+	for _, kv := range kvArray {
+		o.Set(kv.Key(), kv.Value())
+	}
+	return o
+}

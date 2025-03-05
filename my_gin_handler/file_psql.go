@@ -1,6 +1,7 @@
 // 需要在psql中创建表 id - mime_type
 // 需要指定 CONN_STR
 // 可选 UPLOAD_PATH
+// ~~超过1m就会520~~ 是nginx设置，但是nginx设置好了cloudflare对于大文件上传也是恨得很
 
 package handler
 
@@ -75,6 +76,7 @@ func UploadFilePsql(c *gin.Context) {
 	idStr := strconv.Itoa(int(id))
 	idStrArr := []string{idStr[0:3], idStr[3:6], idStr[6:]}
 	// fn := idStrArr[len(idStrArr)-1]
+	// MIME type 通过 c.ContentType() 决定
 	mimeType := tools.Or(c.ContentType(), "application/octet-stream")
 	extensions, _ := mime.ExtensionsByType(mimeType)
 	extension := tools.Or(tools.NewSlice(extensions...).FirstUnequal(""), ".bin")
@@ -125,7 +127,7 @@ func UploadFilePsql(c *gin.Context) {
 
 	tx.Commit()
 	c.JSON(http.StatusOK, map[string]any{
-		"id": id,
+		"id": idStr,
 	})
 }
 
@@ -149,6 +151,7 @@ func DownloadFilePsql(c *gin.Context) {
 	defer db.Close()
 	defer tx.Rollback()
 
+	// MIME 从数据库读取
 	mimeType, err := ReadFileMIMEType(tx, int64(id))
 	if err != nil {
 		c.Header("X-Error", err.Error())
@@ -157,6 +160,7 @@ func DownloadFilePsql(c *gin.Context) {
 	}
 
 	idStrArr := []string{idStr[0:3], idStr[3:6], idStr[6:]}
+	// 通过 MIME 还原扩展名，找文件。 这一步是为了能够在文件夹当中预览文件而不是只能看一个白板
 	extensions, _ := mime.ExtensionsByType(mimeType)
 	extension := tools.Or(tools.NewSlice(extensions...).FirstUnequal(""), ".bin")
 	filePath := strings.Join(idStrArr, "/") + extension
@@ -176,7 +180,7 @@ func DownloadFilePsql(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-
+	// MIME 也会在游览器返回。
 	c.DataFromReader(http.StatusOK, fileInfo.Size(), mimeType, fileReader, map[string]string{"Content-Disposition": "inline"})
 
 }

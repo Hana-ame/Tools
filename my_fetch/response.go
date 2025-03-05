@@ -18,7 +18,12 @@ import (
 // this function receive json request.
 func ResponseToObject(r *http.Response) (o *orderedmap.OrderedMap, err error) {
 	o = orderedmap.New()
-	err = json.NewDecoder(r.Body).Decode(&o)
+	// b, _ := io.ReadAll(r.Body)
+	// err = json.NewDecoder(bytes.NewReader(b)).Decode(&o)
+	// if err != nil {
+	// 	os.WriteFile("o.html", b, 0644) // 0644 是权限模式
+	// }
+	json.NewDecoder(r.Body).Decode(&o)
 	return o, err
 }
 

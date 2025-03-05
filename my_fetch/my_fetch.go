@@ -1,3 +1,5 @@
+// application/json
+// neo-moonchan @ 2025-02-24
 // 写坏了，只能用最原始的client。
 // gin-pack @ 2024-04-06
 // @ 2023-12-21
@@ -61,10 +63,19 @@ func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Read
 		return nil, err
 	}
 
+	if req.Header.Get("Accept") == "" {
+		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Accept", "application/activity+json")
+		req.Header.Add("Accept", "application/ld+json")
+	}
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Add("User-Agent", "myfetch/1.0.0")
+	}
 	resp, err := f.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	return ResponseToObject(resp)
 }
