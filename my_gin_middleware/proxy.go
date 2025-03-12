@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 必须设置 X-Scheme 开启功能, 只支持 X-Host... 方式的设置
 func ProxyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 

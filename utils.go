@@ -33,6 +33,12 @@ func Or[T comparable](e, d T) T {
 	return e
 }
 
+// 检查是否为空值
+func IsDefaultValue[T comparable](e T) bool {
+	var defaultValue T
+	return e == defaultValue
+}
+
 // 是不是用不了。
 // func And[T any](a any, d T) T {
 // 	if a == nil {

@@ -23,7 +23,14 @@ func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
 	return s[index]
 }
 
-func (s Slice[T]) Last() T {
+func (s Slice[T]) Last(defaultValue ...T) T {
+	if len(s) == 0 {
+		if len(defaultValue) == 0 {
+			var dv T
+			return dv
+		}
+		return defaultValue[0]
+	}
 	return s[len(s)-1]
 }
 
@@ -47,21 +54,38 @@ func (s Slice[T]) FirstUnequal(v T) T {
 	return v
 }
 
-func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
-	for _, v := range s {
-		if filter(v) {
-			return v, nil
-		}
+// func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
+// 	for _, v := range s {
+// 		if filter(v) {
+// 			return v, nil
+// 		}
+// 	}
+// 	return defaultValue, fmt.Errorf("null")
+// }
+
+func (s Slice[T]) First(defaultValue T) T {
+	if len(s) == 0 {
+		return defaultValue
 	}
-	return defaultValue, fmt.Errorf("null")
+	return s[0]
 }
 
-// func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
-// 	if index < 0 || len(s) >= index {
-// 		return defaultValue
-// 	}
-// 	return s[index]
-// }
+//	func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
+//		if index < 0 || len(s) >= index {
+//			return defaultValue
+//		}
+//		return s[index]
+//	}
+func (s Slice[T]) Filter(filter func(v T) bool) Slice[T] {
+	result := make([]T, 0, len(s))
+	for _, v := range s {
+		if filter(v) {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
 
 func MoveToFirstInPlace[T comparable](arr []T, target T) {
 	for i, v := range arr {
@@ -72,5 +96,16 @@ func MoveToFirstInPlace[T comparable](arr []T, target T) {
 			}
 			return
 		}
+	}
+}
+
+func UnEqual[T comparable](values ...T) func(v T) bool {
+	return func(v T) bool {
+		for _, value := range values {
+			if v == value {
+				return false
+			}
+		}
+		return true
 	}
 }
