@@ -63,6 +63,7 @@ func ProxyMiddleware() gin.HandlerFunc {
 			// c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
 
 			c.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), resp.Body, map[string]string{
+				"X-Scheme":  scheme,
 				"X-Host":    host,
 				"X-Origin":  header.Get("Origin"),
 				"X-Referer": header.Get("Referer"),

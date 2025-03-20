@@ -64,3 +64,9 @@ func Echo(c *gin.Context) {
 	println(`----------end of body----------`)
 
 }
+
+func EchoCFIP(c *gin.Context) {
+	ip := c.GetHeader("CF-Connecting-IP")
+	c.String(http.StatusOK, ip)
+	c.AbortWithStatus(200)
+}
