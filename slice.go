@@ -8,6 +8,9 @@ func NewSlice[T comparable](e ...T) Slice[T] {
 	return Slice[T](e)
 }
 
+//	func (s Slice[T]) ToSlice() []T {
+//		return s.([]T)
+//	}
 func (s Slice[T]) Get(index int) (T, error) {
 	if index < 0 || index >= len(s) {
 		var defaultValue T

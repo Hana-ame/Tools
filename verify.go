@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	// "github.com/Hana-ame/fedi-antenna/actions/model"
@@ -19,6 +20,9 @@ import (
 
 func VerifyGin(c *gin.Context, body []byte, pubkeyRetriver func(id string) (crypto.PublicKey, error)) error {
 	// verify
+	if c.Request.Header.Get("Host") == "" || strings.Contains(c.Request.Header.Get("HOST"), ":8080") || strings.HasPrefix(c.Request.Header.Get("HOST"), "127.") {
+		c.Request.Header.Set("Host", os.Getenv("HOST"))
+	}
 	if err := Verify(c.Request, pubkeyRetriver); err != nil {
 		log.Println(err)
 		return err

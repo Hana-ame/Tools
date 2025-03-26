@@ -50,3 +50,13 @@ func Extract[T any](o *orderedmap.OrderedMap, keys ...string) (v T, err error) {
 
 	return target, nil
 }
+
+func ExtractInSequence[T any](o *orderedmap.OrderedMap, keysSequence ...[]string) (v T, err error) {
+	for _, keys := range keysSequence {
+		v, err = Extract[T](o, keys...)
+		if err == nil {
+			return
+		}
+	}
+	return
+}
