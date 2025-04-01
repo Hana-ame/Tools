@@ -70,7 +70,7 @@ def extract_url_params(url):
     Args:
       url: 需要提取参数的 URL 字符串。
 
-    Returns:
+    Returns:    
       一个元组，包含提取的数字部分和十六进制字符串部分，如果未找到匹配项则返回 (None, None)。
     """
     match = re.search(r'/g/(\d+)/([a-f0-9]+)', url)
