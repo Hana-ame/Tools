@@ -11,5 +11,5 @@ func First[T any](arr []T, filter func(v T) bool) (T, error) {
 		}
 	}
 	var null T
-	return null, fmt.Errorf("null")
+	return null, fmt.Errorf("not found")
 }

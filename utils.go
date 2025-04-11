@@ -1,5 +1,7 @@
 package tools
 
+import "os"
+
 func NewFuncWrapper[T any](result T, err error) *FuncWrapper[T] {
 	return &FuncWrapper[T]{
 		result: result,
@@ -75,4 +77,9 @@ func (r *result[T]) Result() T {
 
 func (r *result[T]) Error() error {
 	return r.err
+}
+
+func HasEnv(key string) bool {
+	s, ok := os.LookupEnv(key)
+	return ok && s != ""
 }

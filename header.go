@@ -26,6 +26,14 @@ func (h Header) GetAllKeys() []string {
 	return s
 }
 
+func (h Header) ToMap() map[string]string {
+	m := make(map[string]string, len(h.Header))
+	for k := range h.Header {
+		m[k] = h.Get(k)
+	}
+	return m
+}
+
 // 仅为了防止“”作为header被添加
 func NewHeader(header http.Header) Header {
 	if header == nil {
