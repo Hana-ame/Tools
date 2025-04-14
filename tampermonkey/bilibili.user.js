@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili倍速
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      1.0
+// @version      25.4.14
 // @description  添加倍速选项
 // @match        *://*.bilibili.com/*
 // @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/bilibili.user.js
@@ -12,38 +12,34 @@
 (function() {
     'use strict';
 
-    // 目标倍速列表（可自由修改）
-    const customRates = [1.75, 2.0, 2.5, 3.0];
-    
-    // 等待DOM加载完成
-    window.addEventListener('DOMContentLoaded', function() {
-        const observer = new MutationObserver(function(mutations) {
-            // 定位倍速菜单容器
-            const rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
-            
-            if (rateMenu) {
-                // 清空现有倍速选项（可选）
-                // rateMenu.innerHTML = '';
+    const addMoreRates = () => {
+        // 目标倍速列表（可自由修改）
+        const customRates = [1, 2, 3, 4, 8];
+        const rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
+        console.log(rateMenu);
 
-                // 创建自定义倍速项
-                customRates.forEach(rate => {
-                    const li = document.createElement('li');
-                    li.className = 'bpx-player-ctrl-playbackrate-menu-item';
-                    li.dataset.value = rate;
-                    li.textContent = `${rate}x`;
+        if (rateMenu) {
+            // 清空现有倍速选项（可选）
+            rateMenu.innerHTML = '';
 
-                    rateMenu.appendChild(li);
-                });
+            // 创建自定义倍速项
+            customRates.forEach(rate => {
+                const li = document.createElement('li');
+                li.className = 'bpx-player-ctrl-playbackrate-menu-item';
+                li.dataset.value = rate;
+                li.textContent = `${rate}x`;
 
-                // 停止观察
-                observer.disconnect();
-            }
-        });
+                rateMenu.appendChild(li);
+            });
+        } else {
+            setTimeout(() => {addMoreRates();}, 1000);
+        }
+    }
 
-        // 开始监控DOM变化[3](@ref)
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    });
+    window.onload = () => {
+        // 等待页面加载完成
+        setTimeout(() => {
+            addMoreRates();
+        }, 1000); // 延迟1秒以确保元素加载完成
+    };
 })();
