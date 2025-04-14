@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili倍速
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      25.4.14
+// @version      25.4.15
 // @description  添加倍速选项
 // @match        *://*.bilibili.com/*
 // @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/bilibili.user.js
@@ -18,6 +18,11 @@
         const rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
         console.log(rateMenu);
 
+        if (rateMenu == null) {
+            setTimeout(() => {addMoreRates();}, 1000);
+            return;
+        }
+
         if (rateMenu) {
             // 清空现有倍速选项（可选）
             rateMenu.innerHTML = '';
@@ -31,8 +36,6 @@
 
                 rateMenu.appendChild(li);
             });
-        } else {
-            setTimeout(() => {addMoreRates();}, 1000);
         }
     }
     
