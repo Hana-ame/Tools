@@ -15,7 +15,7 @@
     const addMoreRates = () => {
         // 目标倍速列表（可自由修改）
         const customRates = [1, 2, 3, 4];
-        const rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
+        let rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
         console.log(rateMenu);
 
         if (rateMenu == null) {
