@@ -2,69 +2,76 @@ package tools
 
 import "fmt"
 
+// 扩展的Slice对象
+// 拥有带error的Get(index)、GetOrDefault(index)
 type Slice[T comparable] []T
 
 func NewSlice[T comparable](e ...T) Slice[T] {
 	return Slice[T](e)
 }
 
-//	func (s Slice[T]) ToSlice() []T {
-//		return s.([]T)
-//	}
-func (s Slice[T]) Get(index int) (T, error) {
+// 超过range时，给出dv；无dv，给出该Type默认值
+func (s Slice[T]) Get(index int, dv ...T) T {
 	if index < 0 || index >= len(s) {
-		var defaultValue T
-		return defaultValue, fmt.Errorf("out of range")
-	}
-	return s[index], nil
-}
-
-func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
-	if index < 0 || index >= len(s) {
-		return defaultValue
+		if len(dv) == 0 {
+			var defaultValue T
+			return defaultValue
+		}
+		return dv[0]
 	}
 	return s[index]
 }
 
-func (s Slice[T]) Last() T {
+// 超过range时，给出dv；无dv，给出该Type默认值
+func (s Slice[T]) Last(dv ...T) T {
+	if len(s) == 0 {
+		if len(dv) == 0 {
+			var defaultValue T
+			return defaultValue
+		}
+		return dv[0]
+	}
 	return s[len(s)-1]
 }
 
-// func (s Slice[T]) Push(e T) Slice[T] {
-// 	s = append(s, e)
-// 	return s
-// }
-
-// func (s Slice[T]) Pop() (Slice[T], T) {
-// 	e := s.Last()
-// 	s = s[:len(s)-1]
-// 	return s, e
-// }
-
-func (s Slice[T]) FirstUnequal(v T) T {
-	for _, e := range s {
-		if e != v {
-			return e
+func (s Slice[T]) First(dv ...T) T {
+	if len(s) == 0 {
+		if len(dv) == 0 {
+			var defaultValue T
+			return defaultValue
 		}
+		return dv[0]
 	}
-	return v
+	return s[0]
 }
 
-func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
+func (s Slice[T]) Find(filter func(v T) bool) (T, error) {
 	for _, v := range s {
 		if filter(v) {
 			return v, nil
 		}
 	}
-	return defaultValue, fmt.Errorf("null")
+	var defaultValue T
+	return defaultValue, fmt.Errorf("not found")
 }
 
-// func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
-// 	if index < 0 || len(s) >= index {
-// 		return defaultValue
-// 	}
-// 	return s[index]
-// }
+//	func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
+//		if index < 0 || len(s) >= index {
+//			return defaultValue
+//		}
+//		return s[index]
+//	}
+
+func (s Slice[T]) Filter(filter func(v T) bool) Slice[T] {
+	result := make([]T, 0, len(s))
+	for _, v := range s {
+		if filter(v) {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
 
 func MoveToFirstInPlace[T comparable](arr []T, target T) {
 	for i, v := range arr {
@@ -76,4 +83,61 @@ func MoveToFirstInPlace[T comparable](arr []T, target T) {
 			return
 		}
 	}
+}
+
+// s.Filter(tools.UnEqual("should not be this","and that")).First()
+func UnEqual[T comparable](values ...T) func(v T) bool {
+	if len(values) == 0 {
+		return func(v T) bool { return true }
+	}
+	if len(values) == 1 {
+		return func(v T) bool { return values[0] != v }
+	}
+	return func(v T) bool {
+		for _, value := range values {
+			if v == value {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+// 不是指针，不能这么用
+// func (s Slice[T]) Push(e T) Slice[T] {
+// 	s = append(s, e)
+// 	return s
+// }
+// func (s Slice[T]) Pop() (Slice[T], T) {
+// 	e := s.Last()
+// 	s = s[:len(s)-1]
+// 	return s, e
+// }
+
+//	func (s Slice[T]) First(filter func(v T) bool, defaultValue T) (T, error) {
+//		for _, v := range s {
+//			if filter(v) {
+//				return v, nil
+//			}
+//		}
+//		return defaultValue, fmt.Errorf("null")
+//	}
+
+// @Deprecated
+func (s Slice[T]) GetOrDefault(index int, defaultValue T) T {
+	if index < 0 || index >= len(s) {
+		return defaultValue
+	}
+	return s[index]
+}
+
+// @Deprecated
+// s.Filter(tools.UnEqual("should not be this","and that")).First()
+func (s Slice[T]) FirstUnequal(v T) T {
+	for _, e := range s {
+		if e != v {
+			return e
+		}
+	}
+	return v
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 
 	"github.com/gin-gonic/gin"
 )
@@ -63,4 +63,10 @@ func Echo(c *gin.Context) {
 	}
 	println(`----------end of body----------`)
 
+}
+
+func EchoCFIP(c *gin.Context) {
+	ip := c.GetHeader("CF-Connecting-IP")
+	c.String(http.StatusOK, ip)
+	c.AbortWithStatus(200)
 }

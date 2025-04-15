@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"slices"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,11 +51,12 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Next() // 继续处理请求
 
 		// 为什么自带的方法这么贵物
-		exposeHeaders := make([]string, 0, len(c.Writer.Header()))
-		for k, _ := range c.Writer.Header() {
-			exposeHeaders = append(exposeHeaders, k)
-		}
-		slices.Sort(exposeHeaders)
-		c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
+		// exposeHeaders := make([]string, 0, len(c.Writer.Header()))
+		// for k, _ := range c.Writer.Header() {
+		// 	exposeHeaders = append(exposeHeaders, k)
+		// }
+		// slices.Sort(exposeHeaders)
+		// c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
+		c.Writer.Header().Add("Access-Control-Expose-Headers", "*") // 试试通配符
 	}
 }

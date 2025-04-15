@@ -15,6 +15,7 @@ var lastTime int64
 var lastSequence int64
 
 // NewTimeStamp 生成一个唯一的时间戳 ID，保证同一毫秒内唯一
+// 65536000 = 1s
 func NewTimeStamp() int64 {
 	mu.Lock()
 	defer mu.Unlock()

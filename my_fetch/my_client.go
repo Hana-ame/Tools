@@ -8,9 +8,18 @@ import (
 	"time"
 )
 
+type Dialer struct {
+	host string
+	*net.Dialer
+}
+
+func (dialer Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return dialer.Dialer.DialContext(ctx, network, dialer.host)
+}
+
 func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 	tr := &http.Transport{
-		DialContext: (&net.Dialer{ // dialer
+		DialContext: (Dialer{"exhentai.org:443", &net.Dialer{ // dialer
 			// LocalAddr 用于指定本地 IP 地址
 			LocalAddr: &net.TCPAddr{
 				IP: ip, // 将 "your_specific_ip" 替换为你要使用的特定 IP 地址
@@ -23,7 +32,7 @@ func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 					return net.Dial("udp", "1.1.1.1:53")
 				},
 			},
-		}).DialContext,
+		}}).DialContext,
 	}
 	if cookieJar == nil {
 		cookieJar = jar

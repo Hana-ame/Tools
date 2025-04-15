@@ -26,6 +26,14 @@ func (h Header) GetAllKeys() []string {
 	return s
 }
 
+func (h Header) ToMap() map[string]string {
+	m := make(map[string]string, len(h.Header))
+	for k := range h.Header {
+		m[k] = h.Get(k)
+	}
+	return m
+}
+
 // 仅为了防止“”作为header被添加
 func NewHeader(header http.Header) Header {
 	if header == nil {
@@ -34,6 +42,7 @@ func NewHeader(header http.Header) Header {
 	return Header{Header: header}
 }
 
+// 只影响尚未设置的.
 func CopyHeader(c *gin.Context, header http.Header) {
 	for k, vs := range header {
 		if c.Writer.Header().Get(k) != "" {

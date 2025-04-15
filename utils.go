@@ -1,5 +1,7 @@
 package tools
 
+import "os"
+
 func NewFuncWrapper[T any](result T, err error) *FuncWrapper[T] {
 	return &FuncWrapper[T]{
 		result: result,
@@ -31,6 +33,12 @@ func Or[T comparable](e, d T) T {
 		return d
 	}
 	return e
+}
+
+// 检查是否为空值
+func IsDefaultValue[T comparable](e T) bool {
+	var defaultValue T
+	return e == defaultValue
 }
 
 // 是不是用不了。
@@ -69,4 +77,9 @@ func (r *result[T]) Result() T {
 
 func (r *result[T]) Error() error {
 	return r.err
+}
+
+func HasEnv(key string) bool {
+	s, ok := os.LookupEnv(key)
+	return ok && s != ""
 }
