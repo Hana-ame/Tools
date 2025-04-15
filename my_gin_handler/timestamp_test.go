@@ -3,8 +3,8 @@ package handler
 import (
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/debug"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	"github.com/Hana-ame/neo-moonchan/Tools/debug"
 	"github.com/gin-gonic/gin"
 )
 
