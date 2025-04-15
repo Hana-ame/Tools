@@ -2,9 +2,11 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"testing"
 
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stretchr/testify/assert"
 
@@ -69,4 +71,20 @@ func TestCreateFileMIMEType(t *testing.T) {
 	err = tx.QueryRow("SELECT mime_type FROM files WHERE id = $1", 2).Scan(&mimeType)
 	assert.NoError(t, err, "failed to query inserted data")
 	assert.Equal(t, "application/pdf", mimeType, "MIME type should be 'application/pdf'")
+}
+
+func TestFiles(t *testing.T) {
+	db, tx := setupDB(t)
+	defer teardownDB(t, db, tx)
+
+	id, err := ReadFiles(tx, tools.NewSlice("image/png"))
+	fmt.Println(id, err)
+}
+
+func TestFilesBefore(t *testing.T) {
+	db, tx := setupDB(t)
+	defer teardownDB(t, db, tx)
+
+	id, err := ReadFilesBefore(tx, 114049881453953024, tools.NewSlice("image/png"))
+	fmt.Println(id, err)
 }

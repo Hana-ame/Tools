@@ -70,6 +70,112 @@ func CreateFileMIMEType(tx *sql.Tx, id int64, mimeType string) (err error) {
 	return
 }
 
+func ReadFiles(tx *sql.Tx, mimeTypes []string) (idArr []int64, err error) {
+	var args []any
+
+	query := `
+	SELECT id
+	FROM files
+	ORDER BY id DESC
+	LIMIT 10
+	;`
+	if len(mimeTypes) > 0 {
+		offset := 1
+		placeholders := make([]string, len(mimeTypes))
+		args = make([]any, len(mimeTypes))
+		for i, mt := range mimeTypes {
+			placeholders[i] = fmt.Sprintf("$%d", i+offset)
+			args[i] = mt
+		}
+
+		query = fmt.Sprintf(`
+            SELECT id
+            FROM files
+            WHERE mime_type IN (%s)
+            ORDER BY id DESC
+            LIMIT 10;`,
+			strings.Join(placeholders, ","),
+		)
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve files: %v", err)
+	}
+	defer rows.Close()
+
+	idArr = make([]int64, 0, 10)
+
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("could not scan row: %v", err)
+		}
+		idArr = append(idArr, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %v", err)
+	}
+
+	return
+}
+
+func ReadFilesBefore(tx *sql.Tx, before int64, mimeTypes []string) (idArr []int64, err error) {
+	if before == 0 {
+		return ReadFiles(tx, mimeTypes)
+	}
+
+	args := make([]any, len(mimeTypes)+1)
+	args[0] = before
+
+	query := `
+	SELECT id
+	FROM files
+	WHERE id < $1
+	ORDER BY id DESC
+	LIMIT 10
+	;`
+	if len(mimeTypes) > 0 {
+		offset := 2
+		placeholders := make([]string, len(mimeTypes))
+		for i, mt := range mimeTypes {
+			placeholders[i] = fmt.Sprintf("$%d", i+offset)
+			args[i+1] = mt
+		}
+
+		query = fmt.Sprintf(`
+				SELECT id
+				FROM files
+				WHERE id < $1
+				AND mime_type IN (%s)
+				ORDER BY id DESC
+				LIMIT 10;`,
+			strings.Join(placeholders, ","),
+		)
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve files: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("could not scan row: %v", err)
+		}
+		idArr = append(idArr, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %v", err)
+	}
+
+	return
+}
+
 // PUT
 func UploadFilePsql(c *gin.Context) {
 	id := tools.NewTimeStamp()
@@ -183,4 +289,30 @@ func DownloadFilePsql(c *gin.Context) {
 	// MIME 也会在游览器返回。
 	c.DataFromReader(http.StatusOK, fileInfo.Size(), mimeType, fileReader, map[string]string{"Content-Disposition": "inline"})
 
+}
+
+// /list?before={before}
+func ListFilesPsql(c *gin.Context) {
+	before := tools.Atoi(c.Query("before"), 0)
+
+	db, tx, err := SetupDB()
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	defer tx.Rollback()
+
+	// MIME 从数据库读取
+	mimeTypes := []string{"image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"}
+
+	idArr, err := ReadFilesBefore(tx, int64(before), mimeTypes)
+	if err != nil {
+		c.Header("X-Error", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, idArr)
 }

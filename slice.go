@@ -10,49 +10,48 @@ func NewSlice[T comparable](e ...T) Slice[T] {
 	return Slice[T](e)
 }
 
+func (s Slice[T]) ToAny() []any {
+	result := make([]any, len(s))
+	for i, v := range s {
+		result[i] = v
+	}
+	return result
+}
+
 // 超过range时，给出dv；无dv，给出该Type默认值
-func (s Slice[T]) Get(index int, dv ...T) T {
+func (s Slice[T]) Get(index int) *result[T] {
 	if index < 0 || index >= len(s) {
-		if len(dv) == 0 {
-			var defaultValue T
-			return defaultValue
-		}
-		return dv[0]
+		var dv T
+		return &result[T]{dv, fmt.Errorf("out of range")}
 	}
-	return s[index]
+	return &result[T]{s[index], nil}
 }
 
 // 超过range时，给出dv；无dv，给出该Type默认值
-func (s Slice[T]) Last(dv ...T) T {
+func (s Slice[T]) Last() *result[T] {
 	if len(s) == 0 {
-		if len(dv) == 0 {
-			var defaultValue T
-			return defaultValue
-		}
-		return dv[0]
+		var dv T
+		return &result[T]{dv, fmt.Errorf("slice is empty")}
 	}
-	return s[len(s)-1]
+	return &result[T]{s[len(s)-1], nil}
 }
 
-func (s Slice[T]) First(dv ...T) T {
+func (s Slice[T]) First(dv ...T) *result[T] {
 	if len(s) == 0 {
-		if len(dv) == 0 {
-			var defaultValue T
-			return defaultValue
-		}
-		return dv[0]
+		var dv T
+		return &result[T]{dv, fmt.Errorf("slice is empty")}
 	}
-	return s[0]
+	return &result[T]{s[0], nil}
 }
 
-func (s Slice[T]) Find(filter func(v T) bool) (T, error) {
+func (s Slice[T]) Find(filter func(v T) bool) *result[T] {
 	for _, v := range s {
 		if filter(v) {
-			return v, nil
+			return &result[T]{v, fmt.Errorf("not found")}
 		}
 	}
 	var defaultValue T
-	return defaultValue, fmt.Errorf("not found")
+	return &result[T]{defaultValue, fmt.Errorf("not found")}
 }
 
 //	func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
