@@ -1,0 +1,12 @@
+[Unit]
+Description=ssh反向代理
+After=network.target
+Requires=network.target
+
+[Service]
+ExecStart=/home/lumin/Tools/remote_proxy.sh
+Restart=always
+User=lumin
+
+[Install]
+WantedBy=multi-user.target
