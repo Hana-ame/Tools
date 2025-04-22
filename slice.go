@@ -17,6 +17,15 @@ func (s Slice[T]) ToAny() []any {
 	}
 	return result
 }
+func (a Slice[T]) String() string {
+	s := "["
+	for _, v := range a {
+		s += fmt.Sprintf("%v, ", v)
+	}
+	s += "]"
+
+	return s
+}
 
 // 超过range时，给出dv；无dv，给出该Type默认值
 func (s Slice[T]) Get(index int) *result[T] {
