@@ -53,6 +53,7 @@ type result[T any] struct {
 	result T
 	err    error
 	// defaultResult T
+	async bool
 }
 
 // catch一个单输出+error的function，并且
@@ -78,6 +79,33 @@ func (r *result[T]) Result() T {
 func (r *result[T]) Error() error {
 	return r.err
 }
+
+// 暂时没想好怎么用
+func (r *result[T]) Async() *result[T] {
+	r.async = true
+	return r
+}
+
+func (r *result[T]) Then(f func(result T) error) *result[T] {
+	if r.err == nil {
+		r.err = f(r.result)
+	}
+	return r
+}
+
+func (r *result[T]) Catch(f func(e error) error) error {
+	if r.err == nil {
+		return nil
+	}
+	return f(r.err)
+}
+
+// func (r *result[T]) Then(f func(v T) (E, error)) (E, error) {
+// 	if r.err == nil {
+// 		return f(r.result)
+// 	}
+// 	return r.err
+// }
 
 func HasEnv(key string) bool {
 	s, ok := os.LookupEnv(key)

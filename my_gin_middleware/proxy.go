@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
-	tools "github.com/Hana-ame/neo-moonchan/Tools"
-	myfetch "github.com/Hana-ame/neo-moonchan/Tools/my_fetch"
+	tools "github.com/Hana-ame/api-pack/Tools"
+	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,8 +20,8 @@ func ProxyMiddleware() gin.HandlerFunc {
 			requestURL := c.Request.URL.String()
 
 			host := c.GetHeader("X-Host")
-			origin := c.GetHeader("X-Origin")
-			referer := c.GetHeader("X-Referer")
+			// origin := c.GetHeader("X-Origin")
+			// referer := c.GetHeader("X-Referer")
 
 			href, err := url.Parse(requestURL)
 			if err != nil {
@@ -37,8 +37,8 @@ func ProxyMiddleware() gin.HandlerFunc {
 			header := tools.NewHeader(c.Request.Header)
 
 			header.Set("Host", host)
-			header.Set("Origin", origin)
-			header.Set("Referer", referer)
+			header.Set("Origin", c.GetHeader("X-Origin"))
+			header.Set("Referer", c.GetHeader("X-Referer"))
 			header.Set("Cookie", tools.Or(c.GetHeader("X-Cookie"), header.Get("Cookie")))
 
 			resp, err := myfetch.Fetch(c.Request.Method, hrefString,
@@ -51,14 +51,15 @@ func ProxyMiddleware() gin.HandlerFunc {
 			defer resp.Body.Close()
 
 			// 为什么自带的方法这么贵物
-			for k, vs := range resp.Header {
-				if c.Writer.Header().Get(k) != "" { // 擦,好像是因为自己改了什么ContentType所以不好直接弄.但是还是保留了吧.
-					continue
-				}
-				for _, v := range vs {
-					c.Writer.Header().Add(k, v)
-				}
-			}
+			// for k, vs := range resp.Header {
+			// 	if c.Writer.Header().Get(k) != "" { // 擦,好像是因为自己改了什么ContentType所以不好直接弄.但是还是保留了吧.
+			// 		continue
+			// 	}
+			// 	for _, v := range vs {
+			// 		c.Writer.Header().Add(k, v)
+			// 	}
+			// }
+			tools.CopyHeader(c, resp.Header)
 			// slices.Sort(exposeHeaders)
 			// c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
 

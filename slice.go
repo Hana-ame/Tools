@@ -1,6 +1,9 @@
 package tools
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // 扩展的Slice对象
 // 拥有带error的Get(index)、GetOrDefault(index)
@@ -81,6 +84,10 @@ func (s Slice[T]) Filter(filter func(v T) bool) Slice[T] {
 	return result
 }
 
+func (s Slice[T]) Contains(v T) bool {
+	return slices.Contains(s, v)
+}
+
 func MoveToFirstInPlace[T comparable](arr []T, target T) {
 	for i, v := range arr {
 		if v == target && i != 0 {
@@ -95,20 +102,25 @@ func MoveToFirstInPlace[T comparable](arr []T, target T) {
 
 // s.Filter(tools.UnEqual("should not be this","and that")).First()
 func UnEqual[T comparable](values ...T) func(v T) bool {
-	if len(values) == 0 {
-		return func(v T) bool { return true }
-	}
-	if len(values) == 1 {
-		return func(v T) bool { return values[0] != v }
-	}
+	s := Slice[T](values)
 	return func(v T) bool {
-		for _, value := range values {
-			if v == value {
-				return false
-			}
-		}
-		return true
+		return !s.Contains(v)
 	}
+
+	// if len(values) == 0 {
+	// 	return func(v T) bool { return true }
+	// }
+	// if len(values) == 1 {
+	// 	return func(v T) bool { return values[0] != v }
+	// }
+	// return func(v T) bool {
+	// 	for _, value := range values {
+	// 		if v == value {
+	// 			return false
+	// 		}
+	// 	}
+	// 	return true
+	// }
 }
 
 // 不是指针，不能这么用
