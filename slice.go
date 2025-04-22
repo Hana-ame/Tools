@@ -34,36 +34,36 @@ func (a Slice[T]) String() string {
 func (s Slice[T]) Get(index int) *result[T] {
 	if index < 0 || index >= len(s) {
 		var dv T
-		return &result[T]{dv, fmt.Errorf("out of range")}
+		return &result[T]{dv, fmt.Errorf("out of range"), false}
 	}
-	return &result[T]{s[index], nil}
+	return &result[T]{s[index], nil, false}
 }
 
 // 超过range时，给出dv；无dv，给出该Type默认值
 func (s Slice[T]) Last() *result[T] {
 	if len(s) == 0 {
 		var dv T
-		return &result[T]{dv, fmt.Errorf("slice is empty")}
+		return &result[T]{dv, fmt.Errorf("slice is empty"), false}
 	}
-	return &result[T]{s[len(s)-1], nil}
+	return &result[T]{s[len(s)-1], nil, false}
 }
 
 func (s Slice[T]) First(dv ...T) *result[T] {
 	if len(s) == 0 {
 		var dv T
-		return &result[T]{dv, fmt.Errorf("slice is empty")}
+		return &result[T]{dv, fmt.Errorf("slice is empty"), false}
 	}
-	return &result[T]{s[0], nil}
+	return &result[T]{s[0], nil, false}
 }
 
 func (s Slice[T]) Find(filter func(v T) bool) *result[T] {
 	for _, v := range s {
 		if filter(v) {
-			return &result[T]{v, fmt.Errorf("not found")}
+			return &result[T]{v, fmt.Errorf("not found"), false}
 		}
 	}
 	var defaultValue T
-	return &result[T]{defaultValue, fmt.Errorf("not found")}
+	return &result[T]{defaultValue, fmt.Errorf("not found"), false}
 }
 
 //	func (s Slice[T]) Map(index i[RT any]nt, defaultValue T) RT {
