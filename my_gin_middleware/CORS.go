@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	tools "github.com/Hana-ame/api-pack/Tools"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,16 +27,18 @@ var headers = ([]string{
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 设置 CORS 头
-		origin := c.Request.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
+		origin := tools.Or(c.Request.Header.Get("Origin"), "*")
+		// if origin == "" {
+		// 	origin = "*"
+		// }
 
 		c.Header("Access-Control-Allow-Origin", origin) // 或者指定特定的源
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD")
 		// c.Header("Access-Control-Allow-Headers", strings.Join(headers, ", "))
 		c.Header("Access-Control-Allow-Headers", c.GetHeader("access-control-request-headers"))
 		c.Header("Access-Control-Allow-Credentials", "true") // 允许cookie传递
+
+		c.Header("Access-Control-Expose-Headers", "*") // 放这里可以吗？
 
 		// 处理预检请求
 		if c.Request.Method == http.MethodOptions {
@@ -57,6 +60,10 @@ func CORSMiddleware() gin.HandlerFunc {
 		// }
 		// slices.Sort(exposeHeaders)
 		// c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
-		c.Writer.Header().Add("Access-Control-Expose-Headers", "*") // 试试通配符
+		// c.Writer.Header().Add("Access-Control-Expose-Headers", "*") // 试试通配符
+
+		// 必须override掉
+		c.Header("cross-origin-resource-policy", "cross-origin")
+
 	}
 }
