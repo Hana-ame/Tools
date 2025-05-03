@@ -1,9 +1,13 @@
 // ==UserScript==
 // @name         Soul-Plus
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      25.4.22
+// @version      25.5.3
 // @description  全都通到一个网址
 // @match        *://*.white-plus.net/*
+// @match        *://*.north-plus.net/*
+// @match        *://*.snow-plus.net/*
+// @match        *://*.south-plus.net/*
+
 // @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
 // @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
 // @grant        none
@@ -12,5 +16,7 @@
 (function() {
     'use strict';
 
-    window.location.hostname = "south-plus.org"
-})();   
+    const HOST = "south-plus.org";
+    if (window.location.hostname !== HOST) window.location.hostname = HOST;
+
+})();
