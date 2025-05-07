@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         bilibili倍速
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      25.4.22
+// @version      25.5.7
 // @description  添加倍速选项
-// @match        *://*.bilibili.com/*
+// @match        *://www.bilibili.com/video/*
 // @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/bilibili.user.js
 // @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/bilibili.user.js
 // @grant        none
@@ -43,6 +43,6 @@
         // 等待页面加载完成
         setTimeout(() => {
             addMoreRates();
-        }, 1000); // 延迟1秒以确保元素加载完成
+        }, 5000); // 延迟1秒以确保元素加载完成
     };
 })();
