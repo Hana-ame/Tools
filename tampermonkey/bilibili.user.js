@@ -18,7 +18,8 @@
         let rateMenu = document.querySelector('.bpx-player-ctrl-playbackrate-menu');
         console.log(rateMenu);
 
-        if (rateMenu == null) {
+        if (rateMenu === null) {
+            console.log("retry after 1")
             setTimeout(() => { addMoreRates(); }, 1000);
             return;
         }
@@ -39,10 +40,10 @@
         }
     }
 
-    window.onload = () => {
+    //window.onload = () => {
         // 等待页面加载完成
-        setTimeout(() => {
+        //setTimeout(() => {
             addMoreRates();
-        }, 5000); // 延迟1秒以确保元素加载完成
-    };
+        //}, 1000); // 延迟1秒以确保元素加载完成
+    //};
 })();
