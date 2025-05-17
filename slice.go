@@ -88,6 +88,12 @@ func (s Slice[T]) Contains(v T) bool {
 	return slices.Contains(s, v)
 }
 
+func (s Slice[T]) ReverseInPlace() {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i] // 双指针交换元素
+	}
+}
+
 func MoveToFirstInPlace[T comparable](arr []T, target T) {
 	for i, v := range arr {
 		if v == target && i != 0 {
@@ -160,4 +166,10 @@ func (s Slice[T]) FirstUnequal(v T) T {
 		}
 	}
 	return v
+}
+
+func ReverseInPlace[T any](s []T) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i] // 双指针交换元素
+	}
 }
