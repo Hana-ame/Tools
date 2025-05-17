@@ -3,7 +3,7 @@ package tools
 import (
 	"testing"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 func TestWriteJSON(t *testing.T) {
