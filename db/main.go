@@ -7,6 +7,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -30,4 +31,25 @@ func Exec(handler func(tx *sql.Tx) error) error {
 	defer tx.Rollback()
 
 	return handler(tx)
+}
+
+// 封装连接函数
+func ConnectPostgreSQL(host string, port int, user, password, dbname string) (*sql.DB, error) {
+	connStr := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname,
+	)
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 配置连接池
+	db.SetMaxIdleConns(10)  // 最大空闲连接
+	db.SetMaxOpenConns(100) // 最大活跃连接
+
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("数据库心跳检测失败: %v", err)
+	}
+	return db, nil
 }
