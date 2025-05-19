@@ -25,7 +25,11 @@ func NewTimeStamp() int64 {
 		lastSequence++
 	} else {
 		lastTime = now
+		// if lastSequence < 65536 {
 		lastSequence = 0
+		// } else {
+		// 	lastSequence -= 65536
+		// }
 	}
 	return now + lastSequence
 }
