@@ -27,12 +27,7 @@ var headers = ([]string{
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 设置 CORS 头
-		origin := tools.Or(c.Request.Header.Get("Origin"), "*")
-		// if origin == "" {
-		// 	origin = "*"
-		// }
-
-		c.Header("Access-Control-Allow-Origin", origin) // 或者指定特定的源
+		c.Header("Access-Control-Allow-Origin", tools.Or(c.Request.Header.Get("Origin"), "*")) // 或者指定特定的源
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD")
 		// c.Header("Access-Control-Allow-Headers", strings.Join(headers, ", "))
 		c.Header("Access-Control-Allow-Headers", c.GetHeader("access-control-request-headers"))

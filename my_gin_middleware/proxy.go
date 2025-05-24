@@ -72,10 +72,11 @@ func ProxyMiddleware() gin.HandlerFunc {
 				"X-Href":    hrefString,
 			})
 
-			return
-		}
+			c.Abort()
 
-		// 否则不处理
-		c.Next()
+		} else {
+
+			c.Next()
+		}
 	}
 }
