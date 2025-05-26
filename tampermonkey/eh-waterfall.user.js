@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         Waterfall View and Image Link Helper
-// @namespace    http://tampermonkey.net/
-// @version      1.2
+// @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
+// @version      25.5.26
 // @description  Adds buttons for waterfall view and copying image permalinks.
 // @author       Your Name
-// @match        *://*/*
+// @match        *://e-hentai.org/s/*
+// @match        *://exhentai.org/s/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
+// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/eh-waterfall.user.js
+// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/eh-waterfall.user.js
 // @run-at       document-idle
 // ==/UserScript==
 
