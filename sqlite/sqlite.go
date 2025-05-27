@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/mattn/go-sqlite3" // SQLite 驱动
+	// _ "github.com/mattn/go-sqlite3" // SQLite 驱动
+	_ "github.com/glebarez/go-sqlite"
 )
 
 // KVSQLiteDB 是一个 SQLite 数据库包装器，用于键值存储
@@ -17,7 +18,7 @@ type KVSQLiteDB struct {
 // NewKVSQLiteDB 初始化并返回一个新的 KVSQLiteDB 实例
 // dbPath 是 SQLite 数据库文件的路径
 func NewKVSQLiteDB(dbPath string, tableName string) (*KVSQLiteDB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("无法打开数据库文件: %w", err)
 	}
