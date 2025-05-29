@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"net/http"
 
+	"github.com/gen2brain/avif"
 	"golang.org/x/image/webp"
 )
 
@@ -33,6 +34,8 @@ func DecodeResponseToImage(r *http.Response) (image.Image, error) {
 		return gif.Decode(r.Body)
 	case "image/webp": // Added WebP support
 		return webp.Decode(r.Body)
+	case "image/avif": // Added WebP support
+		return avif.Decode(r.Body)
 	default:
 		// As an alternative or fallback, you could try image.Decode which attempts to auto-detect
 		// For this to work with webp, you'd need to import it with an underscore if not used directly:
