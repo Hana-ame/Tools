@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         quick poster
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      0.5
+// @version      0.6
 // @description
 // @author       You
 // @match        *://*/*
