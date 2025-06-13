@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         quick poster
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      0.6
+// @version      0.7
 // @description
 // @author       You
 // @match        *://*/*
@@ -136,14 +136,14 @@
     if (imagesInBody.length === 1 && elemsInBody.length === 1) {
         const singleImageElement = imagesInBody[0];
 
-        function appendButton(text, id) {
+        function appendButton(text, id, top) {
             // Create the button
             const button = document.createElement('button');
             button.textContent = text;
 
             // Style the button
             button.style.position = 'fixed';
-            button.style.top = '10px';
+            button.style.top = top;
             button.style.right = '10px';
             button.style.zIndex = '99999'; // Ensure it's on top
             button.style.padding = '8px 12px';
@@ -162,9 +162,9 @@
             // Append the button to the body
             document.body.appendChild(button);
         }
-        appendButton("串", 12);
-        appendButton("打捞", 23);
-        appendButton("10001", 10001);
+        appendButton("串", 12, '10px');
+        appendButton("打捞", 23, '30px');
+        appendButton("10001", 10001, '50px');
 
         console.log('Single Image Src Logger: Button added for the image.');
 
