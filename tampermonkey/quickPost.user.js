@@ -53,7 +53,7 @@
 
 
     // Function to execute when the button is clicked
-    function postImageData(imgElement) {
+    function postImageData(imgElement, id) {
         if (!imgElement || !imgElement.src) {
             console.log('Could not find the image or its src attribute.');
             alert('Could not find the image or its src attribute.');
@@ -62,7 +62,7 @@
 
         const imageUrl = imgElement.src;
 
-        const apiUrl = "https://moonchan.xyz/api/v2/?bid=23";
+        const apiUrl = `https://moonchan.xyz/api/v2/?bid=${id}`;
         const headers = {
             "Content-Type": "application/json"
         };
@@ -136,30 +136,35 @@
     if (imagesInBody.length === 1 && elemsInBody.length === 1) {
         const singleImageElement = imagesInBody[0];
 
-        // Create the button
-        const button = document.createElement('button');
-        button.textContent = '送信';
+        function appendButton(text, id) {
+            // Create the button
+            const button = document.createElement('button');
+            button.textContent = text;
 
-        // Style the button
-        button.style.position = 'fixed';
-        button.style.top = '10px';
-        button.style.right = '10px';
-        button.style.zIndex = '99999'; // Ensure it's on top
-        button.style.padding = '8px 12px';
-        button.style.backgroundColor = '#4CAF50'; // A pleasant green
-        button.style.color = 'white';
-        button.style.border = 'none';
-        button.style.borderRadius = '4px';
-        button.style.cursor = 'pointer';
-        button.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            // Style the button
+            button.style.position = 'fixed';
+            button.style.top = '10px';
+            button.style.right = '10px';
+            button.style.zIndex = '99999'; // Ensure it's on top
+            button.style.padding = '8px 12px';
+            button.style.backgroundColor = '#4CAF50'; // A pleasant green
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.borderRadius = '4px';
+            button.style.cursor = 'pointer';
+            button.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
 
-        // Add event listener to the button
-        button.addEventListener('click', function () {
-            postImageData(singleImageElement); // Pass the found image element
-        });
+            // Add event listener to the button
+            button.addEventListener('click', function () {
+                postImageData(singleImageElement, id); // Pass the found image element
+            });
 
-        // Append the button to the body
-        document.body.appendChild(button);
+            // Append the button to the body
+            document.body.appendChild(button);
+        }
+        appendButton("串", 12);
+        appendButton("打捞", 23);
+        appendButton("10001", 10001);
 
         console.log('Single Image Src Logger: Button added for the image.');
 
