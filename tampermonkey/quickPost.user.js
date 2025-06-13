@@ -163,8 +163,9 @@
             document.body.appendChild(button);
         }
         appendButton("串", 12, '10px');
-        appendButton("打捞", 23, '50px');
-        appendButton("10001", 10001, '90px');
+        appendButton("打捞", 23, '60px');
+        appendButton("10001", 10001, '100px');
+        appendButton("色图", 103, '140px');
 
         console.log('Single Image Src Logger: Button added for the image.');
 
