@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         quick poster
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      0.3
+// @version      0.5
 // @description
 // @author       You
 // @match        *://*/*
@@ -15,6 +15,43 @@
 
 (function () {
     'use strict';
+
+    function getProxiedImageUrl(imageUrl) {
+        try {
+            // 1. 解析原始 URL
+            const originalUrl = new URL(imageUrl);
+            const originalHost = originalUrl.hostname; // e.g., "ww1.sinaimg.cn"
+
+            // 2. 检查 host domain 是否是 *.sinaimg.cn
+            if (originalHost.endsWith('.sinaimg.cn')) {
+                // 3. 构建新的 URL
+                // 新的 host
+                const newHost = 'proxy.moonchan.xyz';
+
+                // 保留原始的 protocol, pathname, hash
+                // 注意: 如果原始 URL 有 searchParams，这里会丢弃它们，只添加新的 proxy 参数。
+                // 如果需要保留原始 searchParams，需要额外处理。
+                // 对于图片 URL，通常 searchParams 不太重要，或者代理服务会处理路径。
+
+                const proxiedUrl = new URL(originalUrl.pathname, `https://${newHost}`); // 使用 https 作为新协议
+
+                // 4. 添加 searchParams
+                proxiedUrl.searchParams.set('proxy_host', originalHost);
+                proxiedUrl.searchParams.set('proxy_referer', 'https://weibo.com/');
+
+                return proxiedUrl.toString();
+            } else {
+                // 如果不匹配，返回原始 URL
+                return imageUrl;
+            }
+        } catch (error) {
+            // 如果 URL 无效或发生其他错误，打印错误并返回原始 URL
+            console.error("Error processing URL:", imageUrl, error);
+            return imageUrl;
+        }
+    }
+
+
     // Function to execute when the button is clicked
     function postImageData(imgElement) {
         if (!imgElement || !imgElement.src) {
@@ -25,12 +62,12 @@
 
         const imageUrl = imgElement.src;
 
-        const apiUrl = "https://moonchan.xyz/api/v2/?bid=10001";
+        const apiUrl = "https://moonchan.xyz/api/v2/?bid=23";
         const headers = {
             "Content-Type": "application/json"
         };
         const bodyPayload = {
-            p: imageUrl,
+            p: getProxiedImageUrl(imageUrl),
             txt: "无文本"
         };
 
@@ -61,7 +98,6 @@
                     alert('Data sent successfully!\nStatus: ' + response.status + '\nResponse: ' + response.responseText);
                 } catch (e) {
                     console.warn('Response was not valid JSON:', response.responseText);
-                    alert('Data sent successfully (but response was not JSON)!\nStatus: ' + response.status + '\nResponse: ' + response.responseText);
                 }
             },
             onerror: function (response) {
@@ -102,7 +138,7 @@
 
         // Create the button
         const button = document.createElement('button');
-        button.textContent = 'Log Image Src';
+        button.textContent = '送信';
 
         // Style the button
         button.style.position = 'fixed';
