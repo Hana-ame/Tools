@@ -111,3 +111,11 @@ func HasEnv(key string) bool {
 	s, ok := os.LookupEnv(key)
 	return ok && s != ""
 }
+
+func Unpack[T any](e *T) T {
+	if e == nil {
+		var zero T
+		return zero
+	}
+	return *e
+}

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	"github.com/gin-gonic/gin"
@@ -287,7 +288,12 @@ func DownloadFilePsql(c *gin.Context) {
 		return
 	}
 	// MIME 也会在游览器返回。
-	c.DataFromReader(http.StatusOK, fileInfo.Size(), mimeType, fileReader, map[string]string{"Content-Disposition": "inline"})
+	c.DataFromReader(http.StatusOK, fileInfo.Size(), mimeType, fileReader, map[string]string{
+		"Content-Disposition": "inline",
+		"Cache-Control":       "public, max-age=31536000, immutable",
+		"Last-Modified":       "Tue, 27 May 2025 00:00:00 GMT",
+		"Expires":             time.Now().Add(365 * 24 * time.Hour).Format(http.TimeFormat),
+	})
 
 }
 

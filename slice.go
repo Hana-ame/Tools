@@ -24,7 +24,7 @@ func (s Slice[T]) ToAny() []any {
 func (s Slice[T]) ToString() []string {
 	result := make([]string, len(s))
 	for i, v := range s {
-		result[i] = fmt.Sprintf("%s", v)
+		result[i] = fmt.Sprintf("%v", v)
 	}
 	return result
 }
