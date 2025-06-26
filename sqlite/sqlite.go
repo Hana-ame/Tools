@@ -9,6 +9,21 @@ import (
 	_ "github.com/glebarez/go-sqlite"
 )
 
+func NewSQLiteDB(dbPath string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("无法打开数据库文件: %w", err)
+	}
+
+	// 尝试连接并验证数据库是否可用
+	if err = db.Ping(); err != nil {
+		db.Close() // 确保关闭连接
+		return nil, fmt.Errorf("数据库连接失败: %w", err)
+	}
+
+	return db, nil
+}
+
 // KVSQLiteDB 是一个 SQLite 数据库包装器，用于键值存储
 type KVSQLiteDB struct {
 	db        *sql.DB
