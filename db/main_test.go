@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	tools "github.com/Hana-ame/udptun/Tools"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 	_ "github.com/joho/godotenv/autoload"
 
 	_ "github.com/lib/pq"

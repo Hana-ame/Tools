@@ -11,7 +11,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 )
 
 type fetcher struct {
