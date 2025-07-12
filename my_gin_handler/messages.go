@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
-	tools "github.com/Hana-ame/neo-moonchan/Tools"
-	"github.com/Hana-ame/neo-moonchan/Tools/db"
+	tools "github.com/Hana-ame/udptun/Tools"
+	"github.com/Hana-ame/udptun/Tools/db"
 	"github.com/gin-gonic/gin"
 )
 

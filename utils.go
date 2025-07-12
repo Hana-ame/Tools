@@ -27,12 +27,16 @@ func (w *FuncWrapper[T]) Catch(handler func(err error)) *FuncWrapper[T] {
 }
 
 // 用法同 a || b
-func Or[T comparable](e, d T) T {
+func Or[T comparable](e ...T) T {
 	var defaultValue T
-	if e == defaultValue {
-		return d
+	for _, v := range e {
+		if v == defaultValue {
+			continue
+		} else {
+			return v
+		}
 	}
-	return e
+	return defaultValue
 }
 
 // 检查是否为空值

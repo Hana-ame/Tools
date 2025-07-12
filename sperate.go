@@ -14,3 +14,8 @@ func Seprate(separator, data []byte) ([]byte, []byte, error) {
 	}
 	return data[:index], data[index+len(separator):], nil
 }
+
+func SeprateString(separator, data string) (string, string, error) {
+	front, end, err := Seprate([]byte(separator), []byte(data))
+	return string(front), string(end), err
+}

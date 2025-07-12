@@ -48,6 +48,10 @@ func New() *OrderedMap {
 	return &o
 }
 
+func NewOrderedMap() *OrderedMap {
+	return New()
+}
+
 func NewFromPairs(pairs []*Pair) *OrderedMap {
 	o := New()
 	for _, pair := range pairs {

@@ -7,3 +7,5 @@ __pycache__
 # orderedmap
 
 tmp
+
+__debug_bin*

@@ -13,7 +13,7 @@ type SyncMapWithCount struct {
 	*sync.Map
 }
 
-func New() *SyncMapWithCount {
+func NewSyncMapWithCount() *SyncMapWithCount {
 	return &SyncMapWithCount{
 		&atomic.Int32{},
 		&sync.Map{},

@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 )
 
 // this function receive json request.
@@ -38,7 +38,7 @@ func BytesToJSON(b []byte) (*orderedmap.OrderedMap, error) {
 	return ReaderToJSON(bytes.NewReader(b))
 }
 
-func ReadFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
+func FileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 	f, err := os.Open(fn)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func ReadFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 }
 
 // 将结构体数据写入到 JSON 文件
-func SaveStructToJsonFile(data interface{}, filePath string) error {
+func SaveToJSON(data interface{}, filePath string) error {
 	// 将结构体编码为 JSON 格式的字节数组
 	jsonData, err := json.MarshalIndent(data, "", "  ") // 使用两个空格缩进
 	if err != nil {
@@ -64,7 +64,7 @@ func SaveStructToJsonFile(data interface{}, filePath string) error {
 }
 
 // readJsonFileToStruct 将 JSON 文件读取并反序列化到结构体
-func ReadJsonFileToStruct(filePath string, data interface{}) error {
+func UnmarshalFromFile(filePath string, data interface{}) error {
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
 )
 
 type Header struct {

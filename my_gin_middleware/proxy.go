@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
-	tools "github.com/Hana-ame/neo-moonchan/Tools"
-	myfetch "github.com/Hana-ame/neo-moonchan/Tools/my_fetch"
+	tools "github.com/Hana-ame/udptun/Tools"
+	myfetch "github.com/Hana-ame/udptun/Tools/my_fetch"
 	"github.com/gin-gonic/gin"
 )
 
@@ -72,10 +72,11 @@ func ProxyMiddleware() gin.HandlerFunc {
 				"X-Href":    hrefString,
 			})
 
-			return
-		}
+			c.Abort()
 
-		// 否则不处理
-		c.Next()
+		} else {
+
+			c.Next()
+		}
 	}
 }
