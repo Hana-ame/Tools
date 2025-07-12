@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	tools "github.com/Hana-ame/udptun/Tools"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stretchr/testify/assert"
 
