@@ -27,7 +27,7 @@ func Upload(client *Client) gin.HandlerFunc {
 
 // 250712 将mastodon作为图床
 // api.PUT("/mastodon/upload", mastodonclient.Upload(&mastodonclient.Client{
-// 	Host:          "wxw.moe",
+// 	Host:          os.Getenv("MASTODON_HOST"),
 // 	Cookie:        os.Getenv("MASTODON_COOKIE"),
 // 	Authorization: os.Getenv("MASTODON_AUTHORIZATION"),
 // }))
