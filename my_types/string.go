@@ -5,6 +5,9 @@ type String string
 func (s String) Value() string {
 	return string(s)
 }
+func (s String) String() string {
+	return string(s)
+}
 
 func (i String) CompareTo(other String) int {
 	if string(i) < string(other.Value()) {
