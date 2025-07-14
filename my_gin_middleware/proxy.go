@@ -41,6 +41,11 @@ func ProxyMiddleware() gin.HandlerFunc {
 			header.Set("Referer", c.GetHeader("X-Referer"))
 			header.Set("Cookie", tools.Or(c.GetHeader("X-Cookie"), header.Get("Cookie")))
 
+			// 不是流式的。
+			// body, err := c.Request.GetBody()
+			// if tools.AbortWithError(c, http.StatusBadRequest, err) {
+			// 	return
+			// }
 			resp, err := myfetch.Fetch(c.Request.Method, hrefString,
 				(header.Header), c.Request.Body)
 			if err != nil {
