@@ -76,3 +76,15 @@ func (r *result[T]) Result() T {
 func (r *result[T]) Error() error {
 	return r.err
 }
+
+type Pair[K, V any] struct {
+	k K
+	v V
+}
+
+func (pair Pair[K, V]) Key() K {
+	return pair.k
+}
+func (pair Pair[K, V]) Value() V {
+	return pair.v
+}
