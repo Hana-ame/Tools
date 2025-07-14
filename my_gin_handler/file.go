@@ -57,7 +57,7 @@ func (s *FileServer) Upload(c *gin.Context) {
 		Size:     c.Request.ContentLength,
 	}
 
-	if err := tools.SaveStructToJsonFile(metaData, filepath.Join(s.Path, pathArray[0], pathArray[1], pathArray[2]+".metadata.json")); err != nil {
+	if err := tools.SaveToJSON(metaData, filepath.Join(s.Path, pathArray[0], pathArray[1], pathArray[2]+".metadata.json")); err != nil {
 		c.Header("X-Error", err.Error())
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -102,7 +102,7 @@ func (s *FileServer) Get(c *gin.Context) {
 	}
 
 	metadata := new(FileMetaData)
-	if err := tools.ReadJsonFileToStruct(filepath.Join(s.Path, pathArray[1], pathArray[2], pathArray[3]+".metadata.json"), &metadata); err != nil {
+	if err := tools.UnmarshalFromFile(filepath.Join(s.Path, pathArray[1], pathArray[2], pathArray[3]+".metadata.json"), &metadata); err != nil {
 		c.Header("X-Error", err.Error())
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return

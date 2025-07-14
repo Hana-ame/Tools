@@ -21,7 +21,6 @@ func OrderedMap(o *orderedmap.OrderedMap) {
 	}
 }
 
-func orderedMap(o orderedmap.OrderedMap, intent string) {
 	for _, k := range o.Keys() {
 		v, _ := o.Get(k)
 		if oo, ok := v.(orderedmap.OrderedMap); ok {
@@ -87,6 +86,25 @@ func DeepPrint(v any, indent string) {
 }
 
 type logLevel int
+
+func (l logLevel) String() string {
+	switch l {
+	case Trace:
+		return logFunctions[Trace]("TRACE")
+	case Debug:
+		return logFunctions[Debug]("DEBUG")
+	case Info:
+		return logFunctions[Info]("INFO")
+	case Warn:
+		return logFunctions[Warn]("WARN")
+	case Error:
+		return logFunctions[Error]("ERROR")
+	case Fatal:
+		return logFunctions[Fatal]("Fatal")
+	default:
+		return logFunctions[Fatal]("UNKNOWN")
+	}
+}
 
 const (
 	Trace logLevel = iota
@@ -162,7 +180,7 @@ func E(tag any, msg ...any) {
 }
 
 func F(tag any, msg ...any) {
-	log.Printf("[%s] %s %s", tag, levelToString(Fatal), fmt.Sprint(msg...))
+	log.Fatalf("[%s] %s %s", tag, levelToString(Fatal), fmt.Sprint(msg...))
 }
 
 func Print(v ...any) {

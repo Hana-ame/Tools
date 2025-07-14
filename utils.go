@@ -1,5 +1,7 @@
 package tools
 
+import "os"
+
 func NewFuncWrapper[T any](result T, err error) *FuncWrapper[T] {
 	return &FuncWrapper[T]{
 		result: result,
@@ -25,12 +27,16 @@ func (w *FuncWrapper[T]) Catch(handler func(err error)) *FuncWrapper[T] {
 }
 
 // 用法同 a || b
-func Or[T comparable](e, d T) T {
+func Or[T comparable](e ...T) T {
 	var defaultValue T
-	if e == defaultValue {
-		return d
+	for _, v := range e {
+		if v == defaultValue {
+			continue
+		} else {
+			return v
+		}
 	}
-	return e
+	return defaultValue
 }
 
 // 检查是否为空值
@@ -51,6 +57,7 @@ type result[T any] struct {
 	result T
 	err    error
 	// defaultResult T
+	async bool
 }
 
 // catch一个单输出+error的function，并且
@@ -77,14 +84,42 @@ func (r *result[T]) Error() error {
 	return r.err
 }
 
-type Pair[K, V any] struct {
-	k K
-	v V
+// 暂时没想好怎么用
+func (r *result[T]) Async() *result[T] {
+	r.async = true
+	return r
 }
 
-func (pair Pair[K, V]) Key() K {
-	return pair.k
+func (r *result[T]) Then(f func(result T) error) *result[T] {
+	if r.err == nil {
+		r.err = f(r.result)
+	}
+	return r
 }
-func (pair Pair[K, V]) Value() V {
-	return pair.v
+
+func (r *result[T]) Catch(f func(e error) error) error {
+	if r.err == nil {
+		return nil
+	}
+	return f(r.err)
+}
+
+// func (r *result[T]) Then(f func(v T) (E, error)) (E, error) {
+// 	if r.err == nil {
+// 		return f(r.result)
+// 	}
+// 	return r.err
+// }
+
+func HasEnv(key string) bool {
+	s, ok := os.LookupEnv(key)
+	return ok && s != ""
+}
+
+func Unpack[T any](e *T) T {
+	if e == nil {
+		var zero T
+		return zero
+	}
+	return *e
 }

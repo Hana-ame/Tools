@@ -48,7 +48,10 @@ func (e *Extractor) Get(key string) string {
 func AbortWithError(c *gin.Context, code int, err error) bool {
 	if err != nil {
 		c.Header("X-Error", err.Error())
-		c.AbortWithError(code, err)
+		c.AbortWithStatusJSON(code, gin.H{
+			"error": err.Error(),
+		})
+		// c.AbortWithStatusJSON(code, gin.H{"error": err.Error()
 		return true
 	}
 	return false
