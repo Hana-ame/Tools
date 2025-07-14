@@ -21,6 +21,8 @@ func OrderedMap(o *orderedmap.OrderedMap) {
 	}
 }
 
+func orderedMap(o orderedmap.OrderedMap, intent string) {
+
 	for _, k := range o.Keys() {
 		v, _ := o.Get(k)
 		if oo, ok := v.(orderedmap.OrderedMap); ok {

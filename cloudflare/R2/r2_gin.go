@@ -3,7 +3,7 @@ package r2
 import (
 	"strconv"
 
-	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
 	"github.com/gin-gonic/gin"
 )
 
