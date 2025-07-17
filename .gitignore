@@ -25,3 +25,6 @@ nohup.out
 
 # node 
 node_modules
+
+
+*.db
