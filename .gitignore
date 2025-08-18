@@ -1,3 +1,11 @@
 __pycache__
+build
+dist
+
+node_modules
+
+cloudflare
+s1
+wsmux
 
 time.txt
