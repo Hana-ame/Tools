@@ -7,6 +7,10 @@
 // @match        *://*.north-plus.net/*
 // @match        *://*.snow-plus.net/*
 // @match        *://*.south-plus.net/*
+// @match        *://*.south-plus.org/*
+// @match        *://bbs.imoutolove.me/*
+// @match        *://*.level-plus.net/*
+// @match        *://*.spring-plus.net/*
 
 // @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
 // @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
