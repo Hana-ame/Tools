@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Hana-ame/udptun/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 func TestExactg(t *testing.T) {

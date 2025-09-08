@@ -8,9 +8,9 @@ import (
 
 	"os"
 
-	tools "github.com/Hana-ame/udptun/Tools"
-	myfetch "github.com/Hana-ame/udptun/Tools/my_fetch"
-	"github.com/Hana-ame/udptun/Tools/orderedmap"
+	tools "github.com/Hana-ame/api-pack/Tools"
+	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 	"github.com/gin-gonic/gin"
 )
 

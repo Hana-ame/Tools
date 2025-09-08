@@ -7,8 +7,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	myfetch "github.com/Hana-ame/udptun/Tools/my_fetch"
-	"github.com/Hana-ame/udptun/Tools/orderedmap"
+	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 type Client struct {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	curl "github.com/Hana-ame/udptun/Tools/my_curl"
+	curl "github.com/Hana-ame/api-pack/Tools/my_curl"
 )
 
 // 目的未达成

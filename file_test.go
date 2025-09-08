@@ -3,7 +3,7 @@ package tools
 import (
 	"testing"
 
-	"github.com/Hana-ame/udptun/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/Tools/orderedmap"
 )
 
 func TestWriteJSON(t *testing.T) {
