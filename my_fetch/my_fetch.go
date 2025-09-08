@@ -11,7 +11,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 )
 
 type fetcher struct {
@@ -56,11 +56,11 @@ func (f *fetcher) Fetch(method, url string, header http.Header, body io.Reader) 
 	return f.Do(req)
 }
 
-func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Reader) (*orderedmap.OrderedMap, error) {
+func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Reader) (*http.Response, *orderedmap.OrderedMap, error) {
 
 	req, err := NewRequest(method, url, header, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if req.Header.Get("Accept") == "" {
@@ -73,11 +73,12 @@ func (f *fetcher) FetchJSON(method, url string, header http.Header, body io.Read
 	}
 	resp, err := f.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
-	return ResponseToObject(resp)
+	respObj, err := ResponseToObject(resp)
+	return resp, respObj, err
 }
 
 func (f *fetcher) FetchJSONArray(method, url string, header http.Header, body io.Reader) ([]*orderedmap.OrderedMap, error) {
@@ -131,7 +132,7 @@ func Fetch(method, url string, header http.Header, body io.Reader) (*http.Respon
 	return DefaultFetcher.Fetch(method, url, header, body)
 }
 
-func FetchJSON(method, url string, header http.Header, body io.Reader) (*orderedmap.OrderedMap, error) {
+func FetchJSON(method, url string, header http.Header, body io.Reader) (*http.Response, *orderedmap.OrderedMap, error) {
 	return DefaultFetcher.FetchJSON(method, url, header, body)
 }
 

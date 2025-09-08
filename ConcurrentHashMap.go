@@ -3,16 +3,17 @@ package tools
 import "sync"
 
 // ConcurrentHashMap 是一个线程安全的映射，支持泛型类型
+
 type ConcurrentHashMap[K comparable, V any] struct {
 	m map[K]V
-	*sync.RWMutex
+	sync.RWMutex
 }
 
 // NewConcurrentHashMap 创建一个新的 ConcurrentHashMap 实例
 func NewConcurrentHashMap[K comparable, V any]() *ConcurrentHashMap[K, V] {
 	return &ConcurrentHashMap[K, V]{
 		m:       make(map[K]V),
-		RWMutex: &sync.RWMutex{},
+		RWMutex: sync.RWMutex{},
 	}
 }
 
@@ -42,10 +43,11 @@ func (m *ConcurrentHashMap[K, V]) GetOrDefault(key K, defaultValue V) V {
 }
 
 // Put 插入键值对
-func (m *ConcurrentHashMap[K, V]) Put(key K, value V) {
+func (m *ConcurrentHashMap[K, V]) Put(key K, value V) *ConcurrentHashMap[K, V] {
 	m.Lock()
 	defer m.Unlock()
 	m.m[key] = value
+	return m
 }
 
 // ture = 插入成功,  false = 插入失败

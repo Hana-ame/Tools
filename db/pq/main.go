@@ -14,13 +14,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Exec(handler func(tx *sql.Tx) error) error {
-	connStr := os.Getenv("CONN_STR")
-	db, err := sql.Open("postgres", connStr)
+var DB *sql.DB
+
+func init() {
+	db, err := ConnectPostgreSQL("localhost", 5432, os.Getenv("PSQL_USER"), os.Getenv("PSQL_PASSWORD"), os.Getenv("PSQL_DBNAME"))
 	if err != nil {
-		return err
+		panic(err)
 	}
-	defer db.Close()
+	DB = db
+}
+
+func Exec(handler func(tx *sql.Tx) error) error {
+	// connStr := os.Getenv("CONN_STR")
+	// db, err := sql.Open("postgres", connStr)
+	// if err != nil {
+	// return err
+	// }
+	// defer db.Close()
+	db := DB
 
 	tx, err := db.Begin()
 	if err != nil {

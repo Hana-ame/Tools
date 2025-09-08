@@ -7,7 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
+	"github.com/gin-gonic/gin"
 )
 
 func TestSlice(t *testing.T) {
@@ -19,6 +20,28 @@ func TestSlice(t *testing.T) {
 	fmt.Println(ts)
 	cs := ts.GetOrDefault(1, "0")
 	fmt.Println(cs)
+
+}
+
+func TestCurl111(t *testing.T) {
+	code, _, _, err := curl("https://google.com", "-x", "")
+	fmt.Println(code, err)
+}
+
+// 目的未达成。
+func TestCurl1111(t *testing.T) {
+	// host := c.Query("host")
+	host := "https://wx1.sinaimg.cn/"
+	// host = "google.com"
+	// u, err := url.Parse(host)
+	code, _, body, err := Curl("GET", "myfetch/250818", nil, "", host, nil, "-x", "", "--connect-timeout", "4")
+
+	fmt.Println(string(body))
+
+	fmt.Println(gin.H{
+		"code": code,
+		"err":  err,
+	})
 
 }
 

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
+	tools "github.com/Hana-ame/udptun/Tools"
 )
 
 type Header struct {
@@ -33,6 +33,14 @@ func (h Headers) Get(key string) string {
 	}
 	return ""
 }
+func (h Headers) Has(key string) bool {
+	for _, header := range h {
+		if strings.EqualFold(header.Key, key) {
+			return true
+		}
+	}
+	return false
+}
 func (h Headers) LoadFromHttpHeader(headers http.Header) Headers {
 	for k, v := range headers {
 		for _, vv := range v {
@@ -41,7 +49,8 @@ func (h Headers) LoadFromHttpHeader(headers http.Header) Headers {
 	}
 	return h
 }
-func (h Headers) DumpToHttpHeader(headers http.Header) http.Header {
+func (h Headers) DumpToHttpHeader() http.Header {
+	headers := make(http.Header)
 	for _, v := range h {
 		headers.Add(v.Key, v.Value)
 	}
@@ -57,6 +66,15 @@ func (h Headers) LoadFromText(headers string) Headers {
 		h = append(h, &Header{arr[0], arr[1]})
 	}
 	return h
+}
+
+func (h Headers) DumpToText() string {
+	text := ""
+	for _, header := range h {
+		text += header.String()
+		text += "\r\n"
+	}
+	return strings.TrimSuffix(text, "\r\n")
 }
 
 func Get(agent string, headers Headers, cookie string, url string, argv ...string) (statusCode int, respHeaders Headers, body []byte, err error) {
@@ -82,10 +100,16 @@ func Curl(method string, agent string, requestHeaders Headers, cookie string, ur
 		argv = append(argv, "-H", header.String())
 	}
 	if cookie != "" {
-		argv = append(argv, "-b", cookie)
 		if strings.HasSuffix(cookie, ".txt") {
 			argv = append(argv, "-c", cookie)
+		} else {
+			argv = append(argv, "-b", cookie)
 		}
+	}
+
+	// 添加请求体
+	if len(requestBody) > 0 {
+		argv = append(argv, "-d", string(requestBody))
 	}
 
 	argv = append(argv, url)
@@ -134,7 +158,7 @@ func curl(argv ...string) (statusCode int, headers Headers, body []byte, err err
 	if err != nil {
 		return
 	}
-	statusCode, err = strconv.Atoi(tools.Slice[string](strings.Split(string(codeSlice), " ")).Get(1).GetOrDefault("0"))
+	statusCode, err = strconv.Atoi(tools.Match(tools.Slice[string](strings.Split(string(codeSlice), " ")).Get(1)).GetOrDefault("0"))
 	if err != nil {
 		return
 	}

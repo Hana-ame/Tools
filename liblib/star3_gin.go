@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/udptun/Tools/orderedmap"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +23,7 @@ func Img2Img(c *gin.Context) {
 		request.GetOrDefault("image", "https://upload.moonchan.xyz/api/01LLWEUU57EY6SVEWVQBAL26RQYVPFEBTZ/20250310-200604.png").(string),
 		request.GetOrDefault("width", 768/4).(int),
 		request.GetOrDefault("height", 1024/4).(int),
-		request.GetOrDefault("imgCount", 1).(int),
+		request.GetOrDefault("img_count", 1).(int),
 		request.GetOrDefault("steps", 30).(int),
 		// request.GetOrDefault("controlNet", orderedmap.New()).(*orderedmap.OrderedMap),
 		nil,
@@ -51,9 +51,9 @@ func Text2Img(c *gin.Context) {
 		request.GetOrDefault("prompt", "1 girl,cat girl,masterpiece,best quality,finely detail,highres,8k,beautiful and aesthetic,no watermark").(string),
 		request.GetOrDefault("width", 768).(int),
 		request.GetOrDefault("height", 1024).(int),
-		request.GetOrDefault("imgCount", 1).(int),
+		request.GetOrDefault("img_count", 1).(int),
 		request.GetOrDefault("steps", 30).(int),
-		request.GetOrDefault("controlNet", nil).(*orderedmap.OrderedMap),
+		nil, // request.GetOrDefault("controlNet", nil).(*orderedmap.OrderedMap),
 	)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{

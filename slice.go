@@ -20,6 +20,14 @@ func (s Slice[T]) ToAny() []any {
 	}
 	return result
 }
+
+func (s Slice[T]) ToString() []string {
+	result := make([]string, len(s))
+	for i, v := range s {
+		result[i] = fmt.Sprintf("%v", v)
+	}
+	return result
+}
 func (a Slice[T]) String() string {
 	s := "["
 	for _, v := range a {
