@@ -90,7 +90,7 @@ func (b *Bucket) DownloadHandler(param string) func(c *gin.Context) {
 		// 	headers["x-amz-meta-"+k] = v
 		// }
 
-		c.DataFromReader(200, tools.Unpack(output.ContentLength), tools.Unpack(output.ContentType), output.Body, map[string]string{
+		c.DataFromReader(200, *(output.ContentLength), *(output.ContentType), output.Body, map[string]string{
 			"Content-Disposition": "inline",
 		})
 	}

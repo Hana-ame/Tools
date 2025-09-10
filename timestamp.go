@@ -35,6 +35,7 @@ func NewTimeStamp() int64 {
 }
 
 // GetTimestamp 获取纳秒级时间戳的int64形式
+// 请用NewTimestamp
 func GetTimestamp() int64 {
 	return int64(float64(time.Now().UnixNano()) * (float64(65536) / float64(1_000_000)))
 }

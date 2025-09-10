@@ -158,7 +158,9 @@ func curl(argv ...string) (statusCode int, headers Headers, body []byte, err err
 	if err != nil {
 		return
 	}
-	statusCode, err = strconv.Atoi(tools.Match(tools.Slice[string](strings.Split(string(codeSlice), " ")).Get(1)).GetOrDefault("0"))
+	statusCode, err = strconv.Atoi(
+		tools.Slice[string](strings.Split(string(codeSlice), " ")).GetOrDefault(1, "0"))
+
 	if err != nil {
 		return
 	}

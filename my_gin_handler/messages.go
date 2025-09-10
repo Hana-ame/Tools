@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/db"
+	db "github.com/Hana-ame/api-pack/Tools/db/pq"
 	"github.com/gin-gonic/gin"
 )
 

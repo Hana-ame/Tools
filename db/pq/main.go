@@ -16,7 +16,7 @@ import (
 
 var DB *sql.DB
 
-func init() {
+func Init() {
 	db, err := ConnectPostgreSQL("localhost", 5432, os.Getenv("PSQL_USER"), os.Getenv("PSQL_PASSWORD"), os.Getenv("PSQL_DBNAME"))
 	if err != nil {
 		panic(err)

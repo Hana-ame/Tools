@@ -45,6 +45,13 @@ func IsDefaultValue[T comparable](e T) bool {
 	return e == defaultValue
 }
 
+func Ternary[T any](condition bool, a, b T) T {
+	if condition {
+		return a
+	}
+	return b
+}
+
 // 是不是用不了。
 // func And[T any](a any, d T) T {
 // 	if a == nil {
