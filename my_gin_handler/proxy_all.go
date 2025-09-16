@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 不知道什么时候写的,感觉不能用
 func ProxyAll() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从请求头中获取 Referer
