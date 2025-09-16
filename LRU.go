@@ -60,6 +60,15 @@ func (c *LRUCache[K, V]) Put(key K, value V) {
 	}
 }
 
+func (c *LRUCache[K, V]) Delete(key K) bool {
+	if element, found := c.cache[key]; found {
+		c.order.Remove(element)
+		delete(c.cache, key)
+		return true
+	}
+	return false
+}
+
 func (c *LRUCache[K, V]) GetOrder() []K {
 	keys := make([]K, 0, c.order.Len())
 	for e := c.order.Front(); e != nil; e = e.Next() {
