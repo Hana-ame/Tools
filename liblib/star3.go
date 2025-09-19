@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	myfetch "github.com/Hana-ame/neo-moonchan/Tools/my_fetch"
+	"github.com/Hana-ame/neo-moonchan/Tools/orderedmap"
 )
 
 const Accesskey = "6cysi5F8DUg9L8dntQxfSg"

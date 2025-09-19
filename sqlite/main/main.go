@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Hana-ame/api-pack/Tools/sqlite"
+	"github.com/Hana-ame/neo-moonchan/Tools/sqlite"
 	_ "github.com/glebarez/go-sqlite"
 )
 

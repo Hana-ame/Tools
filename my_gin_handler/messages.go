@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	db "github.com/Hana-ame/api-pack/Tools/db/pq"
+	tools "github.com/Hana-ame/neo-moonchan/Tools"
+	db "github.com/Hana-ame/neo-moonchan/Tools/db/pq"
 	"github.com/gin-gonic/gin"
 )
 
