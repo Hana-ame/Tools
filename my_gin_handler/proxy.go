@@ -3,28 +3,26 @@ package handler
 import (
 	"io"
 	"net/http"
-	"net/url"
 
+	tools "github.com/Hana-ame/api-pack/Tools"
+	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
 	"github.com/gin-gonic/gin"
 )
 
-func Proxy(targetUrl, path string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 创建目标 URL
-		target, _ := url.Parse(targetUrl)
+var client = &http.Client{}
 
-		// 创建请求
-		proxy := c.Request.Clone(c.Request.Context())
-		proxy.URL.Scheme = target.Scheme
-		proxy.URL.Host = target.Host
-		proxy.URL.Path = path
-		proxy.Host = target.Host
+func Proxy(target string) gin.HandlerFunc {
+	// 创建目标 URL
+	// target, err := url.Parse(targetUrl)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	return func(c *gin.Context) {
 
 		// 发送请求到目标服务器
-		client := &http.Client{}
-		resp, err := client.Do(proxy)
-		if err != nil {
-			c.String(http.StatusBadGateway, "Bad Gateway")
+		resp, err := myfetch.Fetch(http.MethodGet, target+c.Request.URL.String(), (c.Request.Header), nil)
+		if tools.AbortWithError(c, 500, err) {
 			return
 		}
 		defer resp.Body.Close()
