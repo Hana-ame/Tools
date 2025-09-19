@@ -4,9 +4,11 @@ import (
 	"os/exec"
 )
 
-func Command(name string, arg ...string) (string, error) {
+func Command(dir, name string, arg ...string) (string, error) {
 	cmd := exec.Command(name, arg...)
 	// 捕获输出
+	cmd.Dir = dir
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err

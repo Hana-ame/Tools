@@ -75,10 +75,10 @@ func Request(messages []any, model string) (int, *orderedmap.OrderedMap, error) 
 	payload.Set("messages", messages)
 	payload.Set("stop", nil)
 	payload.Set("temperature", 0.7)
-	payload.Set("max_tokens", 32768)
+	payload.Set("max_tokens", 8192)
 	payload.Set("top_p", 1)
 
-	apikey, endpoint := service2key("chutes")
+	apikey, endpoint := service2key("groq")
 	resp, o, err := myfetch.FetchJSON(http.MethodPost,
 		tools.Or( /*"https://chat.moonchan.xyz/api/echo"*/ "", endpoint),
 		http.Header{
