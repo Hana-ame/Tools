@@ -45,10 +45,10 @@ export function fetchWithProxy(
   return fetch(endpoint, init); // 使用更新后的 init 进行 fetch
 }
 
-export function getProxyURL(input: string) {
-  console.log(input)
-  if (input === "") return input;
-  const url = new URL(input);
+export function getProxyURL(originURL: string) {
+  console.log(originURL)
+  if (originURL === "") return originURL;
+  const url = new URL(originURL);
   url.searchParams.set('proxy_host', url.hostname); // 替换为实际的 proxy_host 值
   url.hostname = END_POINT;
   return url.toString();
