@@ -4,6 +4,7 @@ package tools
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -44,6 +45,18 @@ func FileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 		return nil, err
 	}
 	return ReaderToJSON(f)
+}
+
+func GzipFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	reader, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+	return ReaderToJSON(reader)
 }
 
 // 将结构体数据写入到 JSON 文件
@@ -87,7 +100,7 @@ func UnmarshalFromFile(filePath string, data interface{}) error {
 	return nil
 }
 
-func OrderedMap(kvArray Slice[*orderedmap.Pair]) *orderedmap.OrderedMap {
+func OrderedMapFromKVArray(kvArray Slice[*orderedmap.Pair]) *orderedmap.OrderedMap {
 	o := orderedmap.New()
 	for _, kv := range kvArray {
 		o.Set(kv.Key(), kv.Value())
