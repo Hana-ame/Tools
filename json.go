@@ -59,18 +59,32 @@ func GzipFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 	return ReaderToJSON(reader)
 }
 
-// 将结构体数据写入到 JSON 文件
-func SaveToJSON(data interface{}, filePath string) error {
-	// 将结构体编码为 JSON 格式的字节数组
-	jsonData, err := json.MarshalIndent(data, "", "  ") // 使用两个空格缩进
+// SaveToGzip 将结构体数据压缩为GZIP格式并保存到文件
+func SaveToGzip(data interface{}, filePath string, level int) error {
+	// 1. 先将结构体编码为JSON
+	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return fmt.Errorf("JSON 编码失败: %w", err)
+		return fmt.Errorf("JSON编码失败: %w", err)
 	}
 
-	// 将 JSON 数据写入文件
-	err = os.WriteFile(filePath, jsonData, 0644) // 0644 是权限模式
+	// 2. 创建目标文件
+	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("写入文件失败: %w", err)
+		return fmt.Errorf("创建文件失败: %w", err)
+	}
+	defer file.Close()
+
+	// 3. 创建gzip写入器
+	gzWriter, err := gzip.NewWriterLevel(file, level)
+	if err != nil {
+		return fmt.Errorf("压缩level错误: %w", err)
+	}
+	defer gzWriter.Close()
+
+	// 4. 将JSON数据写入gzip写入器
+	_, err = gzWriter.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("GZIP压缩失败: %w", err)
 	}
 
 	return nil
