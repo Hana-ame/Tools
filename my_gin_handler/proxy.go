@@ -11,7 +11,7 @@ import (
 
 var client = &http.Client{}
 
-func Proxy(target string) gin.HandlerFunc {
+func Proxy(target string, header func(requestHeader http.Header) http.Header) gin.HandlerFunc {
 	// 创建目标 URL
 	// target, err := url.Parse(targetUrl)
 	// if err != nil {
@@ -21,7 +21,7 @@ func Proxy(target string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// 发送请求到目标服务器
-		resp, err := myfetch.Fetch(http.MethodGet, target+c.Request.URL.String(), (c.Request.Header), nil)
+		resp, err := myfetch.Fetch(http.MethodGet, target+c.Request.URL.String(), header(c.Request.Header), nil)
 		if tools.AbortWithError(c, 500, err) {
 			return
 		}
