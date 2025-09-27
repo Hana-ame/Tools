@@ -81,7 +81,7 @@ export default function useLocalStorage<T>(key: string, initialValue: T): UseLoc
 
         const handleStorageChange = (event: StorageEvent) => {
             // 当事件对应的 key 是我们正在监听的 key，并且有新值时
-            console.log(event, event.key === key, event.newValue)
+            // console.log(event, event.key === key, event.newValue)
             if (event.key === key && event.newValue) {
                 try {
                     setStoredValue(JSON.parse(event.newValue) as T);
