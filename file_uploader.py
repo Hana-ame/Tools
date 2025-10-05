@@ -74,6 +74,7 @@ class ImageUploader:
         response.raise_for_status()
         return response.json().get("data")
     
+    # pass, but auth-token manually
     def i_111666_best(self, fn):
         """
         上传到 i.111666.best 图床 (需要 auth-token)
@@ -100,6 +101,7 @@ class ImageUploader:
         response.raise_for_status()
         return f"https://i.111666.best{response.json().get('src')}"
     
+    # 用不了, 403错误
     def skyimg_net(self, fn):
         """
         上传到 skyimg.net 图床
@@ -110,6 +112,11 @@ class ImageUploader:
         返回:
             str: 上传成功后的文件 URL
         """
+        # 首先获取 CSRF token，使用同一个 session 会自动保持 cookie
+        headers = {
+            "x-csrf-token" : self.session.get("https://skyimg.net/csrf-token").json().get("csrfToken")
+        }
+        
         mime_type, _ = mimetypes.guess_type(fn)
         with open(fn, 'rb') as f:
             files = {
@@ -119,10 +126,11 @@ class ImageUploader:
                     mime_type or "application/octet-stream",
                 )
             }
-            response = self.session.post("https://skyimg.net/upload", files=files)
+            response = self.session.post("https://skyimg.net/upload", files=files, headers=headers)
         response.raise_for_status()
         return response.json()[0].get("url")
     
+    # 用不了, 403错误
     def skyimg_net_webp(self, fn):
         """
         上传到 skyimg.net 图床并转换为 WebP 格式
@@ -134,7 +142,9 @@ class ImageUploader:
             str: 上传成功后的文件 URL
         """
         # 首先获取 CSRF token，使用同一个 session 会自动保持 cookie
-        self.session.get("https://skyimg.net/csrf-token")
+        headers = {
+            "x-csrf-token" : self.session.get("https://skyimg.net/csrf-token").json().get("csrfToken")
+        }
         
         mime_type, _ = mimetypes.guess_type(fn)
         with open(fn, 'rb') as f:
@@ -145,9 +155,32 @@ class ImageUploader:
                     mime_type or "application/octet-stream",
                 )
             }
-            response = self.session.post("https://skyimg.net/upload?webp=true", files=files)
+            response = self.session.post("https://skyimg.net/upload?webp=true", files=files, headers=headers)
         response.raise_for_status()
         return response.json()[0].get("url")
+    
+    def cdn_violet_vin(self, fn):
+        """
+        上传到 cdn.violet.vin 图床
+        
+        参数:
+            fn (str): 文件路径
+        
+        返回:
+            str: 上传成功后的文件 URL
+        """
+        mime_type, _ = mimetypes.guess_type(fn)
+        with open(fn, 'rb') as f:
+            files = {
+                'file': (
+                    ImageUploader.get_filename(fn),
+                    f,
+                    mime_type or "application/octet-stream",
+                )
+            }
+            response = self.session.post("https://cdn.violet.vin/upload", files=files)
+        response.raise_for_status()
+        return f"https://cdn.violet.vin/v2/{response.json().get("data").get("id")}.jpeg"
     
     def close(self):
         """

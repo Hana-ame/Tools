@@ -75,7 +75,7 @@ def post_to_thread(tid, txt="", p=""):
         
     except requests.exceptions.RequestException as e:
         print(f"请求失败: {e}")
-        return None
+        return post_to_thread(tid=tid, txt=txt, p=p)  # 递归重试
     
 def get_filename(path):
     """
