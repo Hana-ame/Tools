@@ -3,7 +3,7 @@
 // "X-Origin",
 // "X-Referer",
 // 这些会替换那些不让传的，Host是这里设定的
-export const END_POINT = "moonchan.xyz"
+export const END_POINT = "ex.moonchan.xyz"
 // 目前访问的时候有挺多问题的
 // 比如host没有port，忘记后端哪边改了没有了
 
@@ -19,6 +19,7 @@ export function fetchWithProxy(
   if (!init) {
     return fetch(endpoint, {
       headers: {
+        "X-Scheme": "https",
         "X-Host": url.hostname,
       }
     });
@@ -45,11 +46,11 @@ export function fetchWithProxy(
   return fetch(endpoint, init); // 使用更新后的 init 进行 fetch
 }
 
-export function getProxyURL(input: string) {
+export function getProxyURL(input: string, endpoint = END_POINT) {
   console.log(input)
   if (input === "") return input;
   const url = new URL(input);
   url.searchParams.set('proxy_host', url.hostname); // 替换为实际的 proxy_host 值
-  url.hostname = END_POINT;
+  url.hostname = endpoint;
   return url.toString();
 }
