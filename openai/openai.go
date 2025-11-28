@@ -8,8 +8,8 @@ import (
 
 	"os"
 
-	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	myfetch "github.com/Hana-ame/api-pack/tools/my_fetch"
+	"github.com/Hana-ame/api-pack/tools/orderedmap"
 	tools "github.com/Hana-ame/api-pack/tools/utils"
 	"github.com/gin-gonic/gin"
 )

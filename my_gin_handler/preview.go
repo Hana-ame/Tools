@@ -4,7 +4,7 @@ import (
 	"image/jpeg"
 	"net/http"
 
-	myfetch "github.com/Hana-ame/api-pack/Tools/my_fetch"
+	myfetch "github.com/Hana-ame/api-pack/tools/my_fetch"
 	tools "github.com/Hana-ame/api-pack/tools/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/nfnt/resize"

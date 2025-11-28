@@ -2,7 +2,7 @@
 
 package myiter
 
-import "github.com/Hana-ame/api-pack/Tools/orderedmap"
+import "github.com/Hana-ame/api-pack/tools/orderedmap"
 
 type SliceIter []any
 

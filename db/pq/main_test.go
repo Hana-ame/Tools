@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/api-pack/tools/orderedmap"
 	tools "github.com/Hana-ame/api-pack/tools/utils"
 	_ "github.com/joho/godotenv/autoload"
 

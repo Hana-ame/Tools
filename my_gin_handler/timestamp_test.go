@@ -3,7 +3,7 @@ package handler
 import (
 	"testing"
 
-	"github.com/Hana-ame/api-pack/Tools/debug"
+	"github.com/Hana-ame/api-pack/tools/debug"
 	tools "github.com/Hana-ame/api-pack/tools/utils"
 	"github.com/gin-gonic/gin"
 )
