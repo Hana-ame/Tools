@@ -59,7 +59,7 @@ func GzipFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 	return ReaderToJSON(reader)
 }
 
-func SaveToJSON(data interface{}, filePath string, level int) error {
+func SaveToJSON(data interface{}, filePath string) error {
 	// 1. 先将结构体编码为JSON
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {

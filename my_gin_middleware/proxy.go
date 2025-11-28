@@ -64,7 +64,7 @@ func ProxyMiddleware() gin.HandlerFunc {
 			// 		c.Writer.Header().Add(k, v)
 			// 	}
 			// }
-			tools.CopyHeader(c, resp.Header)
+			tools.PatchHeader(c, resp.Header)
 			// slices.Sort(exposeHeaders)
 			// c.Writer.Header().Add("Access-Control-Expose-Headers", strings.Join(exposeHeaders, ", "))
 
