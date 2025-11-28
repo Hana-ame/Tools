@@ -59,6 +59,29 @@ func GzipFileToJSON(fn string) (*orderedmap.OrderedMap, error) {
 	return ReaderToJSON(reader)
 }
 
+func SaveToJSON(data interface{}, filePath string, level int) error {
+	// 1. 先将结构体编码为JSON
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("JSON编码失败: %w", err)
+	}
+
+	// 2. 创建目标文件
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("创建文件失败: %w", err)
+	}
+	defer file.Close()
+
+	// 4. 将JSON数据写入文件
+	_, err = file.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("GZIP压缩失败: %w", err)
+	}
+
+	return nil
+}
+
 // SaveToGzip 将结构体数据压缩为GZIP格式并保存到文件
 func SaveToGzip(data interface{}, filePath string, level int) error {
 	// 1. 先将结构体编码为JSON
