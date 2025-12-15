@@ -3,10 +3,14 @@ package my_if
 import (
 	"math/rand"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	tools "github.com/Hana-ame/api-pack/tools/utils"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -14,7 +18,7 @@ var addr4 = randomInt()
 var addr3 = randomInt()
 var prestBatch = make([]net.IP, 0)
 var nextBatch = make([]net.IP, 0)
-var prefix = "2001:470:c:6c:"
+var prefix = tools.Or(os.Getenv("IPV6_PREFIX"), "2001:470:c:6c:")
 
 const BATCH_SIZE = 4
 
