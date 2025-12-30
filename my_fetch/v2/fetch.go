@@ -6,7 +6,7 @@ import (
 )
 
 type Client struct {
-	http.Client
+	*http.Client
 }
 
 func (c *Client) Fetch(method, url string, header http.Header, body io.Reader) (*http.Response, error) {

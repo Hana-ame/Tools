@@ -15,7 +15,7 @@ ip tunnel add sit1 mode sit remote $HE_SERVER local $LOCAL_IPV4 ttl 255
 ip link set sit1 up
 
 echo "3. 配置 IP 地址..."
-ip -6 addr add "$HE_CLIENT_IP/64" dev sit1
+# ip -6 addr add "$HE_CLIENT_IP/64" dev sit1
 
 echo "4. 修正路由表..."
 # 关键修正：
