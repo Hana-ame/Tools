@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/azure-go/Tools/orderedmap"
 )
 
 func TestExactg(t *testing.T) {

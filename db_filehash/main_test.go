@@ -1,7 +1,7 @@
 package db
 
 import (
-	// _ "github.com/Hana-ame/api-pack/Tools/db_filehash"
+	// _ "github.com/Hana-ame/azure-go/Tools/db_filehash"
 	"database/sql"
 	"fmt"
 	"log"

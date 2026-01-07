@@ -10,7 +10,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Hana-ame/api-pack/Tools/orderedmap"
+	"github.com/Hana-ame/azure-go/Tools/orderedmap"
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
 )

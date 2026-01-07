@@ -3,8 +3,8 @@ package handler
 import (
 	"testing"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
-	"github.com/Hana-ame/api-pack/Tools/debug"
+	tools "github.com/Hana-ame/azure-go/Tools"
+	"github.com/Hana-ame/azure-go/Tools/debug"
 	"github.com/gin-gonic/gin"
 )
 

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	tools "github.com/Hana-ame/api-pack/Tools"
+	tools "github.com/Hana-ame/azure-go/Tools"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq" // 导入 PostgreSQL 驱动
