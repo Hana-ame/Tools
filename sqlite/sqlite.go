@@ -9,7 +9,7 @@ import (
 )
 
 func NewSQLiteDB(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("无法打开数据库文件: %w", err)
 	}
