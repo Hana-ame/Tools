@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/mattn/go-sqlite3" // SQLite 驱动
-	// _ "github.com/glebarez/go-sqlite"
+	// _ "github.com/mattn/go-sqlite3" // SQLite 驱动
+	_ "github.com/glebarez/go-sqlite"
 )
 
 func NewSQLiteDB(dbPath string) (*sql.DB, error) {
