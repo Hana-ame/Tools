@@ -1,3 +1,7 @@
+// 26.01.31
+// review
+// 用于插值，单纯按照需要储存value的简易SQL
+
 package sqlite
 
 import (

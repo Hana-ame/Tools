@@ -1,3 +1,7 @@
+// 26.01.31
+// review
+// 简易的插值查值KV表
+
 package sqlite
 
 import (
