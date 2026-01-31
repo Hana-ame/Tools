@@ -59,7 +59,7 @@ func (m *Manager) GenerateIP() (netip.Addr, error) {
 func (m *Manager) AddAddr(ip netip.Addr) error {
 	// 格式: ip addr add 2001:db8::1/64 dev sit1
 	fullAddr := fmt.Sprintf("%s/%d", ip.String(), m.Prefix.Bits())
-	cmd := exec.Command("ip", "addr", "add", fullAddr, "dev", m.InterfaceName)
+	cmd := exec.Command("/usr/sbin/ip", "addr", "add", fullAddr, "dev", m.InterfaceName)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to add ip %s: %s, %w", fullAddr, string(output), err)
 	}
@@ -69,7 +69,7 @@ func (m *Manager) AddAddr(ip netip.Addr) error {
 // DelAddr 在网卡上移除 IP
 func (m *Manager) DelAddr(ip netip.Addr) error {
 	fullAddr := fmt.Sprintf("%s/%d", ip.String(), m.Prefix.Bits())
-	cmd := exec.Command("ip", "addr", "del", fullAddr, "dev", m.InterfaceName)
+	cmd := exec.Command("/usr/sbin/ip", "addr", "del", fullAddr, "dev", m.InterfaceName)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to del ip %s: %s, %w", fullAddr, string(output), err)
 	}
