@@ -11,8 +11,8 @@ source ~/script/cloudcone/net6.sh
 
 # api-pack
 cd ~;
-python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new && nohup ~/api-pack-new > ./nohup.out 2>&1 &
+python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new && chmod +x api-pack-new && nohup ~/api-pack-new > ./nohup.out 2>&1 &
 
 # azure
 cd ~;
-ls azure/refresh_token && cd azure && python3 ~/script/download_asset.py --repo Hana-ame/azure-go --dest azure.bin && nohup ~/azure.bin > ./nohup.out 2>&1 &
+ls azure/refresh_token && cd azure && python3 ~/script/download_asset.py --repo Hana-ame/azure-go --dest azure.bin && chmod +x azure.bin && nohup ~/azure.bin > ./nohup.out 2>&1 &

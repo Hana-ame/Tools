@@ -1,5 +1,3 @@
-sleep 10;
-
 /sbin/ifconfig sit0 down
 /sbin/ifconfig sit1 down
 
