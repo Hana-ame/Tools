@@ -25,13 +25,6 @@ if [ -f "$DOTENV_FILE" ]; then
     done < "$DOTENV_FILE"
 else
     echo "Error: .env file not found at $DOTENV_FILE"
-    echo "Please create a .env file with CF_TUNNEL_TOKEN and other required vars."
-    exit 1
-fi
-
-# Check if essential variable exists
-if [ -z "$CF_TUNNEL_TOKEN" ]; then
-    echo "Error: CF_TUNNEL_TOKEN is not defined in .env"
     exit 1
 fi
 
