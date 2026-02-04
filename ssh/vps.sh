@@ -1,3 +1,3 @@
 #!/bin/bash
 
-~/script/ssh.sh -4 root@vps.moonchan.xyz $@
+~/script/ssh/ssh.sh -4 root@vps.moonchan.xyz $@

@@ -1,12 +1,51 @@
 #!/bin/bash
 
+# azure
+# mkdir -p ~/azure/ && curl -L https://upload.moonchan.xyz/REPLACE_WITH_FILE_ID/azure_tokens.tar.gz | tar -xz -C ~/azure/
+# rclone
+# mkdir -p ~/.config/rclone/ && curl -L https://upload.moonchan.xyz/REPLACE_WITH_FILE_ID/rclone.conf >  ~/.config/rclone/rclone.conf
+# curl https://upload.moonchan.xyz/REPLACE_WITH_FILE_ID/.env > .env
+# git clone git@github.com:Hana-ame/Tools.git -b script
+# ~/script/cloudcone/install.sh
+
+
+# Stop on any error
+set -e
+
+# 0. Load .env file
+DOTENV_FILE="$HOME/.env"
+
+if [ -f "$DOTENV_FILE" ]; then
+    echo "Loading variables from $DOTENV_FILE..."
+    # This reads the .env file, ignores comments, and exports the variables
+    export $(grep -v '^#' "$DOTENV_FILE" | xargs)
+else
+    echo "Error: .env file not found at $DOTENV_FILE"
+    echo "Please create a .env file with CF_TUNNEL_TOKEN and other required vars."
+    exit 1
+fi
+
+# Check if essential variable exists
+if [ -z "$CF_TUNNEL_TOKEN" ]; then
+    echo "Error: CF_TUNNEL_TOKEN is not defined in .env"
+    exit 1
+fi
+
+# install ssh
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCwF4AUmXUJ6eC14jNfe6gTBV3iYvMr6RHuCt356KbuWX/EeVjqNRmTIFam72gfwIUYIJKhekCg4qGwWEetUeFo5Cv2/cGxdd+UfwTSHwEos2jdNFXXlpgLhn/R6c4deuUvXhrfnRI224M9aQZd2SC0Jy1ORC2C1RVp0+u64ZPcHDpbgO/SMVE4JbrEdsTN9wYBqAhAb19TxyPkshsQ5mcDuRWh0a1zi9hmefa7tBHrwAweih3wX+BNij+kBChJrfXQuiw30BGP5XEP4V4bfqiosgqoLJQ4jH7qFQOchABPZ7gR4eHe5/dftv4Y7GUa/gtxzpczYi6YmidwZTaIkv5ZJMNG9wmSOUZLKCSv+qMM5LWLE8VYDVTMN7SMSmBGVqgQnHK6OqOqrPuBvHY+oiKUf8YTb7yX49XLyiGO9K80y3io4IqUTfAAvC0k0N+dKxUCGy0V5BmovwLrrbwq84e+SzUEd1jRliPko4EgiNIcBnuQObbEQa6JsppJL4QasFH/U5tOXGCWkU+cD/mAVykwHe+uKbuc+nvnHkKNh40XSoXVHWwpqWHllp+4o26Kjr8WC0TmoiJ/FmlBgGMSk/P7bLoy8pydQOyt+DIUpBWF85vnKcxkeRZC31EpvmDveZ7V4TOSaGbc0+j9ApWVH2WJGZBRNqzA9rtUOId0T5quDw== luminovoez@gmail.com" >>  ~/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDMdcbLQK62FfDMNo1wjAgw6VlUugmxBrID+ijeHnxRhwMA6Ld/yjQ0Ean338wJoLq7GmfuTlsMocmCVubKNDnG0nyg4M8jkklTZZ76aYp0bAzufqXmkItWMU3uyqWyQDEqJdVKc1OEOY4JGaD+47y7nLWzlsOY0DwBW6BvQrA425fQPhi75KLPn5VBHniikhxoNZdSkywZ+2+4j1eoCpSK+3oRKG3TqdoPONZCjLRJxlgQ9kTgp4BJbBRBSFIv+uXYoNtv/k0B80QK5rIiy6xuns0McQUOfQ/GdyZXt8PNw2YcyqS+u+YkFl32EovPjMP1UB+XjswDvgMtgDep18wN" >>  ~/.ssh/authorized_keys
+
 cd ~;
 
 # install
-apt update && apt upgrade;
-apt install nginx;
-apt install mariadb;
+apt update -y && apt upgrade -y
+apt install socat -y
+
 # acme.sh
+curl https://get.acme.sh | sh -s email=luminovoez@gmail.com
+acme.sh --issue --dns dns_cf -d moonchan.xyz -d *.moonchan.xyz
+acme.sh --issue --standalone -d moonchan.publicvm.com
+
 
 # add startup.sh
 cd ~;
@@ -14,8 +53,18 @@ NEW_JOB="@reboot ~/script/cloudcone/startup.sh";
 (crontab -l 2>/dev/null | grep -vF "$NEW_JOB"; echo "$NEW_JOB") | crontab -;
 
 # nginx
+apt install nginx -y
 cd /etc && rm -rf nginx && git clone git@github.com:Hana-ame/nginx.git -b cloudcone nginx && cd nginx;
-cp ~/script/nginx-reload.sh reload.sh;
+ln -s ~/script/nginx-reload.sh reload.sh;
+
+apt install mariadb -y
 
 # 顺手的事
 cd ~ && ln -s ~/script/tree.sh;
+
+apt install python3 -y
+
+# rclone
+curl https://rclone.org/install.sh | bash
+
+source ~/script/cloudcone/startup.sh
