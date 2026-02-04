@@ -17,8 +17,12 @@ DOTENV_FILE="$HOME/.env"
 
 if [ -f "$DOTENV_FILE" ]; then
     echo "Loading variables from $DOTENV_FILE..."
-    # This reads the .env file, ignores comments, and exports the variables
-    export $(grep -v '^#' "$DOTENV_FILE" | xargs)
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip lines starting with # or empty lines
+        [[ $line =~ ^#.* ]] || [[ -z $line ]] && continue
+        # Export the variable
+        export "$line"
+    done < "$DOTENV_FILE"
 else
     echo "Error: .env file not found at $DOTENV_FILE"
     echo "Please create a .env file with CF_TUNNEL_TOKEN and other required vars."
