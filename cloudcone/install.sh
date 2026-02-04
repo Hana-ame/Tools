@@ -40,21 +40,24 @@ apt install socat -y
 
 # acme.sh
 curl https://get.acme.sh | sh -s email=luminovoez@gmail.com
+alias acme.sh="/root/.acme.sh/acme.sh"
 acme.sh --issue --dns dns_cf -d moonchan.xyz -d *.moonchan.xyz
 acme.sh --issue --standalone -d moonchan.publicvm.com
 
 
 # add startup.sh
 cd ~;
-NEW_JOB="@reboot ~/script/cloudcone/startup.sh";
+# Pre-set nano as the selected editor to satisfy the system check
+echo 'SELECTED_EDITOR="/usr/bin/nano"' > ~/.selected_editor
+NEW_JOB="@reboot sleep 60;~/script/cloudcone/startup.sh";
 (crontab -l 2>/dev/null | grep -vF "$NEW_JOB"; echo "$NEW_JOB") | crontab -;
 
 # nginx
 apt install nginx -y
-cd /etc && rm -rf nginx && git clone git@github.com:Hana-ame/nginx.git -b cloudcone nginx && cd nginx;
-ln -s ~/script/nginx-reload.sh reload.sh;
+cd /etc && rm -rf nginx && git clone https://github.com/Hana-ame/nginx.git -b cloudcone nginx && cd nginx;
+    ln -s ~/script/nginx-reload.sh reload.sh;
 
-apt install mariadb -y
+apt install mariadb-server -y
 
 # 顺手的事
 cd ~ && ln -s ~/script/tree.sh;
