@@ -31,3 +31,5 @@ python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new 
 
 nohup /usr/local/bin/py ~/forward.py &
 nohup /usr/local/bin/py ~/forward.py --local-port 22  --remote-port 26275 &
+
+cd ~/script/ && git pull;

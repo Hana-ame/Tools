@@ -31,3 +31,5 @@ python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new 
 # azure
 cd ~;
 ls azure/refresh_token && cd azure && python3 ~/script/download_asset.py --repo Hana-ame/azure-go --dest azure.bin && chmod +x azure.bin && nohup ./azure.bin > ./nohup.out 2>&1 &
+
+cd ~/script/ && git pull;
