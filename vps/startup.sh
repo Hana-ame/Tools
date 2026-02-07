@@ -13,9 +13,8 @@ nohup ./shijima >> nohup.out 2>&1  &
 cd ./azure/
 nohup ./azure.bin > nohup.out 2>&1 &
 
-
-sleep 20;
-source ~/script/net6.sh;
+sleep 10;
+source ~/script/vps/net6.sh;
 
 cd ~
 # w/exhentai
@@ -39,6 +38,6 @@ ls azure/refresh_token && cd azure && python3 ~/script/download_asset.py --repo 
 
 sleep 180;
 
-~/backup.sh
+~/script/vps/backup.sh
 
 cd ~/script && git pull;
