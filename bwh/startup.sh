@@ -5,7 +5,7 @@ systemctl start nginx
 systemctl start sshd
 systemctl start v2ray
 
-source ~/script/net6.sh
+source ~/script/bwh/net6.sh
 
 sleep 15;
 
