@@ -27,7 +27,7 @@ rm -rf temp-repo
 
 # api-pack
 cd ~;
-python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new && chmod +x api-pack-new && nohup ./api-pack-new > ./nohup.out 2>&1 &
+/usr/local/bin/python3.6 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new && chmod +x api-pack-new && nohup ./api-pack-new > ./nohup.out 2>&1 &
 
 nohup /usr/local/bin/py ~/forward.py &
 nohup /usr/local/bin/py ~/forward.py --local-port 22  --remote-port 26275 &
