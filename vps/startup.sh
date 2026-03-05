@@ -25,7 +25,7 @@ cp -r temp-repo/exhentai/main/exhentai/. ~/exhentai/
 rm -rf temp-repo
 python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new && chmod +x api-pack-new && nohup ./api-pack-new > ./nohup.out 2>&1 &
 
-
+# twitter-pic
 cd ~/twitter
 python3 ~/script/download_asset.py --repo Hana-ame/twitter-pic-go --dest twitter.bin && chmod +x twitter.bin;
 nohup ./twitter.bin >> nohup.out 2>&1  &
