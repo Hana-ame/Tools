@@ -1,13 +1,18 @@
 #!/bin/bash
 
+# curl -sL https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/script/bwh/install.sh | bash
+
 # 这一段是让你在console里面运行的。
-# 确保~/.ssh目录存在
+apt update -y && apt upgrade -y
+apt install git -y
+# # 确保~/.ssh目录存在
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-# 将GitHub的主机密钥添加到已知主机文件
-ssh-keyscan github.com >> $KNOWN_HOSTS_FILE
-git clone git@github.com:Hana-ame/Tools.git -b script
-~/script/bwh/install.sh
+# # 将GitHub的主机密钥添加到已知主机文件
+# ssh-keyscan github.com >>  ~/.ssh/known_hosts 
+git clone https://github.com/Hana-ame/Tools.git -b script script
+# git clone git@github.com:Hana-ame/Tools.git -b script script
+# ~/script/bwh/install.sh
 
 # Stop on any error
 set -e
@@ -25,3 +30,24 @@ sudo sed -i 's/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentica
 sudo sed -i 's/^#\?KbdInteractiveAuthentication.*/KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
 
 cd ~;
+
+
+# add startup.sh
+cd ~;
+# Pre-set nano as the selected editor to satisfy the system check
+echo 'SELECTED_EDITOR="/usr/bin/nano"' > ~/.selected_editor
+NEW_JOB="@reboot sleep 60;~/script/bwh/startup.sh";
+(crontab -l 2>/dev/null | grep -vF "$NEW_JOB"; echo "$NEW_JOB") | crontab -;
+
+
+# 关闭交换文件
+sudo swapoff /swapfile
+
+# 删除原文件
+sudo rm /swapfile
+
+# 重新创建新大小的文件（步骤同上）
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
