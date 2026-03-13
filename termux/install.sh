@@ -23,12 +23,15 @@ if [ -z "$CF_TUNNEL_TOKEN" ]; then
 fi
 
 # 1. Update and install required packages
+export DEBIAN_FRONTEND=noninteractive
 pkg update -y && pkg upgrade -y
 pkg install termux-services openssh python3 curl cloudflared -y
 # ok it is possible
+source $PREFIX/etc/profile.d/start-services.sh
+pip install dotenv requests
 
 # add ssh key to
-curl https://pastebin.com/raw/muem87hB >> .ssh/authorized_keys
+curl https://pastebin.com/raw/75GX7tCv >> .ssh/authorized_keys
 
 # 2. Setup DDNS Python Script
 mkdir -p $HOME
@@ -70,8 +73,8 @@ chmod +x ~/.termux/boot/start-services
 # 6. Enable Services
 
 # 1. Force start the service daemon
-termux-services
-sleep 2
+# termux-services
+# sleep 2
 
 sv-enable ddns_cf
 sv-enable cloudflared

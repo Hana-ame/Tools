@@ -12,7 +12,7 @@ mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 # # 将GitHub的主机密钥添加到已知主机文件
 # ssh-keyscan github.com >>  ~/.ssh/known_hosts 
-git clone https://github.com/Hana-ame/Tools.git -b script script
+cd ~ && git clone https://github.com/Hana-ame/Tools.git -b script script
 # git clone git@github.com:Hana-ame/Tools.git -b script script
 # ~/script/bwh/install.sh
 
@@ -53,3 +53,13 @@ sudo fallocate -l 2G /swap
 sudo chmod 600 /swap
 sudo mkswap /swap
 sudo swapon /swap
+
+
+# acme.sh
+curl https://get.acme.sh | sh -s email=luminovoez@gmail.com
+alias acme.sh="/root/.acme.sh/acme.sh"
+acme.sh --issue --standalone -d bwh.moonchan.xyz --keylength ec-256
+
+
+apt install nginx -y
+cd /etc && rm -rf nginx && git clone  https://github.com/Hana-ame/nginx.git -b bwh
