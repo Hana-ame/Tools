@@ -3,6 +3,7 @@
 # Stop on any error
 set -e
 
+# please download .env first
 # 0. Load .env file
 DOTENV_FILE="$HOME/.env"
 
@@ -25,13 +26,14 @@ fi
 # 1. Update and install required packages
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y && pkg upgrade -y
-pkg install termux-services openssh python3 curl cloudflared -y
+pkg install termux-services openssh python3 curl cloudflared git -y
 # ok it is possible
 source $PREFIX/etc/profile.d/start-services.sh
 pip install dotenv requests
+git clone https://github.com/Hana-ame/Tools.git -b script script
 
 # add ssh key to
-curl https://pastebin.com/raw/75GX7tCv >> .ssh/authorized_keys
+cat ~/script/authorized_keys >> .ssh/authorized_keys
 
 # 2. Setup DDNS Python Script
 mkdir -p $HOME
