@@ -8,3 +8,8 @@
 /sbin/ip link set dev sit1 mtu 1280
 
 /sbin/ip addr add 2001:470:c:6c::2 dev sit1
+/sbin/ip addr change 2001:470:c:6c::2/128 dev sit1 preferred_lft forever
+
+/sbin/ip addr del 2607:f130:0:159::9b8b:826f/64 dev eth0
+/sbin/ip addr del 2607:f130:0:159::483d:96da/64 dev eth0
+/sbin/ip addr del 2607:f130:0:159::151d:8350/64 dev eth0
