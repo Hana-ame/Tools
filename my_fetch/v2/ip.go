@@ -21,6 +21,9 @@ func NewManager(iface string, prefixStr string) (*Manager, error) {
 			prefixStr = "2001:470:c:6c::/64" // 默认值
 		}
 	}
+	if iface == "" {
+		iface = "sit1" // 默认值
+	}
 
 	prefix, err := netip.ParsePrefix(prefixStr)
 	if err != nil {
