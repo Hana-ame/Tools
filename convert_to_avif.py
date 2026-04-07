@@ -71,7 +71,11 @@ class ReturnType:
         # return cls(file=str(file_path), status='error', message=error_message, output="")
         return cls(file=str(file_path), status=StatusCode.ERROR, message=error_message, output="")
 
-def process_file(file_path: str) -> ReturnType:
+
+def process_file(file_path: str):
+    return _process_file(file_path).to_dict()
+
+def _process_file(file_path: str) -> ReturnType:
     """
     将媒体文件转换为 AVIF 格式
     

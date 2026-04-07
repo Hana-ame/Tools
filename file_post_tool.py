@@ -118,11 +118,11 @@ def file_iterator(directory_path: str) -> Iterator[str]:
 flag = True
 
 
-for fn in file_iterator("/mnt/c/Users/lumin/Downloads/爱慕 (@im86617687)"):
+for fn in file_iterator("/mnt/c/Users/lumin/Downloads/推特ouo0988/ZLn-Isv_DKbcrDYp"):
     # break
-    if "1787133881147089342_p0.mp4" in fn: flag = False
-    if flag: continue
-    tid = 155803
+    # if "1787133881147089342_p0.mp4" in fn: flag = False
+    # if flag: continue
+    tid = 162983
     print(fn)
     resp = upload_file_put(fn)
     print(resp.json())
