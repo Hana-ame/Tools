@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
 """
 FastAPI 测试服务器 - Markdown 代码块执行器
-功能：接收 Markdown 文本，解析其中的 ```bash 和 ```python 代码块并执行，
-      将执行结果替换原代码块（格式为 ```output ... ```）。
-      支持嵌套（嵌套代码块视为普通文本）。
+功能：精确解析 Markdown 代码块（支持内容中的 ```），执行 bash/sh/空 和 python/py 代码块，
+      保留原代码块并附加 ```output ... ``` 结果块。
 端口：8000
-支持 CORS（供独立 HTML 文件访问）
+支持 CORS
 """
 
 import os
 import subprocess
 import re
+from typing import List, Tuple, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 import uvicorn
 
 # ============ 安全配置 ============
-# 通过环境变量 ALLOW_CODE_EXECUTION=1 启用任意命令/代码执行
 ALLOW_UNSAFE = os.getenv("ALLOW_CODE_EXECUTION", "false").lower() == "true"
 
-# ============ FastAPI 应用配置 ============
 app = FastAPI(
     title="Markdown Code Executor API",
-    version="2.0.0",
-    description="解析 Markdown 中的 bash/python 代码块并执行"
+    version="3.0.0",
+    description="精确解析代码块并执行，支持内容中的 ``` 符号"
 )
 
 app.add_middleware(
@@ -35,23 +33,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # ============ 数据模型 ============
 class TextRequest(BaseModel):
     text: str
-    operation: str = "execute_markdown"   # 新操作：解析并执行代码块
+    operation: str = "execute_markdown"
 
     @field_validator('operation')
     @classmethod
     def validate_operation(cls, v):
-        allowed = {
-            "reverse", "uppercase", "lowercase",
-            "bash", "count", "trim", "execute_markdown"
-        }
+        allowed = {"reverse", "uppercase", "lowercase", "bash", "count", "trim", "execute_markdown"}
         if v not in allowed:
-            raise ValueError(f"不支持的操作: {v}. 支持的操作: {allowed}")
+            raise ValueError(f"不支持的操作: {v}")
         return v
-
 
 class TextResponse(BaseModel):
     result: str
@@ -59,187 +52,171 @@ class TextResponse(BaseModel):
     original_length: int
     processed_length: int
 
-
 # ============ 代码块执行器 ============
 def execute_bash(code: str) -> str:
-    """执行 bash 代码（安全受限）"""
     if not ALLOW_UNSAFE:
-        # 安全模式：只允许只读/无害命令
-        allowed_prefixes = ("echo", "ls", "pwd", "date", "whoami", "cat ")
-        code_stripped = code.strip()
-        if not any(code_stripped.startswith(p) for p in allowed_prefixes):
-            return f"[安全限制] 仅允许以下命令: {', '.join(allowed_prefixes)}"
+        allowed = ("echo", "ls", "pwd", "date", "whoami", "cat ")
+        if not any(code.strip().startswith(p) for p in allowed):
+            return f"[安全限制] 仅允许: {', '.join(allowed)}"
     try:
         result = subprocess.run(
-            code,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=5,
+            code, shell=True, capture_output=True, text=True, timeout=5,
             executable="/bin/bash" if os.name != "nt" else None
         )
-        output = result.stdout if result.returncode == 0 else result.stderr
-        return output.strip() or "(无输出)"
+        return (result.stdout or result.stderr).strip() or "(无输出)"
     except subprocess.TimeoutExpired:
         return "错误：命令执行超时（5秒）"
     except Exception as e:
         return f"执行错误: {str(e)}"
 
-
 def execute_python(code: str) -> str:
-    """执行 Python 代码（独立子进程）"""
     if not ALLOW_UNSAFE:
-        # 安全模式：只允许打印简单信息
         if "print(" not in code and "import" not in code:
-            return "[安全限制] 未启用执行权限，仅允许 print/import"
-        # 额外可添加白名单模块
+            return "[安全限制] 仅允许 print/import"
     try:
-        # 使用 -c 参数执行代码，超时 5 秒
         result = subprocess.run(
-            ["python", "-c", code],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["python", "-c", code], capture_output=True, text=True, timeout=5
         )
-        output = result.stdout if result.returncode == 0 else result.stderr
-        return output.strip() or "(无输出)"
+        return (result.stdout or result.stderr).strip() or "(无输出)"
     except subprocess.TimeoutExpired:
-        return "错误：Python 代码执行超时（5秒）"
+        return "错误：Python 执行超时（5秒）"
     except Exception as e:
         return f"执行错误: {str(e)}"
 
-
-def process_markdown(markdown_text: str) -> str:
+# ============ 精确的代码块解析（基于反引号计数） ============
+def get_code_blocks(text: str) -> List[Tuple[str, str, str]]:
     """
-    解析 Markdown 文本，执行 ```bash 和 ```python 代码块，
-    将每个代码块替换为 ```output ... ``` 格式的执行结果。
-    嵌套的 ``` 不会触发新块（视为普通文本）。
+    返回列表，每个元素为 (language, content, full_block)
+    language: 小写语言标识（空字符串表示无标识）
+    content: 代码块内容（去除首尾空白行）
+    full_block: 完整的原始代码块文本（含开始和结束标记）
     """
-    lines = markdown_text.splitlines(keepends=True)
-    output_lines = []
+    lines = text.splitlines(keepends=True)
+    blocks = []
     i = 0
     n = len(lines)
 
     while i < n:
         line = lines[i]
-        # 检测代码块开始：行以 ``` 开头，后面可能跟语言（无其他内容）
-        # 匹配模式：行首零个或多个空格 + ``` + 可选语言（非空白字符） + 可选空白 + 换行
-        match = re.match(r'^(\s*```)(\w*)\s*$', line)
+        # 匹配代码块开始：可选缩进 + 连续反引号(>=3) + 可选语言标识
+        match = re.match(r'^(\s*)(`{3,})(\w*)\s*$', line)
         if match:
-            lang = match.group(2).lower()  # 语言标识
-            start_indent = match.group(1)  # 保留前导缩进
-            # 收集代码块内容
-            code_lines = []
+            indent = match.group(1)
+            backticks = match.group(2)      # 反引号字符串，如 "```"
+            lang = match.group(3).lower()
+            min_ticks = len(backticks)
+
+            # 收集代码块内容，直到遇到相同或更多数量的反引号
+            content_lines = []
             i += 1
+            end_line = None
             while i < n:
-                # 检查是否为结束标记：行首零个或多个空格 + ``` + 可选空白
-                if re.match(r'^\s*```\s*$', lines[i]):
-                    i += 1  # 跳过结束标记行
-                    break
-                code_lines.append(lines[i])
+                cur = lines[i]
+                # 检查当前行是否由 可选缩进 + 反引号(>=min_ticks) + 空白 组成
+                end_match = re.match(rf'^(\s*)(`{{{min_ticks},}})\s*$', cur)
+                if end_match:
+                    # 确保反引号数量不少于开始的数量
+                    if len(end_match.group(2)) >= min_ticks:
+                        end_line = cur
+                        i += 1
+                        break
+                content_lines.append(cur)
                 i += 1
-            else:
-                # 没有找到结束标记，视为普通文本（保留原样）
-                # 回退并原样输出
-                output_lines.append(line)
-                # 将之前收集的行原样输出
-                output_lines.extend(code_lines)
+
+            if end_line is None:
+                # 未闭合，视为普通文本，回退
                 continue
 
-            # 处理代码块内容
-            code_content = ''.join(code_lines).rstrip('\n')
-            if lang == 'bash':
-                result = execute_bash(code_content)
-            elif lang == 'python':
-                result = execute_python(code_content)
-            else:
-                # 其他语言代码块保持不变
-                output_lines.append(line)
-                output_lines.extend(code_lines)
-                output_lines.append('```\n')  # 补回结束标记
-                continue
+            # 拼接代码块内容，并去掉末尾多余换行
+            content = ''.join(content_lines).rstrip('\n')
+            # 构造完整原始块
+            full_block = line + ''.join(content_lines) + end_line
 
-            # 构建输出：保留原缩进的 ```output 块
-            output_lines.append(f"{start_indent}output\n")
-            # 结果中的每行添加相同的缩进（可选，简单起见不加缩进）
-            # 若要保持格式美观，可缩进，但可能破坏原结构，直接原样输出
-            for res_line in result.splitlines():
-                output_lines.append(f"{res_line}\n")
-            output_lines.append(f"{start_indent}```\n")
+            blocks.append((lang, content, full_block))
         else:
-            output_lines.append(line)
             i += 1
+    return blocks
 
-    return ''.join(output_lines)
+def process_markdown(markdown_text: str) -> str:
+    """
+    处理 Markdown：找到所有代码块，对可执行的附加 ```output 结果块。
+    替换原块为 原块 + 结果块。
+    """
+    blocks = get_code_blocks(markdown_text)
+    if not blocks:
+        return markdown_text
 
+    # 按完整块进行替换（注意：可能存在相同的块文本，故使用顺序替换）
+    result_text = markdown_text
+    for lang, content, full_block in blocks:
+        is_bash = lang in ('bash', 'sh', '')
+        is_python = lang in ('python', 'py')
+        if not (is_bash or is_python):
+            continue
+
+        # 执行并获取结果
+        if is_bash:
+            output = execute_bash(content)
+        else:
+            output = execute_python(content)
+
+        # 构建结果块（保持与原始块相同的缩进？这里简单使用相同的开头缩进）
+        # 提取原始块的缩进（第一行的前导空格）
+        first_line = full_block.splitlines()[0] if full_block else ''
+        indent_match = re.match(r'^(\s*)', first_line)
+        indent = indent_match.group(1) if indent_match else ''
+        result_block = f"{indent}```output\n{output}\n{indent}```\n"
+
+        # 替换：原块 + 结果块
+        replacement = full_block + '\n' + result_block
+        result_text = result_text.replace(full_block, replacement, 1)  # 只替换第一次出现
+
+    return result_text
 
 # ============ 文本处理主函数 ============
 def process_text(text: str, operation: str) -> str:
-    """根据操作类型处理文本"""
     if operation == "execute_markdown":
         return process_markdown(text)
-
     elif operation == "reverse":
         return text[::-1]
-
     elif operation == "uppercase":
         return text.upper()
-
     elif operation == "lowercase":
         return text.lower()
-
     elif operation == "count":
         lines = len(text.splitlines())
         words = len(text.split())
         chars = len(text)
         return f"行数: {lines}, 单词数: {words}, 字符数: {chars}"
-
     elif operation == "trim":
         return text.strip()
-
     elif operation == "bash":
-        # 保留原危险操作（仅允许 echo）
         text = text.strip()
         if not text.startswith("echo "):
-            return f"错误：出于安全考虑，只允许 'echo' 命令。输入: {text[:50]}"
+            return f"错误：只允许 echo 命令"
         try:
-            result = subprocess.run(
-                text,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            output = result.stdout if result.returncode == 0 else result.stderr
-            return output.strip() or "(无输出)"
+            result = subprocess.run(text, shell=True, capture_output=True, text=True, timeout=5)
+            return (result.stdout or result.stderr).strip() or "(无输出)"
         except subprocess.TimeoutExpired:
-            return "错误：命令执行超时"
+            return "错误：命令超时"
         except Exception as e:
-            return f"执行错误: {str(e)}"
-
+            return f"执行错误: {e}"
     return text
-
 
 # ============ API 路由 ============
 @app.get("/")
 async def root():
     return {
         "message": "Markdown Code Executor API",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "endpoints": {
-            "POST /process": "处理 Markdown 文本（执行 bash/python 代码块）",
-            "GET /health": "健康检查"
-        },
-        "operations": ["execute_markdown", "reverse", "uppercase", "lowercase", "count", "trim", "bash(危险)"],
-        "security": f"允许不安全执行: {ALLOW_UNSAFE} (设置环境变量 ALLOW_CODE_EXECUTION=1 开启)",
-        "note": "代码块中的嵌套 ``` 被视为普通文本"
+            "POST /process": "处理 Markdown 文本，执行 bash/sh/空 和 python/py 代码块"
+        }
     }
-
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "markdown-executor"}
-
+    return {"status": "healthy"}
 
 @app.post("/process", response_model=TextResponse)
 async def process_endpoint(request: TextRequest):
@@ -252,29 +229,8 @@ async def process_endpoint(request: TextRequest):
             processed_length=len(result)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"处理失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"处理失败: {e}")
 
-
-# ============ 启动入口 ============
 if __name__ == "__main__":
-    print("=" * 60)
-    print("🚀 启动 Markdown 代码块执行服务器")
-    print("=" * 60)
-    print(f"📍 地址: http://127.0.0.1:8000")
-    print(f"📖 文档: http://127.0.0.1:8000/docs")
-    print(f"🔧 API:  POST http://127.0.0.1:8000/process")
-    print("=" * 60)
-    if ALLOW_UNSAFE:
-        print("⚠️  警告: 已启用不安全执行模式 (ALLOW_CODE_EXECUTION=1)")
-        print("     bash 和 python 代码将被实际执行，请勿暴露到公网！")
-    else:
-        print("🔒 安全模式: 仅允许受限命令 (echo/ls/pwd/date/whoami/cat 和 python print)")
-        print("    如需完整执行能力，请设置环境变量: ALLOW_CODE_EXECUTION=1")
-    print("=" * 60)
-
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    print("🚀 启动服务 (支持精确代码块解析)")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
