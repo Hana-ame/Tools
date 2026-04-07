@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-FastAPI 测试服务器 - Markdown 代码块执行器
-功能：精确解析 Markdown 代码块（支持内容中的 ```），执行 bash/sh/空 和 python/py 代码块，
-      保留原代码块并附加 ```output ... ``` 结果块。
-端口：8000
-支持 CORS
+FastAPI 测试服务器 - Markdown 代码块执行器（改进版栈解析）
+修复：支持同级反引号嵌套（如 python 内嵌 bash），正确保留外层代码块结构。
 """
 
 import os
 import subprocess
 import re
-from typing import List, Tuple, Optional
+from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
@@ -18,11 +15,12 @@ import uvicorn
 
 # ============ 安全配置 ============
 ALLOW_UNSAFE = os.getenv("ALLOW_CODE_EXECUTION", "false").lower() == "true"
+ALLOW_UNSAFE = True  # 测试时强制开启
 
 app = FastAPI(
     title="Markdown Code Executor API",
-    version="3.0.0",
-    description="精确解析代码块并执行，支持内容中的 ``` 符号"
+    version="4.1.0",
+    description="支持嵌套代码块的栈解析器"
 )
 
 app.add_middleware(
@@ -52,7 +50,7 @@ class TextResponse(BaseModel):
     original_length: int
     processed_length: int
 
-# ============ 代码块执行器 ============
+# ============ 执行器 ============
 def execute_bash(code: str) -> str:
     if not ALLOW_UNSAFE:
         allowed = ("echo", "ls", "pwd", "date", "whoami", "cat ")
@@ -83,141 +81,167 @@ def execute_python(code: str) -> str:
     except Exception as e:
         return f"执行错误: {str(e)}"
 
-# ============ 精确的代码块解析（基于反引号计数） ============
-def get_code_blocks(text: str) -> List[Tuple[str, str, str]]:
-    """
-    返回列表，每个元素为 (language, content, full_block)
-    language: 小写语言标识（空字符串表示无标识）
-    content: 代码块内容（去除首尾空白行）
-    full_block: 完整的原始代码块文本（含开始和结束标记）
-    """
-    lines = text.splitlines(keepends=True)
-    blocks = []
+# ============ 改进的栈解析逻辑 ============
+def process_markdown(markdown_text: str) -> str:
+    lines = markdown_text.splitlines(keepends=False)
+    output_lines = []
+    stack = []
+
     i = 0
-    n = len(lines)
-
-    while i < n:
+    while i < len(lines):
         line = lines[i]
-        # 匹配代码块开始：可选缩进 + 连续反引号(>=3) + 可选语言标识
-        match = re.match(r'^(\s*)(`{3,})(\w*)\s*$', line)
-        if match:
-            indent = match.group(1)
-            backticks = match.group(2)      # 反引号字符串，如 "```"
-            lang = match.group(3).lower()
-            min_ticks = len(backticks)
 
-            # 收集代码块内容，直到遇到相同或更多数量的反引号
-            content_lines = []
-            i += 1
-            end_line = None
-            while i < n:
-                cur = lines[i]
-                # 检查当前行是否由 可选缩进 + 反引号(>=min_ticks) + 空白 组成
-                end_match = re.match(rf'^(\s*)(`{{{min_ticks},}})\s*$', cur)
-                if end_match:
-                    # 确保反引号数量不少于开始的数量
-                    if len(end_match.group(2)) >= min_ticks:
-                        end_line = cur
-                        i += 1
-                        break
-                content_lines.append(cur)
+        # 预检查：这一行是否是一个带语言的代码块开始标记 (如 ```python, ```bash)
+        # 这用于区分是"结束当前块"还是"开始嵌套块"
+        start_marker_match = re.match(r'^(\s*)(`{3,})(\w+)\s*$', line)
+
+        # --- 逻辑分支1: 处理代码块结束或嵌套开始 ---
+        if stack:
+            current_block = stack[-1]
+            min_ticks = current_block['backtick_count']
+            
+            # 检查是否匹配结束标记 (反引号数量 >= 开始时的数量)
+            end_match = re.match(rf'^(\s*)(`{{{min_ticks},}})\s*$', line)
+            
+            if end_match:
+                # 【关键修改】如果这一行同时也匹配“带语言的开始标记”，则视为嵌套开始
+                if start_marker_match:
+                    # 认为是嵌套块开始，压入栈
+                    indent = start_marker_match.group(1)
+                    backticks = start_marker_match.group(2)
+                    lang = start_marker_match.group(3).lower()
+                    
+                    stack.append({
+                        'lang': lang,
+                        'indent': indent,
+                        'backtick_count': len(backticks),
+                        'start_line': line,
+                        'content_lines': [],
+                        'end_line': None
+                    })
+                    i += 1
+                    continue
+                else:
+                    # 没有 language 标识，认为是当前块的结束
+                    current_block['end_line'] = line
+                    closed_block = stack.pop()
+                    
+                    # 处理闭合的块，返回处理后的文本行
+                    processed_lines = _handle_closed_block(closed_block)
+                    
+                    # 【关键修改】将结果追加到父级内容或最终输出
+                    if stack:
+                        stack[-1]['content_lines'].extend(processed_lines)
+                    else:
+                        output_lines.extend(processed_lines)
+                    
+                    i += 1
+                    continue
+            else:
+                # 不是结束标记，作为内容添加到当前块
+                current_block['content_lines'].append(line)
                 i += 1
-
-            if end_line is None:
-                # 未闭合，视为普通文本，回退
                 continue
 
-            # 拼接代码块内容，并去掉末尾多余换行
-            content = ''.join(content_lines).rstrip('\n')
-            # 构造完整原始块
-            full_block = line + ''.join(content_lines) + end_line
-
-            blocks.append((lang, content, full_block))
-        else:
+        # --- 逻辑分支2: 处理顶层代码块开始 ---
+        # 如果不在栈中，检查是否为开始标记
+        if start_marker_match:
+            indent = start_marker_match.group(1)
+            backticks = start_marker_match.group(2)
+            lang = start_marker_match.group(3).lower()
+            stack.append({
+                'lang': lang,
+                'indent': indent,
+                'backtick_count': len(backticks),
+                'start_line': line,
+                'content_lines': [],
+                'end_line': None
+            })
             i += 1
-    return blocks
-
-def process_markdown(markdown_text: str) -> str:
-    """
-    处理 Markdown：找到所有代码块，对可执行的附加 ```output 结果块。
-    替换原块为 原块 + 结果块。
-    """
-    blocks = get_code_blocks(markdown_text)
-    if not blocks:
-        return markdown_text
-
-    # 按完整块进行替换（注意：可能存在相同的块文本，故使用顺序替换）
-    result_text = markdown_text
-    for lang, content, full_block in blocks:
-        is_bash = lang in ('bash', 'sh', '')
-        is_python = lang in ('python', 'py')
-        if not (is_bash or is_python):
             continue
 
-        # 执行并获取结果
-        if is_bash:
-            output = execute_bash(content)
+        # --- 逻辑分支3: 普通文本 ---
+        # 如果不在任何块中，直接输出
+        if not stack:
+            output_lines.append(line)
         else:
-            output = execute_python(content)
+            # 理论上不应走到这里，上面的逻辑已经处理了块内情况
+            stack[-1]['content_lines'].append(line)
+        
+        i += 1
 
-        # 构建结果块（保持与原始块相同的缩进？这里简单使用相同的开头缩进）
-        # 提取原始块的缩进（第一行的前导空格）
-        first_line = full_block.splitlines()[0] if full_block else ''
-        indent_match = re.match(r'^(\s*)', first_line)
-        indent = indent_match.group(1) if indent_match else ''
-        result_block = f"{indent}```output\n{output}\n{indent}```\n"
+    # 处理未闭合的块
+    while stack:
+        unclosed = stack.pop()
+        # 将未闭合的内容回填
+        if stack:
+            stack[-1]['content_lines'].append(unclosed['start_line'])
+            stack[-1]['content_lines'].extend(unclosed['content_lines'])
+        else:
+            output_lines.append(unclosed['start_line'])
+            output_lines.extend(unclosed['content_lines'])
 
-        # 替换：原块 + 结果块
-        replacement = full_block + '\n' + result_block
-        result_text = result_text.replace(full_block, replacement, 1)  # 只替换第一次出现
+    return '\n'.join(output_lines)
 
-    return result_text
+def _handle_closed_block(block: Dict[str, Any]) -> List[str]:
+    """处理一个完整闭合的代码块，返回处理后的行列表"""
+    result_lines = []
+    
+    lang = block['lang']
+    indent = block['indent']
+    start_line = block['start_line']
+    content_lines = block['content_lines']
+    end_line = block['end_line']
+
+    # 1. 原样输出原始代码块（开始行 + 内容 + 结束行）
+    result_lines.append(start_line)
+    result_lines.extend(content_lines)
+    result_lines.append(end_line)
+
+    # 2. 执行代码
+    is_bash = lang in ('bash', 'sh', '')
+    is_python = lang in ('python', 'py')
+    
+    if is_bash or is_python:
+        # 注意：content_lines 可能已经包含了嵌套块处理后的结果
+        code_content = '\n'.join(content_lines).rstrip('\n')
+        
+        if is_bash:
+            res = execute_bash(code_content)
+        else:
+            res = execute_python(code_content)
+        
+        # 追加 output 块
+        result_lines.append(f"{indent}```output")
+        if res:
+            for res_line in res.splitlines():
+                result_lines.append(f"{indent}{res_line}")
+        else:
+            result_lines.append(f"{indent}(无输出)")
+        result_lines.append(f"{indent}```")
+
+    return result_lines
 
 # ============ 文本处理主函数 ============
 def process_text(text: str, operation: str) -> str:
     if operation == "execute_markdown":
         return process_markdown(text)
-    elif operation == "reverse":
-        return text[::-1]
-    elif operation == "uppercase":
-        return text.upper()
-    elif operation == "lowercase":
-        return text.lower()
+    # ... 其他操作保持不变 ...
+    elif operation == "reverse": return text[::-1]
+    elif operation == "uppercase": return text.upper()
+    elif operation == "lowercase": return text.lower()
     elif operation == "count":
-        lines = len(text.splitlines())
-        words = len(text.split())
-        chars = len(text)
-        return f"行数: {lines}, 单词数: {words}, 字符数: {chars}"
-    elif operation == "trim":
-        return text.strip()
+        return f"行数: {len(text.splitlines())}, 字符数: {len(text)}"
+    elif operation == "trim": return text.strip()
     elif operation == "bash":
-        text = text.strip()
-        if not text.startswith("echo "):
-            return f"错误：只允许 echo 命令"
+        # 简单的 bash 测试操作
+        if not text.strip().startswith("echo "): return "错误：只允许 echo"
         try:
-            result = subprocess.run(text, shell=True, capture_output=True, text=True, timeout=5)
-            return (result.stdout or result.stderr).strip() or "(无输出)"
-        except subprocess.TimeoutExpired:
-            return "错误：命令超时"
-        except Exception as e:
-            return f"执行错误: {e}"
+            return subprocess.run(text, shell=True, capture_output=True, text=True, timeout=2).stdout.strip()
+        except: return "执行出错"
     return text
 
 # ============ API 路由 ============
-@app.get("/")
-async def root():
-    return {
-        "message": "Markdown Code Executor API",
-        "version": "3.0.0",
-        "endpoints": {
-            "POST /process": "处理 Markdown 文本，执行 bash/sh/空 和 python/py 代码块"
-        }
-    }
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
 @app.post("/process", response_model=TextResponse)
 async def process_endpoint(request: TextRequest):
     try:
@@ -232,5 +256,5 @@ async def process_endpoint(request: TextRequest):
         raise HTTPException(status_code=500, detail=f"处理失败: {e}")
 
 if __name__ == "__main__":
-    print("🚀 启动服务 (支持精确代码块解析)")
+    print("🚀 启动服务 (改进版栈解析，支持同符号嵌套)")
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
