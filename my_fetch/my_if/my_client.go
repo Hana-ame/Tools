@@ -26,7 +26,7 @@ func NewClient(prefix string, jar *cookiejar.Jar) (*Client, error) {
 			LocalAddr: &net.TCPAddr{
 				IP: ip, // 将 "your_specific_ip" 替换为你要使用的特定 IP 地址
 			},
-			Timeout:   5 * time.Second,  // 连接超时时间
+			Timeout:   3 * time.Second,  // 连接超时时间
 			KeepAlive: 30 * time.Second, // Keep-Alive 超时时间
 			Resolver: &net.Resolver{
 				PreferGo: true,
@@ -41,6 +41,7 @@ func NewClient(prefix string, jar *cookiejar.Jar) (*Client, error) {
 		Client: &http.Client{
 			Transport: tr,
 			Jar:       jar,
+			Timeout:   5 * time.Second,
 		},
 		ip: ip,
 	}, nil

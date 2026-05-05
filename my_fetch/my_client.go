@@ -32,6 +32,7 @@ func NewV4Client(cookieJar *cookiejar.Jar) *http.Client {
 	return &http.Client{
 		Transport: tr,
 		Jar:       cookieJar,
+		Timeout:   5 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse // 返回错误以阻止重定向
 		},
@@ -46,7 +47,7 @@ func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 			LocalAddr: &net.TCPAddr{
 				IP: ip, // 将 "your_specific_ip" 替换为你要使用的特定 IP 地址
 			},
-			Timeout:   5 * time.Second,  // 连接超时时间
+			Timeout:   3 * time.Second,  // 连接超时时间
 			KeepAlive: 30 * time.Second, // Keep-Alive 超时时间
 			Resolver: &net.Resolver{
 				PreferGo: true,
@@ -62,6 +63,7 @@ func NewV6Client(ip net.IP, cookieJar *cookiejar.Jar) *http.Client {
 	return &http.Client{
 		Transport: tr,
 		Jar:       cookieJar,
+		Timeout:   5 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse // 返回错误以阻止重定向
 		},
