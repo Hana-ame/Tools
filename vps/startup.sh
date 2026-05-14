@@ -28,9 +28,9 @@ python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new 
 # twitter-pic
 cd ~/twitter
 python3 ~/script/download_asset.py --repo Hana-ame/twitter-pic-go --dest twitter.bin && chmod +x twitter.bin;
-nohup ./twitter.bin >> nohup.out 2>&1  &
-nohup py caller.py >> nohup.out 2>&1  &
-nohup py deamon.py >> nohup.out 2>&1 &
+nohup ./twitter.bin > nohup.out 2>&1  &
+nohup py caller.py > nohup.out 2>&1  &
+nohup py deamon.py > nohup.out 2>&1 &
 
 # azure
 cd ~;
