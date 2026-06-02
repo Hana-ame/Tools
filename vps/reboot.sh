@@ -4,4 +4,4 @@ cd ~;
 
 py ~/upload.py ~/twitter/nohup.out --gzip;
 
-reboot;
+/sbin/reboot;
