@@ -7,7 +7,7 @@ systemctl start mariadb
 systemctl start nginx
 systemctl start sshd
 
-source ~/script/cloudcone/net6.sh
+# source ~/script/cloudcone/net6.sh
 
 # exhentai
 git clone --depth 1 --branch master https://github.com/Hana-ame/api-pack.git temp-repo
