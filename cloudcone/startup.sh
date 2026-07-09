@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo ip link set dev eth0 mtu 1350
 
 # 没写内容。
 source ~/script/cloudcone/backup.sh
