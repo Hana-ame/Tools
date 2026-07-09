@@ -26,4 +26,4 @@ ls azure/refresh_token && cd azure && python3 ~/script/download_asset.py --repo 
 
 cd ~/script/ && git pull;
 
-cd /etc/nginx && git merge -X theirs origin/cloudcone --quiets
+cd /etc/nginx && git merge -X theirs origin/cloudcone --quiet
