@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gzip 预览器 · 极速解压 · 代码高亮</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --accent: #c2410c;
+            --bg-body: #f4f7f9;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2edf2;
+        }
+
+        * { box-sizing: border-box; margin: 0; }
+        
+        body { 
+            margin: 0 auto; 
+            max-width: 1050px; 
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif; 
+            background: var(--bg-body); 
+            color: var(--text-main); 
+            padding: 0 16px 40px; 
+        }
+
+        .top-input { padding: 30px 0 16px 0; }
+        input { 
+            width: 100%; padding: 16px 20px; font-size: 15px; 
+            border: 2px solid #cfdee9; border-radius: 50px; outline: none; 
+            background: #fff; transition: all 0.2s ease; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(194,65,12,0.15); }
+
+        .btn-group { display: flex; gap: 12px; padding: 8px 0 24px 0; flex-wrap: wrap; }
+        button { 
+            flex: 1; min-width: 100px; padding: 12px 0; font-size: 15px; font-weight: 600; 
+            color: white; border: none; border-radius: 50px; cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-action { background: linear-gradient(135deg, #c2410c, #ea580c); }
+        .btn-action:hover { box-shadow: 0 4px 12px rgba(234,88,12,0.3); transform: translateY(-2px); }
+        .btn-copy { background: linear-gradient(135deg, #16a34a, #15803d); }
+        .btn-copy:hover { box-shadow: 0 4px 12px rgba(22,163,74,0.3); transform: translateY(-2px); }
+        
+        .btn-toggle { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; box-shadow: none; }
+        .btn-toggle:hover { background: #c7d2fe; }
+        .btn-toggle.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+
+        .viewer { 
+            width: 100%; min-height: 55vh; padding: 32px; 
+            background: var(--bg-card); border-radius: 20px; 
+            border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.03);
+            font-family: 'SF Mono', Consolas, monospace; font-size: 14px; 
+            line-height: 1.6; white-space: pre-wrap; word-break: break-word; 
+            overflow-y: auto; transition: all 0.2s;
+        }
+
+        .viewer.md-mode { font-family: system-ui, sans-serif; white-space: normal; font-size: 16px; color: #334155; }
+        .viewer.md-mode p { margin-bottom: 16px; line-height: 1.7; }
+        .viewer.md-mode h1, .viewer.md-mode h2 { 
+            border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin: 32px 0 16px; color: #0f172a; 
+        }
+        .viewer.md-mode h3, .viewer.md-mode h4 { margin: 24px 0 12px; color: #1e293b; }
+        
+        .viewer.md-mode blockquote { 
+            border-left: 4px solid var(--primary); background: #f8fafc; 
+            margin: 16px 0; padding: 12px 20px; color: #475569; border-radius: 0 8px 8px 0;
+            font-style: italic;
+        }
+
+        .viewer.md-mode ul, .viewer.md-mode ol { padding-left: 24px; margin-bottom: 16px; }
+        .viewer.md-mode li { margin-bottom: 6px; }
+
+        .viewer.md-mode table { 
+            width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; 
+            box-shadow: 0 0 0 1px #e2e8f0; border-radius: 8px; overflow: hidden;
+        }
+        .viewer.md-mode th, .viewer.md-mode td { border: 1px solid #e2e8f0; padding: 10px 16px; }
+        .viewer.md-mode th { background: #f8fafc; font-weight: 600; color: #334155; text-align: left; }
+        .viewer.md-mode tr:nth-child(even) { background: #fbfcfd; }
+
+        .viewer.md-mode p code, .viewer.md-mode li code { 
+            background: #f1f5f9; color: #e11d48; padding: 2px 6px; 
+            border-radius: 6px; font-size: 0.9em; font-family: 'SF Mono', Consolas, monospace;
+        }
+
+        .viewer.md-mode pre { 
+            background: #1e1e24 !important;
+            padding: 16px 20px; border-radius: 12px; margin: 20px 0; 
+            overflow-x: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .viewer.md-mode pre code { 
+            background: transparent !important; color: #abb2bf; 
+            padding: 0; font-size: 14px; font-family: 'SF Mono', Consolas, monospace; 
+            text-shadow: none; line-height: 1.5;
+        }
+        .viewer.md-mode img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .viewer.md-mode a { color: var(--primary); text-decoration: none; border-bottom: 1px solid transparent; transition: 0.2s; }
+        .viewer.md-mode a:hover { border-color: var(--primary); }
+
+        details { margin: 24px 0 0; background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        summary { font-weight: 600; cursor: pointer; padding: 16px 20px; color: #334155; background: #fff; border-radius: 20px; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+        summary::before { content:"⚙️"; font-size: 1.1rem; }
+        details[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 1px solid var(--border); }
+        details[open] summary::before { content:"🔽"; }
+        .log { background: #0f172a; color: #cbd5e1; padding: 16px 20px; font-family: Consolas, monospace; font-size: 13px; white-space: pre-wrap; max-height: 240px; overflow-y: auto; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .success { color: #34d399; } .error { color: #f87171; } .info { color: #7dd3fc; }
+
+        .toast-tip { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 10px 24px; border-radius: 60px; font-size: 14px; z-index: 999; box-shadow: 0 8px 24px rgba(0,0,0,0.25); pointer-events: none; animation: fadeOut 2.5s forwards; font-weight: 500; }
+        @keyframes fadeOut { 0% { opacity: 0; transform: translate(-50%, 10px); } 10% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; visibility: hidden; transform: translate(-50%, -10px); } }
+        
+        @media (max-width: 600px) { .btn-group button { font-size: 13px; min-width: 80px; padding: 10px 0; } }
+    </style>
+</head>
+<body>
+
+<div class="top-input">
+    <input type="text" id="gzUrl" placeholder="🔗 粘贴 .gz 文件 URL 自动加载 (支持全局 Ctrl+V 唤醒)">
+</div>
+
+<div class="btn-group">
+    <button id="plainModeBtn" class="btn-toggle active">📄 纯文本</button>
+    <button id="mdModeBtn" class="btn-toggle">✨ Markdown排版</button>
+    <button id="copyResultBtn" class="btn-copy">📋 复制文本</button>
+    <button id="fetchBtn" class="btn-action">⬇️ 下载解压</button>
+</div>
+
+<div id="previewArea" class="viewer">
+    <div style="color:var(--text-muted); text-align:center; padding-top: 40px; line-height: 2;">
+        <h3>✨ Gzip 智能预览器 ✨</h3>
+        <p>粘贴 URL 自动加载并解压显示</p>
+        <p>在任意界面按下 <strong>Ctrl+V / Cmd+V</strong> 即可快速填入并解压</p>
+        <p>包含代码高亮的全新 Markdown 模式</p>
+    </div>
+</div>
+
+<details>
+    <summary>选项与日志终端</summary>
+    <div class="log" id="logArea">
+        <div class="info">✅ 系统就绪 | 支持深色代码高亮排版 | 全局剪贴板接管已启动</div>
+    </div>
+</details>
+
+<script>
+    (function() {
+        const urlInput = document.getElementById('gzUrl');
+        const logDiv = document.getElementById('logArea');
+        const viewer = document.getElementById('previewArea');
+        const plainBtn = document.getElementById('plainModeBtn');
+        const mdBtn = document.getElementById('mdModeBtn');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const copyBtn = document.getElementById('copyResultBtn');
+
+        let currentDecodedText = "";
+        let currentMode = "text"; 
+        let isLoading = false;              
+        let activeAbortController = null;   
+        
+        const defaultTitle = document.title; 
+
+        function updateUrlParam(url) {
+            const newUrl = new URL(window.location.href);
+            if (url) newUrl.searchParams.set('url', url);
+            else newUrl.searchParams.delete('url');
+            window.history.replaceState({}, '', newUrl);
+        }
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const cls = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            logDiv.innerHTML += `<div class="${cls}">[${time}] ${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv.children.length > 100) {
+                for (let i = 0; i < 20; i++) logDiv.children[i]?.remove();
+            }
+        }
+
+        function showFloatingMessage(msg, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-tip';
+            toast.style.background = isError ? '#dc2626' : '#1e293b';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+
+        function renderPreview() {
+            if (!currentDecodedText && currentDecodedText !== '') {
+                viewer.innerHTML = '<div style="color:#94a3b8; text-align:center; padding-top:40px;">📭 暂无解压内容，请加载 .gz 文件</div>';
+                viewer.classList.remove('md-mode');
+                document.title = defaultTitle;
+                return;
+            }
+
+            let fallbackTitle = defaultTitle;
+            if (currentDecodedText) {
+                const lines = currentDecodedText.split(/\r?\n/);
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line) {
+                        const cleanLine = line.replace(/^[#>*-\s]+/, '').trim();
+                        const finalTitle = cleanLine || line; 
+                        fallbackTitle = finalTitle.length > 60 ? finalTitle.substring(0, 60) + '...' : finalTitle;
+                        break;
+                    }
+                }
+            }
+
+            if (currentMode === 'markdown') {
+                try {
+                    viewer.innerHTML = marked.parse(currentDecodedText);
+                    viewer.classList.add('md-mode');
+                    
+                    document.querySelectorAll('#previewArea pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+
+                    const firstHeading = viewer.querySelector('h1, h2, h3');
+                    document.title = (firstHeading && firstHeading.textContent.trim()) ? firstHeading.textContent.trim() : fallbackTitle;
+                } catch (err) {
+                    log(`Markdown 渲染失败: ${err.message}`, 'error');
+                    viewer.innerHTML = `<div class="error" style="margin-bottom:16px;">⚠️ Markdown 渲染失败，回退到纯文本</div><pre style="margin:0; font-family:inherit;">${escapeHtml(currentDecodedText)}</pre>`;
+                    viewer.classList.remove('md-mode');
+                    document.title = fallbackTitle;
+                }
+            } else {
+                viewer.innerHTML = `<pre style="margin:0; white-space:pre-wrap; font-family:inherit;">${escapeHtml(currentDecodedText)}</pre>`;
+                viewer.classList.remove('md-mode');
+                document.title = fallbackTitle; 
+            }
+        }
+
+        async function decompressGzipBlob(blob) {
+            if ('DecompressionStream' in window) {
+                try {
+                    const stream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
+                    const text = await new Response(stream).text();
+                    return { success: true, text, method: '原生流' };
+                } catch (err) {
+                    log(`原生流解压失败，切换 pako: ${err.message}`, 'error');
+                    return decompressWithPako(blob);
+                }
+            }
+            return decompressWithPako(blob);
+        }
+
+        function decompressWithPako(blob) {
+            return new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        const uint8Array = new Uint8Array(e.target.result);
+                        const text = pako.inflate(uint8Array, { to: 'string' });
+                        resolve({ success: true, text, method: 'Pako引擎' });
+                    } catch (err) {
+                        resolve({ success: false, error: err.message });
+                    }
+                };
+                reader.onerror = () => resolve({ success: false, error: '文件读取失败' });
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        async function fetchAndDecompress(url) {
+            if (!url || url.trim() === '') {
+                log('❌ 请输入有效的 URL', 'error');
+                showFloatingMessage('请填写有效的 URL', true);
+                return false;
+            }
+            if (isLoading && activeAbortController) {
+                activeAbortController.abort();
+                log('⚠️ 中断上一个任务', 'info');
+            }
+
+            let fullUrl = url.trim();
+            if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+                fullUrl = 'https://' + fullUrl;
+            }
+            
+            if (urlInput.value !== fullUrl) urlInput.value = fullUrl;
+            updateUrlParam(fullUrl);
+            log(`🌐 发起请求: ${fullUrl}`, 'info');
+            
+            const controller = new AbortController();
+            activeAbortController = controller;
+            isLoading = true;
+            
+            try {
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const response = await fetch(fullUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+                const blob = await response.blob();
+                if (blob.size === 0) throw new Error('文件大小为 0 字节');
+                
+                const res = await decompressGzipBlob(blob);
+                if (res.success) {
+                    currentDecodedText = res.text;
+                    log(`✅ 解压成功 (${res.method}) · 长度: ${currentDecodedText.length} 字符`, 'success');
+                    showFloatingMessage(`解压成功，共 ${currentDecodedText.length} 字符`);
+                    renderPreview();
+                    return true;
+                } else {
+                    throw new Error(res.error);
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    log(`⏹️ 请求已取消`, 'info');
+                    return false;
+                }
+                log(`❌ 加载失败: ${err.message}`, 'error');
+                showFloatingMessage(`加载失败: ${err.message}`, true);
+                if (!currentDecodedText) {
+                    currentDecodedText = '';
+                    renderPreview();
+                }
+                return false;
+            } finally {
+                isLoading = false;
+                if (activeAbortController === controller) activeAbortController = null;
+            }
+        }
+
+        async function copyDecodedText() {
+            if (!currentDecodedText || currentDecodedText.trim() === '') {
+                showFloatingMessage('暂无内容可复制', true);
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentDecodedText);
+                log(`📋 复制成功 · ${currentDecodedText.length} 字符`, 'success');
+                showFloatingMessage(`已复制 ${currentDecodedText.length} 字符`);
+            } catch (err) {
+                log(`❌ 复制失败: ${err.message}`, 'error');
+                showFloatingMessage('复制失败，请检查浏览器权限', true);
+            }
+        }
+
+        function setupGlobalPaste() {
+            document.addEventListener('paste', async (e) => {
+                if (document.activeElement === urlInput && urlInput.value) return;
+                
+                e.preventDefault();
+                let pastedText = '';
+                if (e.clipboardData && e.clipboardData.getData) {
+                    pastedText = e.clipboardData.getData('text/plain');
+                }
+                if (!pastedText || pastedText.trim() === '') return;
+                
+                pastedText = pastedText.trim();
+                urlInput.value = pastedText;
+                log(`🌍 触发全局粘贴: ${pastedText.length > 60 ? pastedText.substring(0, 60) + '…' : pastedText}`, 'info');
+                await fetchAndDecompress(pastedText);
+            });
+        }
+
+        function setMode(mode) {
+            if (!currentDecodedText && currentDecodedText !== '') return;
+            currentMode = mode;
+            if (mode === 'markdown') {
+                mdBtn.classList.add('active');
+                plainBtn.classList.remove('active');
+                log('🎨 切换为 Markdown 高亮排版模式', 'success');
+            } else {
+                plainBtn.classList.add('active');
+                mdBtn.classList.remove('active');
+                log('📄 切换为纯文本模式', 'success');
+            }
+            renderPreview();
+        }
+
+        function onManualFetch() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showFloatingMessage('请输入 URL', true);
+                return;
+            }
+            fetchAndDecompress(url);
+        }
+
+        function init() {
+            setupGlobalPaste();
+            urlInput.addEventListener('input', () => updateUrlParam(urlInput.value.trim()));
+            
+            fetchBtn.onclick = onManualFetch;
+            copyBtn.onclick = copyDecodedText;
+            
+            plainBtn.onclick = () => setMode('text');
+            mdBtn.onclick = () => setMode('markdown');
+            
+            urlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onManualFetch();
+                }
+            });
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlParam = urlParams.get('url');
+            const isMarkdown = urlParams.get('markdown') === 'true';
+
+            if (isMarkdown) {
+                currentMode = 'markdown';
+                mdBtn.classList.add('active');
+                plainBtn.classList.remove('active');
+            }
+
+            if (urlParam) {
+                urlInput.value = urlParam;
+                log(`📥 从 URL 参数读取并加载: ${urlParam}`, 'info');
+                fetchAndDecompress(urlParam);
+            }
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
