@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube倍速控制器
 // @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
-// @version      26.7.23
+// @version      26.7.24
 // @description  支持任意倍率调节的YouTube播放控制，快捷键+预设+记忆
 // @match        *://www.youtube.com/*
 // @match        *://m.youtube.com/*
