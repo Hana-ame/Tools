@@ -8,8 +8,8 @@
 // @match        *://exhentai.org/s/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
-// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/eh-waterfall.user.js
-// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/eh-waterfall.user.js
+// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/eh-waterfall.user.js
+// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/eh-waterfall.user.js
 // @run-at       document-idle
 // ==/UserScript==
 

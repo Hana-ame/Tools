@@ -5,8 +5,8 @@
 // @description  去除所有包含 logo-bg 类名的元素样式
 // @match        https://i.jandan.net/*
 // @match        https://jandan.net/*
-// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/jandan.user.js
-// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/jandan.user.js
+// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/jandan.user.js
+// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/jandan.user.js
 // @grant        GM_addStyle
 
 // ==/UserScript==

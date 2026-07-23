@@ -8,8 +8,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      *
 // @connect      moonchan.xyz
-// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/quickPost.user.js
-// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/quickPost.user.js
+// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/quickPost.user.js
+// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/quickPost.user.js
 // @run-at       document-idle
 // ==/UserScript==
 

@@ -12,8 +12,8 @@
 // @match        *://*.level-plus.net/*
 // @match        *://*.spring-plus.net/*
 
-// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
-// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/master/tampermonkey/soulplus.user.js
+// @updateURL    https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/soulplus.user.js
+// @downloadURL  https://raw.githubusercontent.com/Hana-ame/Tools/refs/heads/tampermonkey/soulplus.user.js
 // @grant        none
 // ==/UserScript==
 
