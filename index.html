@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb; color: #1e293b;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 24px;
+        }
+        .card {
+            max-width: 600px; width: 100%; background: white;
+            border-radius: 28px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            padding: 32px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        p { color: #64748b; margin-bottom: 24px; }
+        .list { display: flex; flex-direction: column; gap: 12px; }
+        a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px 20px; background: #f8fafc;
+            border-radius: 16px; text-decoration: none;
+            color: #1e293b; font-weight: 500; transition: all 0.15s;
+            border: 1px solid #e2e8f0;
+        }
+        a:hover { background: #eef2ff; border-color: #c7d2fe; transform: translateY(-1px); }
+        .icon { font-size: 1.5rem; }
+        .name { flex: 1; }
+        .desc { font-weight: 400; font-size: 0.85rem; color: #64748b; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🧰 Tools</h1>
+    <p>浏览器小工具合集</p>
+    <div class="list">
+        <a href="onetab2md.html">
+            <span class="icon">📄</span>
+            <span class="name">OneTab → Markdown<span class="desc"><br>粘贴链接列表，生成 Markdown 图片语法并复制</span></span>
+        </a>
+        <a href="gzip-viewer.html">
+            <span class="icon">📦</span>
+            <span class="name">Gzip 预览器<span class="desc"><br>在线解压 .gz 文件并查看内容，支持代码高亮</span></span>
+        </a>
+        <a href="md-viewer.html">
+            <span class="icon">📝</span>
+            <span class="name">Markdown 预览器<span class="desc"><br>加载远程 .md 文件并渲染，支持代码高亮</span></span>
+        </a>
+    </div>
+</div>
+</body>
+</html>
