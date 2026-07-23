@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         bilibili倍速
-// @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
+// @namespace    https://github.com/Hana-ame/Tools/tree/tampermonkey
 // @version      26.7.23
 // @description  添加倍速选项
 // @match        *://www.bilibili.com/video/*

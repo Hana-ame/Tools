@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Waterfall View and Image Link Helper
-// @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
+// @namespace    https://github.com/Hana-ame/Tools/tree/tampermonkey
 // @version      25.5.26
 // @description  Adds buttons for waterfall view and copying image permalinks.
 // @author       Your Name

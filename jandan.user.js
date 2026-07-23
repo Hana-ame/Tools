@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Logo-BG Elements
-// @namespace    https://github.com/Hana-ame/Tools/tree/master/tampermonkey
+// @namespace    https://github.com/Hana-ame/Tools/tree/tampermonkey
 // @version      25.5.27
 // @description  去除所有包含 logo-bg 类名的元素样式
 // @match        https://i.jandan.net/*
