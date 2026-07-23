@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneTab → Markdown</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f5f7fb; margin: 0; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; padding: 24px;
+        }
+        .card {
+            max-width: 900px; width: 100%; background: white;
+            border-radius: 28px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            padding: 28px 32px; color: white;
+        }
+        .header h3 { margin: 0; font-weight: 600; font-size: 1.7rem; letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; }
+        .header h3:before { content: "📄"; font-size: 1.8rem; }
+        .header p { margin: 8px 0 0; opacity: 0.75; font-size: 0.9rem; }
+        .content { padding: 28px 32px 32px; }
+        .info-note {
+            background: #eef2ff; border-left: 4px solid #3b82f6; padding: 12px 16px;
+            border-radius: 14px; font-size: 0.85rem; color: #1e293b; margin-bottom: 20px;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .info-note code { background: #ffffffcc; padding: 2px 8px; border-radius: 20px; font-size: 0.8rem; font-family: monospace; }
+        textarea {
+            width: 100%; height: 200px; padding: 16px 18px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 13px; line-height: 1.5; border: 1px solid #d1d5db;
+            border-radius: 20px; background: #fefefe; resize: vertical;
+            box-shadow: inset 0 1px 2px #00000008;
+        }
+        textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        .btn-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+        button {
+            padding: 12px 28px; font-size: 1rem; font-weight: 500;
+            border: none; border-radius: 40px; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 10px;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #0f172a; color: white; }
+        .btn-primary:hover { background: #1e293b; }
+        .btn-copy { background: #059669; color: white; }
+        .btn-copy:hover { background: #047857; }
+        .btn-clear { background: #e2e8f0; color: #475569; }
+        .btn-clear:hover { background: #cbd5e1; }
+        .status-area {
+            margin-top: 18px; padding: 12px 16px; background: #f8fafc;
+            border-radius: 18px; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        #status { color: #2c3e66; font-weight: 450; flex: 1; }
+        #preview {
+            margin-top: 16px; display: none;
+        }
+        #preview textarea {
+            height: 300px; background: #f8fafc;
+        }
+        .badge { font-size: 0.7rem; background: #e2e8f0; padding: 2px 8px; border-radius: 20px; color: #334155; }
+        footer { font-size: 0.7rem; text-align: center; padding: 16px 32px 20px; color: #5b6e8c; border-top: 1px solid #edf2f7; }
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #065f46; color: white; padding: 12px 24px;
+            border-radius: 40px; font-weight: 500; font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <h3>OneTab → Markdown</h3>
+        <p>粘贴 OneTab 导出内容 · 自动代理微博 & B站图片 · 生成 Markdown 并复制</p>
+    </div>
+    <div class="content">
+        <div class="info-note">
+            <span>✨</span>
+            <div>
+                支持格式: <code>https://example.com/page | 标题</code> (每行一条)<br>
+                🖼️ <strong>图片代理规则</strong>:
+                <strong>新浪图床</strong> (wx*.sinaimg.cn) 自动添加 referer；
+                <strong>B站图床</strong> (*.hdslb.com) 仅代理不设 referer。
+            </div>
+        </div>
+        <textarea id="input" placeholder="粘贴 OneTab 导出内容，示例：&#10;https://wx2.sinaimg.cn/large/xxx.jpg | 微博配图&#10;https://i0.hdslb.com/bfs/new_dyn/xxx.png | B站动态图&#10;https://example.com/article | 普通文章"></textarea>
+        <div class="btn-row">
+            <button class="btn-primary" onclick="process()">🚀 处理 & 预览</button>
+            <button class="btn-copy" onclick="copyMd()">📋 复制 Markdown</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ 清空</button>
+        </div>
+        <div class="status-area">
+            <span id="status">⚡ 等待操作</span>
+            <span class="badge">代理: proxy.moonchan.xyz</span>
+        </div>
+        <div id="preview">
+            <textarea id="output" readonly></textarea>
+        </div>
+    </div>
+    <footer>新浪图片自动添加 referer · B站图片仅代理无 referer · 点击复制即用</footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    function applyImageProxy(url) {
+        if (!url) return url;
+        const sina = url.match(/^https?:\/\/(wx\d+\.sinaimg\.cn)\/(.*)$/i);
+        if (sina) return `https://proxy.moonchan.xyz/${sina[2]}?proxy_host=${sina[1]}&proxy_referer=https://weibo.com`;
+        const bili = url.match(/^https?:\/\/([^\/]+\.hdslb\.com)\/(.*)$/i);
+        if (bili) return `https://proxy.moonchan.xyz/${bili[2]}?proxy_host=${bili[1]}`;
+        return url;
+    }
+
+    function pickFilename(lines) {
+        for (const line of lines) {
+            const p = line.split('|');
+            if (p.length > 1 && p[1].trim()) {
+                let t = p[1].trim().replace(/[\[\]]/g, '').replace(/[\\/:*?"<>|]/g, '_').substring(0, 40);
+                if (t) return t;
+            }
+        }
+        return 'onetab-export';
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    let lastMd = '';
+
+    function process() {
+        const status = document.getElementById('status');
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        const preview = document.getElementById('preview');
+        const raw = input.value.trim();
+
+        if (!raw) { status.innerHTML = '⚠️ 请粘贴内容'; return; }
+
+        status.innerHTML = '🔄 转换 Markdown...';
+
+        let md = '# OneTab Export\n\n';
+        let count = 0;
+        const lines = raw.split(/\r?\n/);
+        for (const line of lines) {
+            const l = line.trim();
+            if (!l) continue;
+            const parts = l.split('|');
+            const url = parts[0]?.trim() || '';
+            if (!url.startsWith('http://') && !url.startsWith('https://')) continue;
+            const title = (parts.length > 1 && parts[1]?.trim()) ? parts[1].trim().replace(/[\[\]]/g, '') : url;
+            md += `![${title}](${applyImageProxy(url)})\n`;
+            count++;
+        }
+
+        if (!count) { status.innerHTML = '❌ 未检测到有效链接'; return; }
+
+        lastMd = md;
+        output.value = md;
+        preview.style.display = 'block';
+        status.innerHTML = `✅ 共 ${count} 项 | 文件名: ${pickFilename(lines)}.md`;
+    }
+
+    async function copyMd() {
+        if (!lastMd) { process(); if (!lastMd) return; }
+        try {
+            await navigator.clipboard.writeText(lastMd);
+        } catch {
+            const ta = document.createElement('textarea');
+            ta.value = lastMd; document.body.appendChild(ta);
+            ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        showToast('📋 已复制到剪贴板');
+    }
+
+    function clearAll() {
+        document.getElementById('input').value = '';
+        document.getElementById('output').value = '';
+        document.getElementById('preview').style.display = 'none';
+        document.getElementById('status').innerHTML = '⚡ 等待操作';
+        lastMd = '';
+    }
+</script>
+</body>
+</html>
