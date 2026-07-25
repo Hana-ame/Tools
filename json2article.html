@@ -104,7 +104,13 @@ function convert() {
                 c = c.map(x => x.text || '').join('');
             }
             if (typeof c === 'string' && c.trim()) {
-                parts.push(c.trim());
+                let block = '';
+                if (m.reasoning_content) {
+                    const lines = m.reasoning_content.trim().split('\n');
+                    block += lines.map(l => `> ${l}`).join('\n') + '\n\n';
+                }
+                block += c.trim();
+                parts.push(block);
             }
         }
     }
@@ -114,7 +120,7 @@ function convert() {
         return;
     }
 
-    const article = parts.join('\n\n');
+    const article = parts.join('\n\n---\n\n');
     output.value = article;
     meta.textContent = `共 ${msgs.length} 条消息，提取 ${parts.length} 条 assistant 回复，${article.length} 字符`;
     toast(`提取完成，${article.length} 字符`);
