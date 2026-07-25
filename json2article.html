@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON → 文章</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb; color: #1e293b;
+            padding: 24px; min-height: 100vh;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 1.6rem; margin-bottom: 6px; }
+        p { color: #64748b; margin-bottom: 16px; font-size: 0.9rem; }
+        .row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 300px; }
+        label { font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 6px; color: #334155; }
+        textarea {
+            width: 100%; height: 500px; padding: 14px; border: 1px solid #d1d5db;
+            border-radius: 12px; font-family: 'SF Mono', Consolas, monospace;
+            font-size: 13px; resize: vertical; background: #fefefe;
+        }
+        textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        #output { background: #f8fafc; white-space: pre-wrap; overflow-y: auto; }
+        .btn-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        button {
+            padding: 10px 20px; border: none; border-radius: 40px; font-size: 0.9rem;
+            font-weight: 500; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: #0f172a; color: white; }
+        .btn-primary:hover { background: #1e293b; }
+        .btn-copy { background: #059669; color: white; }
+        .btn-copy:hover { background: #047857; }
+        .btn-clear { background: #e2e8f0; color: #475569; }
+        .btn-clear:hover { background: #cbd5e1; }
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 10px 20px;
+            border-radius: 40px; font-size: 0.9rem; z-index: 9999;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+        .meta { font-size: 0.8rem; color: #64748b; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📖 JSON → 文章</h1>
+    <p>粘贴 DeepSeek API 的 messages JSON，自动提取 assistant 回复拼成完整文章</p>
+    <div class="btn-row">
+        <button class="btn-primary" onclick="convert()">🔄 转换</button>
+        <button class="btn-copy" onclick="copy()">📋 复制</button>
+        <button class="btn-clear" onclick="clearAll()">🗑️ 清空</button>
+    </div>
+    <div class="row">
+        <div class="col">
+            <label>JSON 输入</label>
+            <textarea id="input" placeholder="粘贴 messages JSON ..."></textarea>
+        </div>
+        <div class="col">
+            <label>文章输出</label>
+            <textarea id="output" readonly></textarea>
+        </div>
+    </div>
+    <div class="meta" id="meta"></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+function toast(msg, err) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = err ? '#dc2626' : '#1e293b';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function convert() {
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const meta = document.getElementById('meta');
+    let raw;
+    try {
+        raw = JSON.parse(input.value.trim());
+    } catch {
+        toast('JSON 格式错误', true);
+        return;
+    }
+
+    const msgs = raw.messages || raw;
+    if (!Array.isArray(msgs)) {
+        toast('未找到 messages 数组', true);
+        return;
+    }
+
+    const parts = [];
+    for (const m of msgs) {
+        if (m.role === 'assistant') {
+            let c = m.content;
+            if (Array.isArray(c)) {
+                c = c.map(x => x.text || '').join('');
+            }
+            if (typeof c === 'string' && c.trim()) {
+                parts.push(c.trim());
+            }
+        }
+    }
+
+    if (!parts.length) {
+        toast('未找到 assistant 回复', true);
+        return;
+    }
+
+    const article = parts.join('\n\n');
+    output.value = article;
+    meta.textContent = `共 ${msgs.length} 条消息，提取 ${parts.length} 条 assistant 回复，${article.length} 字符`;
+    toast(`提取完成，${article.length} 字符`);
+}
+
+async function copy() {
+    const output = document.getElementById('output');
+    if (!output.value) { toast('暂无内容', true); return; }
+    try {
+        await navigator.clipboard.writeText(output.value);
+        toast('已复制');
+    } catch {
+        toast('复制失败', true);
+    }
+}
+
+function clearAll() {
+    document.getElementById('input').value = '';
+    document.getElementById('output').value = '';
+    document.getElementById('meta').textContent = '';
+}
+</script>
+</body>
+</html>
