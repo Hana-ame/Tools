@@ -103,6 +103,14 @@
             border-radius: 10px; font-size: 0.9rem; margin-bottom: 14px; outline: none;
         }
         .config-panel input:focus { border-color: #3b82f6; }
+        .hint {
+            font-size: 0.8rem; color: #6b7280; margin: -10px 0 14px 2px;
+            line-height: 1.5;
+        }
+        .hint code {
+            background: #f1f5f9; padding: 1px 5px; border-radius: 4px;
+            font-family: 'SF Mono', Consolas, monospace; font-size: 0.85em;
+        }
         .config-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
         .config-actions button {
             padding: 10px 20px; border-radius: 40px; border: none; font-weight: 500;
@@ -146,7 +154,8 @@
     <div class="config-panel">
         <h2>⚙️ 设置</h2>
         <label>API 地址</label>
-        <input id="cfgUrl" value="https://api.siliconflow.cn/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+        <input id="cfgUrl" value="https://zen.l.moonchan.xyz/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+        <div class="hint">可使用 ech-proxy 的 <code>zen.l.moonchan.xyz</code> 作为默认后端转发</div>
         <label>API Key</label>
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
@@ -176,7 +185,7 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) return JSON.parse(saved);
         } catch {}
-        return { url: 'https://api.siliconflow.cn/v1/chat/completions', key: '', model: 'deepseek-ai/Deepseek-V4-Flash', system: '' };
+        return { url: 'https://zen.l.moonchan.xyz/v1/chat/completions', key: '', model: 'deepseek-ai/Deepseek-V4-Flash', system: '' };
     }
 
     function saveConfig() {
