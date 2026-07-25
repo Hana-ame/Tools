@@ -154,8 +154,8 @@
     <div class="config-panel">
         <h2>⚙️ 设置</h2>
         <label>API 地址</label>
-        <input id="cfgUrl" value="https://bwh.moonchan.xyz:8443/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
-        <div class="hint">可使用 <code>bwh.moonchan.xyz</code> 作为默认后端转发</div>
+        <input id="cfgUrl" value="https://zen.l.moonchan.xyz/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+        <div class="hint">可使用 ech-proxy 的 <code>zen.l.moonchan.xyz</code> 作为默认后端转发</div>
         <label>API Key</label>
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
@@ -183,7 +183,7 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) return JSON.parse(saved);
         } catch {}
-        return { url: 'https://bwh.moonchan.xyz:8443/v1/chat/completions', key: '', model: 'deepseek-v4-flash-free', system: '' };
+        return { url: 'https://zen.l.moonchan.xyz/v1/chat/completions', key: '', model: 'deepseek-v4-flash-free', system: '' };
     }
 
     function saveConfig() {
