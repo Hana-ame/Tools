@@ -1,6 +1,6 @@
 import datetime
 import http.server
-import ipaddress
+
 import json
 import random
 import socket
@@ -9,6 +9,7 @@ import socketserver
 import sys
 import threading
 import time
+from typing import cast
 import requests
 from requests.adapters import HTTPAdapter
 
@@ -31,7 +32,7 @@ def next_utc_midnight():
 def resolve_zen(af=0):
     fam = {4: socket.AF_INET, 6: socket.AF_INET6}.get(af, socket.AF_UNSPEC)
     addrs = socket.getaddrinfo(ZEN_HOST, 443, fam, socket.SOCK_STREAM)
-    ip = addrs[0][4][0]
+    ip = str(addrs[0][4][0])
     if ":" in ip:
         ip = f"[{ip}]"
     return f"https://{ip}{ZEN_PATH}", ZEN_HOST
@@ -56,40 +57,6 @@ def _make_session(source_ip=None):
     s.mount("http://", adapter)
     s.mount("https://", adapter)
     return s
-
-
-class IPv6Pool:
-    def __init__(self, cidr):
-        self._net = ipaddress.IPv6Network(cidr, strict=False)
-        self._gen = self._net.hosts()
-        next(self._gen)
-        self._lock = threading.Lock()
-        self._allocated = {}
-        self._exhausted = set()
-
-    def acquire(self, key):
-        with self._lock:
-            if key in self._allocated:
-                return self._allocated[key]
-            return self._allocated.get(key) or self._fresh(key)
-
-    def _fresh(self, key):
-        for addr in self._gen:
-            s = str(addr)
-            if s not in self._exhausted:
-                self._allocated[key] = s
-                return s
-        raise RuntimeError("IPv6 pool exhausted")
-
-    def mark_exhausted(self, key):
-        with self._lock:
-            addr = self._allocated.pop(key, None)
-            if addr:
-                self._exhausted.add(addr)
-
-    def release(self, key):
-        with self._lock:
-            self._allocated.pop(key, None)
 
 
 def clean(payload):
@@ -119,7 +86,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
 
     def _proxy(self, method, path):
         client_ip = self.client_address[0]
-        sv = self.server
+        sv = cast(ThreadedServer, self.server)
         host = self.headers.get("Host", "")
 
         bl = getattr(sv, "banlist", None)
@@ -166,8 +133,6 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                         if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
                             last_error = data
                             sv.cooldown[fam] = next_utc_midnight()
-                            if fam == "v6":
-                                sv.pool.mark_exhausted(client_ip)
                             r = None
                             continue
                     except (json.JSONDecodeError, ValueError):
@@ -261,10 +226,15 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
     def __init__(self, addr, port, handler):
         self.address_family = socket.AF_INET6 if ":" in addr else socket.AF_INET
-        self._sessions = {}
+        self._sessions: dict[str, tuple[requests.Session, float]] = {}
         self._sessions_lock = threading.Lock()
-        self.cooldown = {}
-        self.modes = {}
+        self.cooldown: dict[str, float] = {}
+        self.modes: dict[str, str] = {}
+        self.banlist: BanList | None = None
+        self.zen_base_v4: str = ""
+        self.zen_host_v4: str = ""
+        self.zen_base_v6: str = ""
+        self.zen_host_v6: str = ""
         super().__init__((addr, port), handler)
 
     def server_bind(self):
@@ -289,18 +259,9 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         if fam == "v4":
             base, host = self.zen_base_v4, self.zen_host_v4
             session = self.get_session(f"v4:{client_ip}")
-            pool = None
         else:
             base, host = self.zen_base_v6, self.zen_host_v6
-            pool = getattr(self, "pool", None)
-            if pool:
-                try:
-                    ipv6 = pool.acquire(client_ip)
-                except RuntimeError:
-                    return None
-                session = self.get_session(f"v6:{client_ip}", ipv6)
-            else:
-                session = self.get_session(f"v6:{client_ip}")
+            session = self.get_session(f"v6:{client_ip}")
         url = f"{base}{'/chat/completions' if body else '/models'}"
         hdrs = dict(headers)
         hdrs["Host"] = host
@@ -310,15 +271,7 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
                                     stream=is_stream, timeout=TIMEOUT)
                 return r
             except requests.exceptions.ConnectionError:
-                if pool and fam == "v6":
-                    pool.mark_exhausted(client_ip)
-                    try:
-                        ipv6 = pool.acquire(client_ip)
-                        session = self.get_session(f"v6:{client_ip}", ipv6)
-                    except RuntimeError:
-                        return None
-                    continue
-                return None
+                pass
         return None
 
     def _cleanup(self):
@@ -343,16 +296,11 @@ if __name__ == "__main__":
     key = sys.argv[4] if len(sys.argv) > 4 else cert
     if len(sys.argv) > 5:
         TIMEOUT = int(sys.argv[5])
-    pool_cidr = sys.argv[6] if len(sys.argv) > 6 else None
-
     server = ThreadedServer(addr, port, ZenProxy)
     server.banlist = BanList()
 
     server.zen_base_v4, server.zen_host_v4 = resolve_zen(4)
     server.zen_base_v6, server.zen_host_v6 = resolve_zen(6)
-    if pool_cidr:
-        server.pool = IPv6Pool(pool_cidr)
-        server.start_cleanup()
 
     server.modes = {
         "bwh4.d.moonchan.xyz": "v4",
@@ -368,8 +316,5 @@ if __name__ == "__main__":
     else:
         scheme = "http"
 
-    extra = f"timeout={TIMEOUT}s"
-    if pool_cidr:
-        extra += f", pool={pool_cidr}"
-    print(f"Zen proxy on {scheme}://{addr}:{port} ({extra})")
+    print(f"Zen proxy on {scheme}://{addr}:{port} (timeout={TIMEOUT}s)")
     server.serve_forever()

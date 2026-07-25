@@ -160,11 +160,9 @@
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
         <select id="cfgModel">
-            <option value="deepseek-v4-flash-free" selected>DeepSeek-V4-Flash-Free</option>
-            <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
-            <option value="gpt-4o-mini">GPT-4o-mini</option>
-            <option value="gpt-4o">GPT-4o</option>
+            <option value="deepseek-v4-flash-free" selected>deepseek-v4-flash-free</option>
         </select>
+        <input id="cfgModelCustom" placeholder="或者输入自定义模型名" style="margin-top:-4px">
         <label>System Prompt</label>
         <input id="cfgSystem" placeholder="可选，AI 角色设定">
         <div class="config-actions">
@@ -191,7 +189,8 @@
     function saveConfig() {
         config.url = document.getElementById('cfgUrl').value.trim();
         config.key = document.getElementById('cfgKey').value.trim();
-        config.model = document.getElementById('cfgModel').value;
+        const custom = document.getElementById('cfgModelCustom').value.trim();
+        config.model = custom || document.getElementById('cfgModel').value;
         config.system = document.getElementById('cfgSystem').value.trim();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
         messages = [{ role: 'system', content: config.system }];
@@ -202,7 +201,9 @@
     function showConfig() {
         document.getElementById('cfgUrl').value = config.url;
         document.getElementById('cfgKey').value = config.key;
-        document.getElementById('cfgModel').value = config.model;
+        const inFree = ['deepseek-v4-flash-free', ''].includes(config.model);
+        document.getElementById('cfgModel').value = inFree ? 'deepseek-v4-flash-free' : 'deepseek-v4-flash-free';
+        document.getElementById('cfgModelCustom').value = inFree ? '' : config.model;
         document.getElementById('cfgSystem').value = config.system;
         document.getElementById('configModal').classList.add('show');
     }
