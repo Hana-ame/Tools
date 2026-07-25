@@ -160,7 +160,7 @@
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
         <select id="cfgModel">
-            <option value="deepseek-ai/Deepseek-V4-Flash" selected>DeepSeek-V4-Flash</option>
+            <option value="deepseek-v4-flash-free" selected>DeepSeek-V4-Flash-Free</option>
             <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
             <option value="gpt-4o-mini">GPT-4o-mini</option>
             <option value="gpt-4o">GPT-4o</option>
@@ -185,7 +185,7 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) return JSON.parse(saved);
         } catch {}
-        return { url: 'https://zen.l.moonchan.xyz/v1/chat/completions', key: '', model: 'deepseek-ai/Deepseek-V4-Flash', system: '' };
+        return { url: 'https://zen.l.moonchan.xyz/v1/chat/completions', key: '', model: 'deepseek-v4-flash-free', system: '' };
     }
 
     function saveConfig() {
@@ -282,7 +282,7 @@
                 stream: true,
                 max_tokens: 8192
             };
-            if (config.model.includes('reasoner') || config.model.includes('DeepSeek-V4')) {
+            if (config.model.includes('reasoner') || config.model.includes('deepseek-v4')) {
                 body.enable_thinking = true;
             }
 
