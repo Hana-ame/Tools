@@ -146,13 +146,13 @@
     <div class="config-panel">
         <h2>⚙️ 设置</h2>
         <label>API 地址</label>
-        <input id="cfgUrl" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+        <input id="cfgUrl" value="https://api.siliconflow.cn/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
         <label>API Key</label>
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
         <select id="cfgModel">
-            <option value="deepseek-chat">DeepSeek-V3</option>
-            <option value="deepseek-reasoner">DeepSeek-R1</option>
+            <option value="deepseek-ai/Deepseek-V4-Flash" selected>DeepSeek-V4-Flash</option>
+            <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
             <option value="gpt-4o-mini">GPT-4o-mini</option>
             <option value="gpt-4o">GPT-4o</option>
         </select>
@@ -176,7 +176,7 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) return JSON.parse(saved);
         } catch {}
-        return { url: 'https://api.deepseek.com/v1/chat/completions', key: '', model: 'deepseek-chat', system: '' };
+        return { url: 'https://api.siliconflow.cn/v1/chat/completions', key: '', model: 'deepseek-ai/Deepseek-V4-Flash', system: '' };
     }
 
     function saveConfig() {
@@ -273,7 +273,7 @@
                 stream: true,
                 max_tokens: 8192
             };
-            if (config.model === 'deepseek-reasoner') {
+            if (config.model.includes('reasoner') || config.model.includes('DeepSeek-V4')) {
                 body.enable_thinking = true;
             }
 
