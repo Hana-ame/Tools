@@ -263,13 +263,18 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         self.zen_host_v4: str = ""
         self.zen_base_v6: str = ""
         self.zen_host_v6: str = ""
+        self._ssl_ctx: ssl.SSLContext | None = None
         super().__init__((addr, port), handler)
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if hasattr(socket, "SO_REUSEPORT"):
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         super().server_bind()
+
+    def get_request(self):
+        sock, addr = self.socket.accept()
+        if self._ssl_ctx:
+            sock = self._ssl_ctx.wrap_socket(sock, server_side=True)
+        return sock, addr
 
     def get_session(self, key, ipv6=None):
         with self._sessions_lock:
@@ -324,26 +329,16 @@ if __name__ == "__main__":
     zen_base_v4, zen_host_v4 = resolve_zen(4)
     zen_base_v6, zen_host_v6 = resolve_zen(6)
 
-    servers = []
-    for addr in ("0.0.0.0", "::"):
-        s = ThreadedServer(addr, port, ZenProxy)
-        s.banlist = banlist
-        s.zen_base_v4 = zen_base_v4
-        s.zen_host_v4 = zen_host_v4
-        s.zen_base_v6 = zen_base_v6
-        s.zen_host_v6 = zen_host_v6
-        if servers:
-            s._sessions = servers[0]._sessions
-            s._sessions_lock = servers[0]._sessions_lock
-            s.cooldown = servers[0].cooldown
-        if cert:
-            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ctx.load_cert_chain(cert, key)
-            s.socket = ctx.wrap_socket(s.socket, server_side=True)
-        servers.append(s)
-        print(f"Zen proxy on {'https' if cert else 'http'}://{addr}:{port} (timeout={TIMEOUT}s)")
-
-    servers[0].start_cleanup()
-    for s in servers[1:]:
-        threading.Thread(target=s.serve_forever, daemon=True).start()
-    servers[0].serve_forever()
+    s = ThreadedServer("0.0.0.0", port, ZenProxy)
+    s.banlist = banlist
+    s.zen_base_v4 = zen_base_v4
+    s.zen_host_v4 = zen_host_v4
+    s.zen_base_v6 = zen_base_v6
+    s.zen_host_v6 = zen_host_v6
+    if cert:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(cert, key)
+        s._ssl_ctx = ctx
+    print(f"Zen proxy on {'https' if cert else 'http'}://0.0.0.0:{port} (timeout={TIMEOUT}s)")
+    s.start_cleanup()
+    s.serve_forever()
