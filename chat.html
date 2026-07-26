@@ -172,6 +172,33 @@
         .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .params-grid .full { grid-column: 1 / -1; }
 
+        .param-tab {
+            background: none; border: none; padding: 8px 14px; font-size: 0.82rem;
+            cursor: pointer; color: #64748b; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; font-weight: 500;
+        }
+        .param-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+        .param-row {
+            display: flex; align-items: center; gap: 6px; padding: 4px 0;
+        }
+        .param-row .p-chk { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+        .param-row .p-key {
+            font-size: 0.82rem; font-weight: 600; color: #374151; min-width: 120px;
+            font-family: 'SF Mono', Consolas, monospace;
+        }
+        .param-row .p-key.locked { color: #64748b; }
+        .param-row .p-val { flex: 1; }
+        .param-row .p-val input, .param-row .p-val select {
+            width: 100%; padding: 6px 8px; border: 1px solid #d1d5db;
+            border-radius: 8px; font-size: 0.82rem; outline: none; font-family: inherit;
+        }
+        .param-row .p-val input:focus { border-color: #3b82f6; }
+        .param-row .p-del {
+            background: none; border: none; cursor: pointer; color: #94a3b8;
+            font-size: 1rem; padding: 2px 4px; flex-shrink: 0;
+        }
+        .param-row .p-del:hover { color: #dc2626; }
+
         @media (max-width: 600px) {
             .msg { max-width: 95%; }
             .modal-panel { padding: 16px; }
@@ -233,31 +260,13 @@
 <div class="modal" id="paramsModal">
     <div class="modal-panel">
         <h2>⚙️ 请求参数</h2>
-        <div class="params-grid">
-            <div>
-                <label>max_tokens</label>
-                <input id="pMaxTokens" type="number" value="8192" min="1" max="65536">
-            </div>
-            <div>
-                <label>temperature</label>
-                <input id="pTemperature" type="number" value="0" step="0.1" min="0" max="2" placeholder="默认">
-            </div>
-            <div>
-                <label>top_p</label>
-                <input id="pTopP" type="number" value="0" step="0.05" min="0" max="1" placeholder="默认">
-            </div>
-            <div>
-                <label>enable_thinking</label>
-                <select id="pThinking">
-                    <option value="">自动</option>
-                    <option value="true">开启</option>
-                    <option value="false">关闭</option>
-                </select>
-            </div>
-            <div class="full">
-                <label>额外字段 (JSON)</label>
-                <textarea id="pExtra" rows="2" placeholder='{"stop":["\n"],"frequency_penalty":0}' style="font-family:monospace;font-size:0.82rem;"></textarea>
-            </div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #e2e8f0;">
+            <button class="param-tab active" data-mode="table" onclick="switchParamMode('table')">📋 表格模式</button>
+            <button class="param-tab" data-mode="json" onclick="switchParamMode('json')">📝 JSON模式</button>
+        </div>
+        <div id="paramsTableView"><div id="paramRows"></div></div>
+        <div id="paramsJsonView" style="display:none;">
+            <textarea id="pJson" rows="8" style="width:100%;font-family:monospace;font-size:0.82rem;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
         </div>
         <div class="modal-actions">
             <button class="primary" onclick="saveParams()">保存</button>
@@ -320,42 +329,218 @@
         showModal('configModal');
     }
 
+    const KNOWN_KEYS = ['max_tokens', 'temperature', 'top_p', 'enable_thinking'];
+
     function loadParams() {
         try {
             const saved = localStorage.getItem(PARAMS_KEY);
-            if (saved) return JSON.parse(saved);
+            if (saved) {
+                const p = JSON.parse(saved);
+                if ('json' in p) return p;
+                const obj = {};
+                if (p.max_tokens) obj.max_tokens = p.max_tokens;
+                if (p.temperature) obj.temperature = p.temperature;
+                if (p.top_p) obj.top_p = p.top_p;
+                if (p.thinking === 'true') obj.enable_thinking = true;
+                else if (p.thinking === 'false') obj.enable_thinking = false;
+                if (p.extra) { try { Object.assign(obj, JSON.parse(p.extra)); } catch {} }
+                return { mode: 'table', json: JSON.stringify(obj, null, 2) };
+            }
         } catch {}
-        return { max_tokens: 8192, temperature: 0, top_p: 0, thinking: '', extra: '' };
+        return { mode: 'table', json: '{\n  "max_tokens": 8192\n}' };
+    }
+
+    function paramsDefaultJson() {
+        return '{\n  "max_tokens": 8192\n}';
+    }
+
+    function jsonToRows(jsonStr) {
+        let obj = {};
+        try { obj = JSON.parse(jsonStr); } catch {}
+        const known = new Set(KNOWN_KEYS);
+        const rows = [];
+        for (const key of KNOWN_KEYS) {
+            if (key in obj) {
+                let val = obj[key];
+                if (key === 'enable_thinking') val = val === true ? 'true' : val === false ? 'false' : '';
+                else val = String(val);
+                rows.push({ key, value: val, enabled: true, locked: true });
+            } else {
+                const defs = { max_tokens: '8192', temperature: '0', top_p: '0', enable_thinking: '' };
+                rows.push({ key, value: defs[key], enabled: false, locked: true });
+            }
+        }
+        for (const [key, val] of Object.entries(obj)) {
+            if (!known.has(key)) {
+                rows.push({ key, value: JSON.stringify(val), enabled: true, locked: false });
+            }
+        }
+        return rows;
+    }
+
+    function rowsToJson(rows) {
+        const obj = {};
+        for (const r of rows) {
+            if (!r.enabled) continue;
+            if (r.key === 'enable_thinking') {
+                if (r.value === 'true') obj.enable_thinking = true;
+                else if (r.value === 'false') obj.enable_thinking = false;
+            } else if (KNOWN_KEYS.includes(r.key)) {
+                const n = parseFloat(r.value);
+                obj[r.key] = isNaN(n) ? r.value : n;
+            } else {
+                try { obj[r.key] = JSON.parse(r.value); } catch { obj[r.key] = r.value; }
+            }
+        }
+        return JSON.stringify(obj, null, 2);
+    }
+
+    function renderParamTable(rows) {
+        const container = document.getElementById('paramRows');
+        container.innerHTML = '';
+        for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            const div = document.createElement('div');
+            div.className = 'param-row';
+            div.dataset.idx = i;
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.className = 'p-chk';
+            chk.checked = r.enabled;
+            chk.onchange = () => { r.enabled = chk.checked; };
+            div.appendChild(chk);
+
+            let keyEl;
+            if (r.locked) {
+                keyEl = document.createElement('span');
+                keyEl.className = 'p-key locked';
+                keyEl.textContent = r.key;
+            } else {
+                keyEl = document.createElement('input');
+                keyEl.className = 'p-key';
+                keyEl.type = 'text';
+                keyEl.value = r.key;
+                keyEl.placeholder = 'key';
+                keyEl.style.cssText = 'font-size:0.82rem;font-weight:600;color:#374151;min-width:100px;font-family:"SF Mono",Consolas,monospace;border:1px solid #d1d5db;border-radius:6px;padding:4px 6px;outline:none;';
+                keyEl.oninput = () => { r.key = keyEl.value; };
+            }
+            div.appendChild(keyEl);
+
+            const valWrap = document.createElement('div');
+            valWrap.className = 'p-val';
+
+            if (r.locked && r.key === 'enable_thinking') {
+                const sel = document.createElement('select');
+                sel.innerHTML = '<option value="">自动</option><option value="true">开启</option><option value="false">关闭</option>';
+                sel.value = r.value;
+                sel.onchange = () => { r.value = sel.value; };
+                valWrap.appendChild(sel);
+            } else if (r.locked && (r.key === 'max_tokens' || r.key === 'temperature' || r.key === 'top_p')) {
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.value = r.value;
+                if (r.key === 'max_tokens') { inp.min = 1; inp.max = 65536; }
+                if (r.key === 'temperature') { inp.step = 0.1; inp.min = 0; inp.max = 2; }
+                if (r.key === 'top_p') { inp.step = 0.05; inp.min = 0; inp.max = 1; }
+                inp.oninput = () => { r.value = inp.value; };
+                valWrap.appendChild(inp);
+            } else {
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.value = r.value;
+                inp.placeholder = 'value';
+                inp.oninput = () => { r.value = inp.value; };
+                valWrap.appendChild(inp);
+            }
+            div.appendChild(valWrap);
+
+            if (!r.locked) {
+                const del = document.createElement('button');
+                del.className = 'p-del';
+                del.textContent = '✕';
+                del.onclick = () => {
+                    rows.splice(i, 1);
+                    renderParamTable(rows);
+                };
+                div.appendChild(del);
+            }
+
+            container.appendChild(div);
+        }
+        const addBtn = document.createElement('button');
+        addBtn.className = 'hdr-btn';
+        addBtn.textContent = '+ 添加字段';
+        addBtn.style.cssText = 'margin-top:6px;';
+        addBtn.onclick = () => {
+            rows.push({ key: '', value: '', enabled: true, locked: false });
+            renderParamTable(rows);
+            // focus the new key input
+            const allRows = container.querySelectorAll('.param-row');
+            const last = allRows[allRows.length - 1];
+            if (last) { const inp = last.querySelector('.p-key'); if (inp) inp.focus(); }
+        };
+        container.appendChild(addBtn);
+
+        // focus the key input of custom rows
+        if (!rows.length || rows[rows.length - 1].locked === false) {
+            // keep focus management simple
+        }
+    }
+
+    function switchParamMode(mode) {
+        params.mode = mode;
+        document.querySelectorAll('.param-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.mode === mode);
+        });
+        document.getElementById('paramsTableView').style.display = mode === 'table' ? '' : 'none';
+        document.getElementById('paramsJsonView').style.display = mode === 'json' ? '' : 'none';
+
+        if (mode === 'table') {
+            const rows = jsonToRows(params.json);
+            renderParamTable(rows);
+        } else {
+            document.getElementById('pJson').value = params.json;
+        }
     }
 
     function saveParams() {
-        params.max_tokens = parseInt(document.getElementById('pMaxTokens').value) || 8192;
-        params.temperature = parseFloat(document.getElementById('pTemperature').value) || 0;
-        params.top_p = parseFloat(document.getElementById('pTopP').value) || 0;
-        params.thinking = document.getElementById('pThinking').value;
-        params.extra = document.getElementById('pExtra').value.trim();
+        if (params.mode === 'table') {
+            const container = document.getElementById('paramRows');
+            const rows = [];
+            container.querySelectorAll('.param-row').forEach(div => {
+                const idx = parseInt(div.dataset.idx);
+                if (!isNaN(idx)) {
+                    const chk = div.querySelector('.p-chk');
+                    const keyEl = div.querySelector('.p-key');
+                    const isLocked = keyEl.classList.contains('locked');
+                    const valEl = div.querySelector('.p-val input, .p-val select');
+                    rows[idx] = {
+                        key: isLocked ? keyEl.textContent : keyEl.value,
+                        value: valEl ? valEl.value : '',
+                        enabled: chk.checked,
+                        locked: isLocked
+                    };
+                }
+            });
+            params.json = rowsToJson(rows.filter(Boolean));
+        } else {
+            params.json = document.getElementById('pJson').value;
+        }
         localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
         hideModal('paramsModal');
         toast('参数已保存');
     }
 
     function resetParams() {
-        params = { max_tokens: 8192, temperature: 0, top_p: 0, thinking: '', extra: '' };
+        params = { mode: 'table', json: paramsDefaultJson() };
         localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
-        document.getElementById('pMaxTokens').value = params.max_tokens;
-        document.getElementById('pTemperature').value = params.temperature;
-        document.getElementById('pTopP').value = params.top_p;
-        document.getElementById('pThinking').value = params.thinking;
-        document.getElementById('pExtra').value = params.extra;
+        switchParamMode(params.mode);
         toast('参数已重置');
     }
 
     function showParams() {
-        document.getElementById('pMaxTokens').value = params.max_tokens;
-        document.getElementById('pTemperature').value = params.temperature;
-        document.getElementById('pTopP').value = params.top_p;
-        document.getElementById('pThinking').value = params.thinking;
-        document.getElementById('pExtra').value = params.extra;
+        switchParamMode(params.mode);
         showModal('paramsModal');
     }
 
@@ -513,19 +698,14 @@
             messages: messages,
             stream: true,
         };
-        if (params.max_tokens) body.max_tokens = params.max_tokens;
-        if (params.temperature) body.temperature = params.temperature;
-        if (params.top_p) body.top_p = params.top_p;
-        if (params.thinking === 'true') body.enable_thinking = true;
-        else if (params.thinking === 'false') body.enable_thinking = false;
-        else if (config.model.includes('reasoner') || config.model.includes('deepseek-v4')) {
-            body.enable_thinking = true;
-        }
-        if (params.extra) {
-            try {
-                const extra = JSON.parse(params.extra);
+        try {
+            if (params.json) {
+                const extra = JSON.parse(params.json);
                 Object.assign(body, extra);
-            } catch {}
+            }
+        } catch {}
+        if (!('enable_thinking' in body) && (config.model.includes('reasoner') || config.model.includes('deepseek-v4'))) {
+            body.enable_thinking = true;
         }
         return body;
     }
@@ -687,7 +867,19 @@
         if (!c) return;
         messages = c.messages.map(m => ({ ...m }));
         config = c.config || config;
-        params = c.params || params;
+        if (c.params && 'json' in c.params) {
+            params = c.params;
+        } else if (c.params) {
+            const old = c.params;
+            const obj = {};
+            if (old.max_tokens) obj.max_tokens = old.max_tokens;
+            if (old.temperature) obj.temperature = old.temperature;
+            if (old.top_p) obj.top_p = old.top_p;
+            if (old.thinking === 'true') obj.enable_thinking = true;
+            else if (old.thinking === 'false') obj.enable_thinking = false;
+            if (old.extra) { try { Object.assign(obj, JSON.parse(old.extra)); } catch {} }
+            params = { mode: 'table', json: JSON.stringify(obj, null, 2) };
+        }
         currentConvId = id;
         hideModal('convModal');
 
