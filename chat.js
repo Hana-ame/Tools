@@ -12,3 +12,5 @@ document.getElementById('input').addEventListener('input', function() {
 });
 
 window.addEventListener('beforeunload', () => autoSave());
+
+migrateConv();

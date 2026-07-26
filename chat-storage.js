@@ -44,43 +44,54 @@ function paramsDefaultJson() {
     return '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192,\n  "timeout": 120\n}';
 }
 
-function getAllConvs() {
-    try {
-        const raw = localStorage.getItem(CONV_KEY);
-        const convs = raw ? JSON.parse(raw) : {};
-        return Object.values(convs);
-    } catch { return []; }
+function idbConn() {
+    if (_idbP) return _idbP;
+    _idbP = new Promise((resolve, reject) => {
+        const req = indexedDB.open('aichat_db', 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('conversations'))
+                db.createObjectStore('conversations', { keyPath: 'id' });
+        };
+        req.onsuccess = (e) => { _idb = e.target.result; resolve(_idb); };
+        req.onerror = (e) => { _idbP = null; reject(e.target.error); };
+    });
+    return _idbP;
 }
 
-function putConv(d) {
-    try {
-        const raw = localStorage.getItem(CONV_KEY);
-        const convs = raw ? JSON.parse(raw) : {};
-        convs[d.id] = d;
-        localStorage.setItem(CONV_KEY, JSON.stringify(convs));
-    } catch (e) { toast('保存对话失败'); }
+function idbOp(mode, cb) {
+    return idbConn().then(db => new Promise((resolve, reject) => {
+        const tx = db.transaction('conversations', mode);
+        const req = cb(tx.objectStore('conversations'));
+        tx.oncomplete = () => resolve(req.result);
+        tx.onerror = (e) => reject(e.target.error);
+    }));
 }
 
-function getConvById(id) {
-    try {
-        const raw = localStorage.getItem(CONV_KEY);
-        const convs = raw ? JSON.parse(raw) : {};
-        return convs[id] || null;
-    } catch { return null; }
-}
+function getAllConvs() { return idbOp('readonly', s => s.getAll()); }
+function putConv(d) { return idbOp('readwrite', s => s.put(d)); }
+function getConvById(id) { return idbOp('readonly', s => s.get(id)); }
+function deleteConvById(id) { return idbOp('readwrite', s => s.delete(id)); }
 
-function deleteConvById(id) {
+async function migrateConv() {
     try {
         const raw = localStorage.getItem(CONV_KEY);
-        const convs = raw ? JSON.parse(raw) : {};
-        delete convs[id];
-        localStorage.setItem(CONV_KEY, JSON.stringify(convs));
-    } catch (e) { toast('删除对话失败'); }
+        if (!raw) return;
+        const convs = JSON.parse(raw);
+        const db = await idbConn();
+        const tx = db.transaction('conversations', 'readwrite');
+        const store = tx.objectStore('conversations');
+        for (const [id, data] of Object.entries(convs)) store.put({ ...data, id });
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = () => { localStorage.removeItem(CONV_KEY); resolve(); };
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) { toast('迁移历史数据失败'); }
 }
 
 function autoSave() {
     if (messages.length <= 1) return;
     const id = currentConvId || Date.now().toString();
     if (!currentConvId) currentConvId = id;
-    putConv({ id, messages, config, params, time: Date.now() });
+    putConv({ id, messages, config, params, time: Date.now() }).catch(() => toast('保存对话失败'));
 }

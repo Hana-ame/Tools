@@ -1,9 +1,9 @@
-function showConvList() {
+async function showConvList() {
     const list = document.getElementById('convList');
     list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>';
     showModal('convModal');
     try {
-        const convs = getAllConvs();
+        const convs = await getAllConvs();
         convs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
         if (convs.length === 0) {
@@ -24,9 +24,9 @@ function showConvList() {
     } catch (e) { toast('加载历史失败'); }
 }
 
-function loadConv(id) {
+async function loadConv(id) {
     try {
-        const c = getConvById(id);
+        const c = await getConvById(id);
         if (!c) return;
         messages = c.messages.map(m => ({ ...m, _id: m._id || nextId() }));
         config = c.config || config;
@@ -61,10 +61,10 @@ function loadConv(id) {
     } catch (e) { toast('加载对话失败'); }
 }
 
-function deleteConv(id) {
+async function deleteConv(id) {
     if (!confirm('删除此对话？')) return;
     try {
-        deleteConvById(id);
+        await deleteConvById(id);
         if (id === currentConvId) currentConvId = null;
         showConvList();
     } catch (e) { toast('删除失败'); }
