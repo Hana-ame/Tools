@@ -819,8 +819,8 @@
     function idbOp(mode, cb) {
         return idbConn().then(db => new Promise((resolve, reject) => {
             const tx = db.transaction('conversations', mode);
-            const result = cb(tx.objectStore('conversations'));
-            tx.oncomplete = () => resolve(result);
+            const req = cb(tx.objectStore('conversations'));
+            tx.oncomplete = () => resolve(req.result);
             tx.onerror = (e) => reject(e.target.error);
         }));
     }
