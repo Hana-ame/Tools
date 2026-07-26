@@ -678,91 +678,95 @@
     }
 
     async function send() {
-        const input = document.getElementById('input');
-        const text = input.value.trim();
-        if (!text || loading) return;
-
-        if (!config.key) { showConfig(); return; }
-
-        input.value = '';
-        input.style.height = 'auto';
-        messages.push({ role: 'user', content: text });
-        addMsg('user', text, null, messages.length - 1);
-        loading = true;
-        document.getElementById('sendBtn').disabled = true;
-
-        const msgDiv = addMsg('ai', '...', null, messages.length);
-        msgDiv.classList.add('typing');
-        let fullContent = '';
-        let fullReasoning = '';
-
         try {
-            const body = buildRequestBody();
-            const resp = await fetch(config.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${config.key}`
-                },
-                body: JSON.stringify(body)
-            });
+            const input = document.getElementById('input');
+            const text = input.value.trim();
+            if (!text || loading) return;
 
-            if (!resp.ok) {
-                const err = await resp.text();
-                throw new Error(`HTTP ${resp.status}: ${err}`);
-            }
+            if (!config.key) { showConfig(); return; }
 
-            msgDiv.classList.remove('typing');
-            const reader = resp.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
+            input.value = '';
+            input.style.height = 'auto';
+            messages.push({ role: 'user', content: text });
+            addMsg('user', text, null, messages.length - 1);
+            loading = true;
+            document.getElementById('sendBtn').disabled = true;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
+            const msgDiv = addMsg('ai', '...', null, messages.length);
+            msgDiv.classList.add('typing');
+            let fullContent = '';
+            let fullReasoning = '';
 
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || !trimmed.startsWith('data: ')) continue;
-                    const data = trimmed.slice(6).trim();
-                    if (data === '[DONE]') continue;
-                    try {
-                        const json = JSON.parse(data);
-                        const choices = json.choices;
-                        if (!choices || !choices.length) continue;
-                        const delta = choices[0].delta;
-                        if (delta.reasoning_content) fullReasoning += delta.reasoning_content;
-                        if (delta.content) fullContent += delta.content;
-                        updateBubble(msgDiv, fullContent, fullReasoning || null);
-                    } catch (e) { console.error(e); }
+            try {
+                const body = buildRequestBody();
+                const resp = await fetch(config.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.key}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.text();
+                    throw new Error(`HTTP ${resp.status}: ${err}`);
                 }
-            }
 
-            if (buffer.trim()) {
-                const data = buffer.trim().slice(6).trim();
-                if (data !== '[DONE]') {
-                    try {
-                        const json = JSON.parse(data);
-                        const delta = json.choices?.[0]?.delta;
-                        if (delta?.reasoning_content) fullReasoning += delta.reasoning_content;
-                        if (delta?.content) fullContent += delta.content;
-                        updateBubble(msgDiv, fullContent, fullReasoning || null);
-                    } catch (e) { console.error(e); }
+                msgDiv.classList.remove('typing');
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+                        const data = trimmed.slice(6).trim();
+                        if (data === '[DONE]') continue;
+                        try {
+                            const json = JSON.parse(data);
+                            const choices = json.choices;
+                            if (!choices || !choices.length) continue;
+                            const delta = choices[0].delta;
+                            if (delta.reasoning_content) fullReasoning += delta.reasoning_content;
+                            if (delta.content) fullContent += delta.content;
+                            updateBubble(msgDiv, fullContent, fullReasoning || null);
+                        } catch (e) { console.error(e); }
+                    }
                 }
+
+                if (buffer.trim()) {
+                    const data = buffer.trim().slice(6).trim();
+                    if (data !== '[DONE]') {
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            if (delta?.reasoning_content) fullReasoning += delta.reasoning_content;
+                            if (delta?.content) fullContent += delta.content;
+                            updateBubble(msgDiv, fullContent, fullReasoning || null);
+                        } catch (e) { console.error(e); }
+                    }
+                }
+
+                messages.push({ role: 'assistant', content: fullContent, reasoning_content: fullReasoning || undefined });
+                updateStats();
+                autoSave();
+
+            } catch (e) {
+                console.error(e);
+                msgDiv.classList.remove('typing');
+                const bubble = msgDiv.querySelector('.bubble');
+                if (bubble) bubble.innerHTML = `<span style="color:#dc2626">❌ ${e.message}</span>`;
             }
-
-            messages.push({ role: 'assistant', content: fullContent, reasoning_content: fullReasoning || undefined });
-            updateStats();
-            autoSave();
-
         } catch (e) {
-            console.error(e);
-            msgDiv.classList.remove('typing');
-            const bubble = msgDiv.querySelector('.bubble');
-            if (bubble) bubble.innerHTML = `<span style="color:#dc2626">❌ ${e.message}</span>`;
+            console.error('send outer error:', e);
         } finally {
             loading = false;
             document.getElementById('sendBtn').disabled = false;
