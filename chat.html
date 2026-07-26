@@ -35,12 +35,14 @@
             flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; display: flex;
             flex-direction: column; gap: 12px; scroll-behavior: smooth;
         }
-        .msg { display: flex; gap: 10px; max-width: 88%; position: relative; padding-right: 60px; }
+        .msg { display: flex; gap: 10px; max-width: 88%; position: relative; }
         .msg.user { align-self: flex-end; flex-direction: row-reverse; padding-right: 85px; }
-        .msg.ai { align-self: flex-start; }
+        .msg.ai { align-self: flex-start; padding-left: 60px; }
         .msg .msg-actions {
-            position: absolute; bottom: 0; right: 4px; display: none; gap: 2px;
+            position: absolute; top: 0; display: none; gap: 2px;
         }
+        .msg.ai .msg-actions { left: 4px; }
+        .msg.user .msg-actions { right: 4px; }
         .msg:hover .msg-actions { display: flex; }
         .msg .msg-actions button {
             background: #fff; border: 1px solid #d1d5db; border-radius: 6px;
@@ -790,94 +792,128 @@
         updateStats();
     }
 
-    function autoSave() {
-        if (messages.length <= 1) return;
-        try {
-            const data = { messages, config, params, time: Date.now(), id: currentConvId || Date.now().toString() };
-            if (!currentConvId) currentConvId = data.id;
-            const convs = getConvs();
-            convs[data.id] = data;
-            localStorage.setItem(CONV_KEY, JSON.stringify(convs));
-        } catch (e) { console.error(e); }
+    let _idb = null;
+    function idbConn() {
+        if (_idb) return Promise.resolve(_idb);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open('aichat_db', 1);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('conversations'))
+                    db.createObjectStore('conversations', { keyPath: 'id' });
+            };
+            req.onsuccess = (e) => { _idb = e.target.result; resolve(_idb); };
+            req.onerror = (e) => reject(e.target.error);
+        });
     }
+    function idbOp(mode, cb) {
+        return idbConn().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction('conversations', mode);
+            const result = cb(tx.objectStore('conversations'));
+            tx.oncomplete = () => resolve(result);
+            tx.onerror = (e) => reject(e.target.error);
+        }));
+    }
+    function getAllConvs() { return idbOp('readonly', s => s.getAll()); }
+    function putConv(d) { return idbOp('readwrite', s => s.put(d)); }
+    function getConvById(id) { return idbOp('readonly', s => s.get(id)); }
+    function deleteConvById(id) { return idbOp('readwrite', s => s.delete(id)); }
 
-    function getConvs() {
+    async function migrateConv() {
         try {
             const raw = localStorage.getItem(CONV_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch (e) { console.error(e); }
-        return {};
+            if (!raw) return;
+            const convs = JSON.parse(raw);
+            const db = await idbConn();
+            const tx = db.transaction('conversations', 'readwrite');
+            const store = tx.objectStore('conversations');
+            for (const [id, data] of Object.entries(convs)) store.put({ ...data, id });
+            await new Promise((resolve, reject) => {
+                tx.oncomplete = () => { localStorage.removeItem(CONV_KEY); resolve(); };
+                tx.onerror = () => reject(tx.error);
+            });
+            console.log('conversations migrated from localStorage to IndexedDB');
+        } catch (e) { console.error('migrateConv:', e); }
+    }
+    migrateConv();
+
+    function autoSave() {
+        if (messages.length <= 1) return;
+        const id = currentConvId || Date.now().toString();
+        if (!currentConvId) currentConvId = id;
+        putConv({ id, messages, config, params, time: Date.now() }).catch(e => console.error(e));
     }
 
-    function showConvList() {
-        const convs = getConvs();
-        const list = document.getElementById('convList');
-        const ids = Object.keys(convs).sort((a, b) => (convs[b].time || 0) - (convs[a].time || 0));
+    async function showConvList() {
+        try {
+            const convs = await getAllConvs();
+            const list = document.getElementById('convList');
+            convs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
-        if (ids.length === 0) {
-            list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">暂无保存的对话</div>';
-        } else {
-            list.innerHTML = ids.map(id => {
-                const c = convs[id];
-                const msgs = (c.messages || []).filter(m => m.role !== 'system');
-                const first = msgs[0]?.content?.slice(0, 40) || '(空)';
-                const t = c.time ? new Date(c.time).toLocaleString() : '';
-                const active = id === currentConvId ? 'background:#eef2ff;' : '';
-                return `<div class="conv-item" style="${active}" onclick="loadConv('${id}')">
-                    <span class="conv-name">${escapeHtml(first)}${msgs.length > 1 ? '...' : ''}</span>
-                    <span class="conv-meta">${msgs.length}条 ${t}</span>
-                    <button class="conv-del" onclick="event.stopPropagation();deleteConv('${id}')" title="删除">✕</button>
-                </div>`;
-            }).join('');
-        }
-        showModal('convModal');
+            if (convs.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">暂无保存的对话</div>';
+            } else {
+                list.innerHTML = convs.map(c => {
+                    const msgs = (c.messages || []).filter(m => m.role !== 'system');
+                    const first = msgs[0]?.content?.slice(0, 40) || '(空)';
+                    const t = c.time ? new Date(c.time).toLocaleString() : '';
+                    const active = c.id === currentConvId ? 'background:#eef2ff;' : '';
+                    return `<div class="conv-item" style="${active}" onclick="loadConv('${c.id}')">
+                        <span class="conv-name">${escapeHtml(first)}${msgs.length > 1 ? '...' : ''}</span>
+                        <span class="conv-meta">${msgs.length}条 ${t}</span>
+                        <button class="conv-del" onclick="event.stopPropagation();deleteConv('${c.id}')" title="删除">✕</button>
+                    </div>`;
+                }).join('');
+            }
+            showModal('convModal');
+        } catch (e) { console.error('showConvList:', e); }
     }
 
-    function loadConv(id) {
-        const convs = getConvs();
-        const c = convs[id];
-        if (!c) return;
-        messages = c.messages.map(m => ({ ...m }));
-        config = c.config || config;
-        if (c.params && 'json' in c.params) {
-            params = c.params;
-        } else if (c.params) {
-            const old = c.params;
-            const obj = {};
-            if (old.max_tokens) obj.max_tokens = old.max_tokens;
-            if (old.temperature) obj.temperature = old.temperature;
-            if (old.top_p) obj.top_p = old.top_p;
-            if (old.thinking === 'true') obj.enable_thinking = true;
-            else if (old.thinking === 'false') obj.enable_thinking = false;
-            if (old.extra) { try { Object.assign(obj, JSON.parse(old.extra)); } catch (e) { console.error(e); } }
-            params = { mode: 'table', json: JSON.stringify(obj, null, 2) };
-        }
-        currentConvId = id;
-        hideModal('convModal');
+    async function loadConv(id) {
+        try {
+            const c = await getConvById(id);
+            if (!c) return;
+            messages = c.messages.map(m => ({ ...m }));
+            config = c.config || config;
+            if (c.params && 'json' in c.params) {
+                params = c.params;
+            } else if (c.params) {
+                const old = c.params;
+                const obj = {};
+                if (old.max_tokens) obj.max_tokens = old.max_tokens;
+                if (old.temperature) obj.temperature = old.temperature;
+                if (old.top_p) obj.top_p = old.top_p;
+                if (old.thinking === 'true') obj.enable_thinking = true;
+                else if (old.thinking === 'false') obj.enable_thinking = false;
+                if (old.extra) { try { Object.assign(obj, JSON.parse(old.extra)); } catch (e) { console.error(e); } }
+                params = { mode: 'table', json: JSON.stringify(obj, null, 2) };
+            }
+            currentConvId = id;
+            hideModal('convModal');
 
-        const container = document.getElementById('messages');
-        container.innerHTML = '';
-        let systemContent = '';
-        for (let i = 0; i < messages.length; i++) {
-            const m = messages[i];
-            if (m.role === 'system') { systemContent = m.content; continue; }
-            const div = addMsg(m.role, m.content, m.reasoning_content);
-            div.dataset.idx = i;
-        }
-        if (!container.querySelector('.msg')) {
-            container.innerHTML = '<div class="empty-state">💬 已加载对话</div>';
-        }
-        updateStats();
-        toast('已加载对话');
+            const container = document.getElementById('messages');
+            container.innerHTML = '';
+            for (let i = 0; i < messages.length; i++) {
+                const m = messages[i];
+                if (m.role === 'system') continue;
+                const div = addMsg(m.role, m.content, m.reasoning_content);
+                div.dataset.idx = i;
+            }
+            if (!container.querySelector('.msg')) {
+                container.innerHTML = '<div class="empty-state">💬 已加载对话</div>';
+            }
+            updateStats();
+            toast('已加载对话');
+        } catch (e) { console.error('loadConv:', e); }
     }
 
-    function deleteConv(id) {
+    async function deleteConv(id) {
         if (!confirm('删除此对话？')) return;
-        const convs = getConvs();
-        delete convs[id];
-        localStorage.setItem(CONV_KEY, JSON.stringify(convs));
-        if (id === currentConvId) { currentConvId = null; }
-        showConvList();
+        try {
+            await deleteConvById(id);
+            if (id === currentConvId) currentConvId = null;
+            showConvList();
+        } catch (e) { console.error('deleteConv:', e); }
     }
 
     function copyMessages() {
