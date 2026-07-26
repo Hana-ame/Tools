@@ -273,7 +273,13 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     def get_request(self):
         sock, addr = self.socket.accept()
         if self._ssl_ctx:
-            sock = self._ssl_ctx.wrap_socket(sock, server_side=True)
+            sock.settimeout(10)
+            try:
+                sock = self._ssl_ctx.wrap_socket(sock, server_side=True)
+            except OSError:
+                sock.close()
+                raise
+            sock.settimeout(None)
         return sock, addr
 
     def get_session(self, key, ipv6=None):
