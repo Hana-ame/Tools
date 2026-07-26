@@ -71,7 +71,7 @@ async function deleteConv(id) {
 }
 
 function newChat() {
-    if (messages.length > 1 && !confirm('当前对话未保存，是否新建？')) return;
+    if (messages.length > 1) autoSave();
     messages = [{ role: 'system', content: config.system }];
     currentConvId = null;
     document.getElementById('messages').innerHTML = '<div class="empty-state">💬 新对话</div>';
