@@ -2,13 +2,13 @@ import datetime
 import http.server
 
 import json
-import random
 import socket
 import ssl
 import socketserver
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import cast
 import requests
 from requests.adapters import HTTPAdapter
@@ -16,6 +16,7 @@ from requests.adapters import HTTPAdapter
 ZEN_HOST = "opencode.ai"
 ZEN_PATH = "/zen/v1"
 TIMEOUT = 120
+CONNECT_TIMEOUT = 10
 CLEANUP_INTERVAL = 300
 MAX_IDLE = 3600
 MAX_REQS_PER_CLIENT = 200
@@ -66,6 +67,10 @@ def clean(payload):
 
 
 class ZenProxy(http.server.BaseHTTPRequestHandler):
+    def _log(self, msg):
+        client_ip = self.client_address[0]
+        print(f"[{datetime.datetime.now().isoformat()}] {client_ip} - {msg}")
+
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -88,10 +93,12 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
         client_ip = self.client_address[0]
         sv = cast(ThreadedServer, self.server)
         host = self.headers.get("Host", "")
+        self._log(f"-> {method} {path} host={host}")
 
         bl = getattr(sv, "banlist", None)
         if bl:
             if bl.is_banned(client_ip):
+                self._log("banned")
                 return self._send(429, {"error": "Banned"})
             bl.incr(client_ip)
 
@@ -107,63 +114,85 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
             body = json.dumps(payload)
             headers["Content-Type"] = "application/json"
 
-        mode = sv._mode_for_host(host)
-
         r = None
         last_error = None
 
-        if mode == "v4":
-            r = sv._try_family("v4", client_ip, body, headers, is_stream, method)
-        elif mode == "v6":
-            r = sv._try_family("v6", client_ip, body, headers, is_stream, method)
-        else:
-            families = ["v4", "v6"]
-            random.shuffle(families)
-            for fam in families:
-                until = sv.cooldown.get(fam, 0)
-                if until > time.time():
+        active = [f for f in ("v4", "v6") if sv.cooldown.get(f, 0) <= time.time()]
+        self._log(f"active={active} stream={is_stream}")
+        if not active:
+            self._log("all families on cooldown")
+            return self._send(503, {"error": "All upstream IPs exhausted"})
+
+        executor = ThreadPoolExecutor(max_workers=2)
+        try:
+            futs = {executor.submit(sv._try_family, f, client_ip, body, headers, is_stream, method): f for f in active}
+            for fut in as_completed(futs):
+                f = futs[fut]
+                try:
+                    resp = fut.result()
+                except Exception:
+                    resp = None
+                self._log(f"{f} resp={resp is not None}")
+                if resp is None:
+                    sv.cooldown[f] = next_utc_midnight()
                     continue
-                r = sv._try_family(fam, client_ip, body, headers, is_stream, method)
-                if r is None:
-                    sv.cooldown[fam] = next_utc_midnight()
-                    continue
-                if not is_stream:
+                if not is_stream or resp.status_code != 200:
                     try:
-                        data = r.json()
+                        data = resp.json()
                         if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
+                            self._log(f"{f} FreeUsageLimitError")
                             last_error = data
-                            sv.cooldown[fam] = next_utc_midnight()
-                            r = None
+                            sv.cooldown[f] = next_utc_midnight()
+                            resp.close()
                             continue
                     except (json.JSONDecodeError, ValueError):
                         pass
+                r = resp
                 break
+        finally:
+            executor.shutdown(wait=False)
 
         if r is None:
+            self._log(f"no response, last_error={last_error is not None}")
             if last_error:
                 return self._send(429, last_error)
             return self._send(503, {"error": "All upstream IPs exhausted"})
 
-        if is_stream:
-            self.send_response(r.status_code)
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Cache-Control", "no-cache")
-            self.send_header("Connection", "keep-alive")
-            self._cors()
-            self.end_headers()
-            for chunk in r.iter_content(chunk_size=None):
-                if chunk:
-                    try:
-                        self.wfile.write(chunk)
-                        self.wfile.flush()
-                    except BrokenPipeError:
-                        break
-        else:
+        is_err = r.status_code != 200
+        self._log(f"respond status={r.status_code} stream={is_stream} error={is_err}")
+
+        if is_err:
             self.send_response(r.status_code)
             self.send_header("Content-Type", "application/json")
             self._cors()
             self.end_headers()
             self.wfile.write(r.content)
+            return
+
+        if not is_stream:
+            self.send_response(r.status_code)
+            self.send_header("Content-Type", "application/json")
+            self._cors()
+            self.end_headers()
+            self.wfile.write(r.content)
+            self._log("non-stream done")
+            return
+
+        self.send_response(r.status_code)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self._cors()
+        self.end_headers()
+        for chunk in r.iter_content(chunk_size=None):
+            if chunk:
+                try:
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                except BrokenPipeError:
+                    self._log("client disconnected")
+                    break
+        self._log("stream done")
 
     def do_POST(self):
         self._proxy("POST", "/chat/completions")
@@ -229,7 +258,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         self._sessions: dict[str, tuple[requests.Session, float]] = {}
         self._sessions_lock = threading.Lock()
         self.cooldown: dict[str, float] = {}
-        self.modes: dict[str, str] = {}
         self.banlist: BanList | None = None
         self.zen_base_v4: str = ""
         self.zen_host_v4: str = ""
@@ -242,10 +270,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         if hasattr(socket, "SO_REUSEPORT"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         super().server_bind()
-
-    def _mode_for_host(self, host):
-        host = host.split(":")[0].lower()
-        return self.modes.get(host, "v4")
 
     def get_session(self, key, ipv6=None):
         with self._sessions_lock:
@@ -268,7 +292,7 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         for _ in range(2):
             try:
                 r = session.request(method, url, data=body, headers=hdrs,
-                                    stream=is_stream, timeout=TIMEOUT)
+                                    stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT))
                 return r
             except requests.exceptions.ConnectionError:
                 pass
@@ -290,31 +314,36 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 if __name__ == "__main__":
-    addr = sys.argv[1] if len(sys.argv) > 1 else "0.0.0.0"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 8443
     cert = sys.argv[3] if len(sys.argv) > 3 else None
     key = sys.argv[4] if len(sys.argv) > 4 else cert
     if len(sys.argv) > 5:
         TIMEOUT = int(sys.argv[5])
-    server = ThreadedServer(addr, port, ZenProxy)
-    server.banlist = BanList()
 
-    server.zen_base_v4, server.zen_host_v4 = resolve_zen(4)
-    server.zen_base_v6, server.zen_host_v6 = resolve_zen(6)
+    banlist = BanList()
+    zen_base_v4, zen_host_v4 = resolve_zen(4)
+    zen_base_v6, zen_host_v6 = resolve_zen(6)
 
-    server.modes = {
-        "bwh4.d.moonchan.xyz": "v4",
-        "bwh6.d.moonchan.xyz": "v6",
-        "bwh.moonchan.xyz": "dual",
-    }
+    servers = []
+    for addr in ("0.0.0.0", "::"):
+        s = ThreadedServer(addr, port, ZenProxy)
+        s.banlist = banlist
+        s.zen_base_v4 = zen_base_v4
+        s.zen_host_v4 = zen_host_v4
+        s.zen_base_v6 = zen_base_v6
+        s.zen_host_v6 = zen_host_v6
+        if servers:
+            s._sessions = servers[0]._sessions
+            s._sessions_lock = servers[0]._sessions_lock
+            s.cooldown = servers[0].cooldown
+        if cert:
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(cert, key)
+            s.socket = ctx.wrap_socket(s.socket, server_side=True)
+        servers.append(s)
+        print(f"Zen proxy on {'https' if cert else 'http'}://{addr}:{port} (timeout={TIMEOUT}s)")
 
-    if cert:
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ctx.load_cert_chain(cert, key)
-        server.socket = ctx.wrap_socket(server.socket, server_side=True)
-        scheme = "https"
-    else:
-        scheme = "http"
-
-    print(f"Zen proxy on {scheme}://{addr}:{port} (timeout={TIMEOUT}s)")
-    server.serve_forever()
+    servers[0].start_cleanup()
+    for s in servers[1:]:
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+    servers[0].serve_forever()

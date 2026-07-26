@@ -217,10 +217,10 @@
         <label>API Key</label>
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
-        <select id="cfgModel">
-            <option value="deepseek-v4-flash-free" selected>deepseek-v4-flash-free</option>
-        </select>
-        <input id="cfgModelCustom" placeholder="或者输入自定义模型名" style="margin-top:-6px;font-size:0.82rem;">
+        <input id="cfgModel" list="modelList" placeholder="deepseek-v4-flash-free">
+        <datalist id="modelList">
+            <option value="deepseek-v4-flash-free">
+        </datalist>
         <label>System Prompt</label>
         <input id="cfgSystem" placeholder="可选，AI 角色设定">
         <div class="modal-actions">
@@ -300,8 +300,7 @@
     function saveConfig() {
         config.url = document.getElementById('cfgUrl').value.trim();
         config.key = document.getElementById('cfgKey').value.trim();
-        const custom = document.getElementById('cfgModelCustom').value.trim();
-        config.model = custom || document.getElementById('cfgModel').value;
+        config.model = document.getElementById('cfgModel').value.trim();
         config.system = document.getElementById('cfgSystem').value.trim();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
         if (messages[0] && messages[0].role === 'system') {
@@ -316,9 +315,7 @@
     function showConfig() {
         document.getElementById('cfgUrl').value = config.url;
         document.getElementById('cfgKey').value = config.key;
-        const inFree = ['deepseek-v4-flash-free', ''].includes(config.model);
-        document.getElementById('cfgModel').value = 'deepseek-v4-flash-free';
-        document.getElementById('cfgModelCustom').value = inFree ? '' : config.model;
+        document.getElementById('cfgModel').value = config.model;
         document.getElementById('cfgSystem').value = config.system;
         showModal('configModal');
     }
