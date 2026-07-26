@@ -509,15 +509,14 @@
         setTimeout(() => el.classList.remove('show'), 2000);
     }
 
-    function addMsg(role, text, thinking) {
+    function addMsg(role, text, thinking, idx) {
         const container = document.getElementById('messages');
         const empty = container.querySelector('.empty-state');
         if (empty) empty.remove();
 
         const div = document.createElement('div');
         div.className = `msg ${role}`;
-        const idx = messages.length;
-        div.dataset.idx = idx;
+        div.dataset.idx = idx != null ? idx : messages.length;
 
         const actions = document.createElement('div');
         actions.className = 'msg-actions';
@@ -687,12 +686,12 @@
 
         input.value = '';
         input.style.height = 'auto';
-        addMsg('user', text);
         messages.push({ role: 'user', content: text });
+        addMsg('user', text, null, messages.length - 1);
         loading = true;
         document.getElementById('sendBtn').disabled = true;
 
-        const msgDiv = addMsg('ai', '...');
+        const msgDiv = addMsg('ai', '...', null, messages.length);
         msgDiv.classList.add('typing');
         let fullContent = '';
         let fullReasoning = '';
