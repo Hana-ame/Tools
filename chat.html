@@ -35,14 +35,14 @@
             flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; display: flex;
             flex-direction: column; gap: 12px; scroll-behavior: smooth;
         }
-        .msg { display: flex; gap: 10px; max-width: 88%; position: relative; }
-        .msg.user { align-self: flex-end; flex-direction: row-reverse; padding-right: 85px; }
-        .msg.ai { align-self: flex-start; padding-left: 60px; }
+        .msg { display: flex; gap: 10px; max-width: 88%; flex-wrap: wrap; }
+        .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+        .msg.ai { align-self: flex-start; }
         .msg .msg-actions {
-            position: absolute; top: 0; display: none; gap: 2px;
+            display: none; gap: 2px; width: 100%; margin-top: 2px;
         }
-        .msg.ai .msg-actions { left: 4px; }
-        .msg.user .msg-actions { right: 4px; }
+        .msg.ai .msg-actions { justify-content: flex-start; padding-left: 40px; }
+        .msg.user .msg-actions { justify-content: flex-end; }
         .msg:hover .msg-actions { display: flex; }
         .msg .msg-actions button {
             background: #fff; border: 1px solid #d1d5db; border-radius: 6px;
@@ -528,7 +528,6 @@
         } else {
             actions.innerHTML = '<button onclick="editMsg(this)">✏️</button><button onclick="deleteMsg(this)">🗑️</button>' + btns;
         }
-        div.appendChild(actions);
 
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
@@ -549,6 +548,7 @@
             bubble.textContent = text;
         }
         div.appendChild(bubble);
+        div.appendChild(actions);
 
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
