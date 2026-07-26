@@ -244,7 +244,7 @@
             <option value="deepseek-v4-flash-free">
         </datalist>
         <label>System Prompt</label>
-        <input id="cfgSystem" placeholder="可选，AI 角色设定">
+        <textarea id="cfgSystem" rows="3" placeholder="可选，AI 角色设定" style="resize:vertical;"></textarea>
         <div class="modal-actions">
             <button class="primary" onclick="saveConfig()">保存</button>
             <button class="secondary" onclick="hideModal('configModal')">取消</button>
