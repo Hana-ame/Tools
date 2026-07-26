@@ -340,11 +340,11 @@
                 return { mode: 'table', json: JSON.stringify(obj, null, 2) };
             }
         } catch (e) { console.error(e); }
-        return { mode: 'table', json: '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192\n}' };
+        return { mode: 'table', json: '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192,\n  "timeout": 120\n}' };
     }
 
     function paramsDefaultJson() {
-        return '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192\n}';
+        return '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192,\n  "timeout": 120\n}';
     }
 
     function jsonToRows(jsonStr) {
@@ -666,6 +666,7 @@
                 Object.assign(body, extra);
             }
         } catch (e) { console.error(e); }
+        delete body.timeout;
         if (!body.model) body.model = config.model;
         if (!('enable_thinking' in body) && (body.model.includes('reasoner') || body.model.includes('deepseek-v4'))) {
             body.enable_thinking = true;
@@ -697,14 +698,20 @@
 
             try {
                 const body = buildRequestBody();
+                let timeoutMs = 120000;
+                try { const p = JSON.parse(params.json); if (p.timeout > 0) timeoutMs = p.timeout * 1000; } catch {}
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
                 const resp = await fetch(config.url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${config.key}`
                     },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify(body),
+                    signal: controller.signal
                 });
+                clearTimeout(timer);
 
                 if (!resp.ok) {
                     const err = await resp.text();
