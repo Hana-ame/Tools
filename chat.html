@@ -98,8 +98,9 @@
         #input {
             flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 24px;
             outline: none; font-size: 0.92rem; resize: none; max-height: 120px;
-            font-family: inherit; line-height: 1.5; overflow: hidden;
+            font-family: inherit; line-height: 1.5; scrollbar-width: none;
         }
+        #input::-webkit-scrollbar { display: none; }
         #input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         #sendBtn {
             width: 40px; height: 40px; border-radius: 50%; border: none;
@@ -641,15 +642,23 @@
     function forkFrom(btn) {
         const msgDiv = btn.closest('.msg');
         const idx = parseInt(msgDiv.dataset.idx);
-        if (isNaN(idx)) return;
+        if (isNaN(idx) || idx < 1) return;
 
         messages.splice(idx + 1);
-        msgDiv.parentElement.querySelectorAll('.msg').forEach(el => {
-            const i = parseInt(el.dataset.idx);
-            if (!isNaN(i) && i > idx) el.remove();
-        });
+        const container = document.getElementById('messages');
+        container.innerHTML = '';
+        for (let i = 0; i < messages.length; i++) {
+            const m = messages[i];
+            if (m.role === 'system') continue;
+            const div = addMsg(m.role, m.content, m.reasoning_content);
+            div.dataset.idx = i;
+        }
+        if (!container.querySelector('.msg')) {
+            container.innerHTML = '<div class="empty-state">💬 消息已清空</div>';
+        }
         currentConvId = null;
         updateStats();
+        autoSave();
         toast('已从此处 fork');
     }
 
