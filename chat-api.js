@@ -5,7 +5,7 @@ function buildRequestBody() {
             const extra = JSON.parse(params.json);
             Object.assign(body, extra);
         }
-    } catch (e) { console.error(e); }
+    } catch {}
     delete body.timeout;
     if (!body.model) body.model = config.model;
     if (!('enable_thinking' in body) && (body.model.includes('reasoner') || body.model.includes('deepseek-v4'))) {
@@ -91,7 +91,7 @@ async function send() {
                         if (delta.reasoning_content) fullReasoning += delta.reasoning_content;
                         if (delta.content) fullContent += delta.content;
                         updateBubble(msgDiv, fullContent, fullReasoning || null);
-                    } catch (e) { console.error(e); }
+                    } catch {}
                 }
             }
 
@@ -104,7 +104,7 @@ async function send() {
                         if (delta?.reasoning_content) fullReasoning += delta.reasoning_content;
                         if (delta?.content) fullContent += delta.content;
                         updateBubble(msgDiv, fullContent, fullReasoning || null);
-                    } catch (e) { console.error(e); }
+                    } catch {}
                 }
             }
 
@@ -113,14 +113,14 @@ async function send() {
             autoSave();
 
         } catch (e) {
-            console.error(e);
             msgDiv.classList.remove('typing');
             if (pendingBadge.parentNode) pendingBadge.remove();
             const bubble = msgDiv.querySelector('.bubble');
             if (bubble) bubble.innerHTML = `<span style="color:#dc2626">❌ ${e.message}</span>`;
+            toast(e.message);
         }
     } catch (e) {
-        console.error('send outer error:', e);
+        toast('发送失败');
     } finally {
         loading = false;
         document.getElementById('sendBtn').disabled = false;

@@ -12,6 +12,3 @@ let currentConvId = null;
 let _msgId = 0;
 function nextId() { return ++_msgId; }
 function findMsg(mid) { return messages.findIndex(m => m._id === mid); }
-
-let _idb = null;
-let _idbP = null;

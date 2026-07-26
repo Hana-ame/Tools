@@ -1,9 +1,9 @@
-async function showConvList() {
+function showConvList() {
     const list = document.getElementById('convList');
     list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>';
     showModal('convModal');
     try {
-        const convs = await getAllConvs();
+        const convs = getAllConvs();
         convs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
         if (convs.length === 0) {
@@ -21,12 +21,12 @@ async function showConvList() {
                 </div>`;
             }).join('');
         }
-    } catch (e) { console.error('showConvList:', e); }
+    } catch (e) { toast('加载历史失败'); }
 }
 
-async function loadConv(id) {
+function loadConv(id) {
     try {
-        const c = await getConvById(id);
+        const c = getConvById(id);
         if (!c) return;
         messages = c.messages.map(m => ({ ...m, _id: m._id || nextId() }));
         config = c.config || config;
@@ -40,7 +40,7 @@ async function loadConv(id) {
             if (old.top_p) obj.top_p = old.top_p;
             if (old.thinking === 'true') obj.enable_thinking = true;
             else if (old.thinking === 'false') obj.enable_thinking = false;
-            if (old.extra) { try { Object.assign(obj, JSON.parse(old.extra)); } catch (e) { console.error(e); } }
+            if (old.extra) { try { Object.assign(obj, JSON.parse(old.extra)); } catch {} }
             params = { mode: 'table', json: JSON.stringify(obj, null, 2) };
         }
         currentConvId = id;
@@ -58,16 +58,16 @@ async function loadConv(id) {
         }
         updateStats();
         toast('已加载对话');
-    } catch (e) { console.error('loadConv:', e); }
+    } catch (e) { toast('加载对话失败'); }
 }
 
-async function deleteConv(id) {
+function deleteConv(id) {
     if (!confirm('删除此对话？')) return;
     try {
-        await deleteConvById(id);
+        deleteConvById(id);
         if (id === currentConvId) currentConvId = null;
         showConvList();
-    } catch (e) { console.error('deleteConv:', e); }
+    } catch (e) { toast('删除失败'); }
 }
 
 function newChat() {

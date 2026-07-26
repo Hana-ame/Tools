@@ -11,4 +11,4 @@ document.getElementById('input').addEventListener('input', function() {
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
 
-migrateConv();
+window.addEventListener('beforeunload', () => autoSave());

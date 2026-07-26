@@ -89,6 +89,7 @@ function editMsg(btn) {
         } else {
             bubble.textContent = messages[idx].content;
         }
+        autoSave();
         updateStats();
     };
 
@@ -118,6 +119,7 @@ function deleteMsg(btn) {
     if (!container.querySelector('.msg')) {
         container.innerHTML = '<div class="empty-state">💬 消息已清空，开始新对话</div>';
     }
+    autoSave();
     updateStats();
 }
 
