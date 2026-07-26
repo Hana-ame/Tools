@@ -346,11 +346,11 @@
                 return { mode: 'table', json: JSON.stringify(obj, null, 2) };
             }
         } catch (e) { console.error(e); }
-        return { mode: 'table', json: '{\n  "max_tokens": 8192\n}' };
+        return { mode: 'table', json: '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192\n}' };
     }
 
     function paramsDefaultJson() {
-        return '{\n  "max_tokens": 8192\n}';
+        return '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192\n}';
     }
 
     function jsonToRows(jsonStr) {
@@ -662,18 +662,15 @@
     }
 
     function buildRequestBody() {
-        const body = {
-            model: config.model,
-            messages: messages,
-            stream: true,
-        };
+        const body = { messages, stream: true };
         try {
             if (params.json) {
                 const extra = JSON.parse(params.json);
                 Object.assign(body, extra);
             }
         } catch (e) { console.error(e); }
-        if (!('enable_thinking' in body) && (config.model.includes('reasoner') || config.model.includes('deepseek-v4'))) {
+        if (!body.model) body.model = config.model;
+        if (!('enable_thinking' in body) && (body.model.includes('reasoner') || body.model.includes('deepseek-v4'))) {
             body.enable_thinking = true;
         }
         return body;
