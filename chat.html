@@ -187,6 +187,7 @@
         <button class="hdr-btn" onclick="copyMessages()" title="复制 messages[]">📋 复制</button>
         <button class="hdr-btn" onclick="showParams()" title="请求参数">⚙️ 参数</button>
         <button class="hdr-btn" onclick="newChat()" title="新对话">➕ 新</button>
+        <button class="hdr-btn" onclick="downloadEch()">⬇ ech-proxy</button>
         <button class="hdr-btn" onclick="showConfig()">🔑 设置</button>
     </header>
     <div id="statBar">
@@ -724,6 +725,10 @@
             () => toast('messages[] 已复制'),
             () => toast('复制失败')
         );
+    }
+
+    function downloadEch() {
+        window.open('https://gh-proxy.com/github.com/Hana-ame/wintools/releases/download/v1.5.0/ech-proxy-windows-amd64.exe', '_blank');
     }
 
     function escapeHtml(s) {
