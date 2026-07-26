@@ -44,6 +44,7 @@ function paramsDefaultJson() {
     return '{\n  "model": "deepseek-v4-flash-free",\n  "max_tokens": 8192,\n  "timeout": 120\n}';
 }
 
+// !!! 不准改成 localStorage !!! 历史数据在 IndexedDB 里，改了就全丢了
 function idbConn() {
     if (_idbP) return _idbP;
     _idbP = new Promise((resolve, reject) => {
