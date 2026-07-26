@@ -187,7 +187,6 @@
         <button class="hdr-btn" onclick="copyMessages()" title="复制 messages[]">📋 复制</button>
         <button class="hdr-btn" onclick="showParams()" title="请求参数">⚙️ 参数</button>
         <button class="hdr-btn" onclick="newChat()" title="新对话">➕ 新</button>
-        <button class="hdr-btn" onclick="downloadEch()">⬇ ech-proxy</button>
         <button class="hdr-btn" onclick="showConfig()">🔑 设置</button>
     </header>
     <div id="statBar">
@@ -214,7 +213,7 @@
         <h2>🔑 设置</h2>
         <label>API 地址</label>
         <input id="cfgUrl" placeholder="https://api.deepseek.com/v1/chat/completions">
-        <div class="hint" style="font-size:0.78rem;color:#6b7280;margin:-6px 0 10px 2px;">可使用 ech-proxy 的 <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;">zen.l.moonchan.xyz</code> 作为默认后端转发</div>
+        <div class="hint" style="font-size:0.78rem;color:#6b7280;margin:-6px 0 10px 2px;">可使用 ech-proxy 的 <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;">zen.l.moonchan.xyz</code> 作为默认后端转发 · <a href="https://gh-proxy.com/github.com/Hana-ame/wintools/releases/download/v1.5.0/ech-proxy-windows-amd64.exe" target="_blank" style="color:#3b82f6;">下载 ech-proxy</a></div>
         <label>API Key</label>
         <input id="cfgKey" type="password" placeholder="sk-...">
         <label>模型</label>
@@ -725,10 +724,6 @@
             () => toast('messages[] 已复制'),
             () => toast('复制失败')
         );
-    }
-
-    function downloadEch() {
-        window.open('https://gh-proxy.com/github.com/Hana-ame/wintools/releases/download/v1.5.0/ech-proxy-windows-amd64.exe', '_blank');
     }
 
     function escapeHtml(s) {
