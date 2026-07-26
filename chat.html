@@ -864,9 +864,11 @@
     }
 
     async function showConvList() {
+        const list = document.getElementById('convList');
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>';
+        showModal('convModal');
         try {
             const convs = await getAllConvs();
-            const list = document.getElementById('convList');
             convs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
             if (convs.length === 0) {
@@ -884,7 +886,6 @@
                     </div>`;
                 }).join('');
             }
-            showModal('convModal');
         } catch (e) { console.error('showConvList:', e); }
     }
 
