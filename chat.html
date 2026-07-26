@@ -98,7 +98,7 @@
         #input {
             flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 24px;
             outline: none; font-size: 0.92rem; resize: none; max-height: 120px;
-            font-family: inherit; line-height: 1.5;
+            font-family: inherit; line-height: 1.5; overflow: hidden;
         }
         #input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         #sendBtn {
@@ -793,9 +793,10 @@
     }
 
     let _idb = null;
+    let _idbP = null;
     function idbConn() {
-        if (_idb) return Promise.resolve(_idb);
-        return new Promise((resolve, reject) => {
+        if (_idbP) return _idbP;
+        _idbP = new Promise((resolve, reject) => {
             const req = indexedDB.open('aichat_db', 1);
             req.onupgradeneeded = (e) => {
                 const db = e.target.result;
@@ -803,8 +804,9 @@
                     db.createObjectStore('conversations', { keyPath: 'id' });
             };
             req.onsuccess = (e) => { _idb = e.target.result; resolve(_idb); };
-            req.onerror = (e) => reject(e.target.error);
+            req.onerror = (e) => { _idbP = null; reject(e.target.error); };
         });
+        return _idbP;
     }
     function idbOp(mode, cb) {
         return idbConn().then(db => new Promise((resolve, reject) => {
