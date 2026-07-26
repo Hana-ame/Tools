@@ -516,7 +516,7 @@
 
         const div = document.createElement('div');
         div.className = `msg ${role}`;
-        const idx = messages.length - 1;
+        const idx = messages.length;
         div.dataset.idx = idx;
 
         const actions = document.createElement('div');
@@ -524,8 +524,8 @@
         const btns = '<button onclick="forkFrom(this)">🔀</button>';
         if (role === 'user') {
             actions.innerHTML = '<button onclick="editMsg(this)">✏️</button><button onclick="deleteMsg(this)">🗑️</button>' + btns;
-        } else if (role === 'ai') {
-            actions.innerHTML = '<button onclick="deleteMsg(this)">🗑️</button>' + btns;
+        } else {
+            actions.innerHTML = '<button onclick="editMsg(this)">✏️</button><button onclick="deleteMsg(this)">🗑️</button>' + btns;
         }
         div.appendChild(actions);
 
