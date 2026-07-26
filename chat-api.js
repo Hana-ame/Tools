@@ -15,6 +15,7 @@ function buildRequestBody() {
 }
 
 async function send() {
+    let started = false;
     try {
         const input = document.getElementById('input');
         const text = input.value.trim();
@@ -22,6 +23,7 @@ async function send() {
 
         if (!config.key) { showConfig(); return; }
 
+        started = true;
         input.value = '';
         input.style.height = 'auto';
         const userMid = nextId();
@@ -122,8 +124,10 @@ async function send() {
     } catch (e) {
         toast('发送失败');
     } finally {
-        loading = false;
-        document.getElementById('sendBtn').disabled = false;
+        if (started) {
+            loading = false;
+            document.getElementById('sendBtn').disabled = false;
+        }
     }
 }
 
