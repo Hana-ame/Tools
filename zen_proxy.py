@@ -87,7 +87,10 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self._cors()
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+        try:
+            self.wfile.write(json.dumps(data).encode())
+        except OSError:
+            self._log("client disconnected during send")
 
     def _proxy(self, method, path):
         client_ip = self.client_address[0]
@@ -166,7 +169,10 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self._cors()
             self.end_headers()
-            self.wfile.write(r.content)
+            try:
+                self.wfile.write(r.content)
+            except OSError:
+                self._log("client disconnected during error response")
             return
 
         if not is_stream:
@@ -174,7 +180,10 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self._cors()
             self.end_headers()
-            self.wfile.write(r.content)
+            try:
+                self.wfile.write(r.content)
+            except OSError:
+                self._log("client disconnected during non-stream response")
             self._log("non-stream done")
             return
 
@@ -189,7 +198,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                 try:
                     self.wfile.write(chunk)
                     self.wfile.flush()
-                except BrokenPipeError:
+                except (BrokenPipeError, OSError):
                     self._log("client disconnected")
                     break
         self._log("stream done")
@@ -205,7 +214,10 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain")
         self._cors()
         self.end_headers()
-        self.wfile.write(b"Zen proxy running\n")
+        try:
+            self.wfile.write(b"Zen proxy running\n")
+        except OSError:
+            self._log("client disconnected during GET response")
 
 
 class BanList:
