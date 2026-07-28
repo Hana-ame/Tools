@@ -9,7 +9,7 @@ import threading
 import time
 import requests
 from requests.adapters import HTTPAdapter
-from urllib3.util.connection import allowed_gai_family
+import urllib3.util.connection
 
 ZEN_HOST = "opencode.ai"
 ZEN_PATH = "/zen/v1"
@@ -22,6 +22,18 @@ BAN_WINDOW = 600
 FREE_LIMIT_ERR = "FreeUsageLimitError"
 POOL_SIZE = 50
 
+_local = threading.local()
+
+
+def _allowed_gai_family():
+    try:
+        return _local.family
+    except AttributeError:
+        return socket.AF_UNSPEC
+
+
+urllib3.util.connection.allowed_gai_family = _allowed_gai_family
+
 
 def next_utc_midnight():
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -29,9 +41,22 @@ def next_utc_midnight():
     return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
-def _make_session():
+class FamilyAdapter(HTTPAdapter):
+    def __init__(self, family, **kwargs):
+        self._family = family
+        super().__init__(**kwargs)
+
+    def send(self, request, **kwargs):
+        _local.family = self._family
+        try:
+            return super().send(request, **kwargs)
+        finally:
+            _local.family = socket.AF_UNSPEC
+
+
+def _make_session(family):
     s = requests.Session()
-    adapter = HTTPAdapter(pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE)
+    adapter = FamilyAdapter(family, pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE)
     s.mount("http://", adapter)
     s.mount("https://", adapter)
     return s
@@ -103,11 +128,9 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                 continue
             resp = None
             try:
-                url = sv.zen_base[fam] + ("/chat/completions" if body else "/models")
-                hdrs = dict(headers)
-                hdrs["Host"] = sv.zen_host[fam]
+                url = sv.zen_url + ("/chat/completions" if body else "/models")
                 resp = session.request(
-                    method, url, data=body_str, headers=hdrs,
+                    method, url, data=body_str, headers=headers,
                     stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
                 )
                 if is_stream and resp.status_code == 200:
@@ -243,10 +266,9 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         self.address_family = socket.AF_INET6 if ":" in addr else socket.AF_INET
         self.cooldown: dict[str, float] = {}
         self.banlist: BanList | None = None
-        self.zen_base: dict[str, str] = {}
-        self.zen_host: dict[str, str] = {}
-        self.session_v4 = _make_session()
-        self.session_v6 = _make_session()
+        self.zen_url: str = ""
+        self.session_v4 = _make_session(socket.AF_INET)
+        self.session_v6 = _make_session(socket.AF_INET6)
         self._ssl_ctx: ssl.SSLContext | None = None
         super().__init__((addr, port), handler)
 
@@ -267,15 +289,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         return sock, addr
 
 
-def resolve_zen(af=0):
-    fam = {4: socket.AF_INET, 6: socket.AF_INET6}.get(af, socket.AF_UNSPEC)
-    addrs = socket.getaddrinfo(ZEN_HOST, 443, fam, socket.SOCK_STREAM)
-    ip = str(addrs[0][4][0])
-    if ":" in ip:
-        ip = f"[{ip}]"
-    return f"https://{ip}{ZEN_PATH}", ZEN_HOST
-
-
 if __name__ == "__main__":
     addr = sys.argv[1] if len(sys.argv) > 1 else "0.0.0.0"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 8443
@@ -285,13 +298,10 @@ if __name__ == "__main__":
         TIMEOUT = int(sys.argv[5])
 
     banlist = BanList()
-    zen_base_v4, zen_host_v4 = resolve_zen(4)
-    zen_base_v6, zen_host_v6 = resolve_zen(6)
 
     s = ThreadedServer(addr, port, ZenProxy)
     s.banlist = banlist
-    s.zen_base = {"v4": zen_base_v4, "v6": zen_base_v6}
-    s.zen_host = {"v4": zen_host_v4, "v6": zen_host_v6}
+    s.zen_url = f"https://{ZEN_HOST}{ZEN_PATH}"
 
     if cert:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
