@@ -20,9 +20,14 @@ usage() {
 
 [ -z "$DOMAIN" ] && usage
 
-# --- 用 nslookup 解析 A(IPv4) 和 AAAA(IPv6) ---
-ipv4_list=$(nslookup -type=A "$DOMAIN" 2>/dev/null | awk '/has address/{print $NF}' || true)
-ipv6_list=$(nslookup -type=AAAA "$DOMAIN" 2>/dev/null | awk '/has AAAA address/{print $NF}' || true)
+# --- 用 host/nslookup 解析 A(IPv4) 和 AAAA(IPv6) ---
+if command -v host >/dev/null 2>&1; then
+  ipv4_list=$(host -t A "$DOMAIN" 2>/dev/null | awk '/has address/{print $NF}' || true)
+  ipv6_list=$(host -t AAAA "$DOMAIN" 2>/dev/null | awk '/has IPv6 address/{print $NF}' || true)
+else
+  ipv4_list=$(nslookup -type=A "$DOMAIN" 2>/dev/null | awk '/has address/{print $NF}' || true)
+  ipv6_list=$(nslookup -type=AAAA "$DOMAIN" 2>/dev/null | awk '/has AAAA address/{print $NF}' || true)
+fi
 
 mapfile -t IPV4 <<<"$ipv4_list"
 mapfile -t IPV6 <<<"$ipv6_list"
