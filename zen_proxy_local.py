@@ -30,12 +30,6 @@ def _allowed_gai_family():
 urllib3.util.connection.allowed_gai_family = _allowed_gai_family
 
 
-def next_utc_midnight():
-    now = datetime.datetime.now(datetime.timezone.utc)
-    tomorrow = now + datetime.timedelta(days=1)
-    return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-
-
 class FamilyAdapter(HTTPAdapter):
     def __init__(self, family, **kwargs):
         self._family = family
@@ -145,8 +139,6 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
         for fam, session in [("v6", self.server.session_v6), ("v4", self.server.session_v4)]:
             if session is None:
                 continue
-            if self.server.cooldown.get(fam, 0) > time.time():
-                continue
             resp = None
             try:
                 url = self.server.zen_url + ("/chat/completions" if body else "/models")
@@ -162,7 +154,6 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
                     if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
                         self._log(f"{fam} FreeUsageLimitError")
                         limit_error = data
-                        self.server.cooldown[fam] = next_utc_midnight()
                         resp.close()
                         continue
 
@@ -249,7 +240,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
     def __init__(self, addr, port, handler):
-        self.cooldown: dict[str, float] = {}
         self.zen_url: str = ""
         self.session_v4 = _make_session(socket.AF_INET)
         if ipv6_available():
