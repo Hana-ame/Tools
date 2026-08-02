@@ -1,9 +1,9 @@
+import argparse
 import datetime
 import http.server
 import json
 import socket
 import socketserver
-import sys
 import threading
 import time
 import requests
@@ -249,10 +249,15 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 if __name__ == "__main__":
-    addr = sys.argv[1] if len(sys.argv) > 1 else "0.0.0.0"
-    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8000
-    if len(sys.argv) > 3:
-        TIMEOUT = int(sys.argv[3])
+    parser = argparse.ArgumentParser(description="Local dual-stack Zen proxy")
+    parser.add_argument("--port", "-p", type=int, default=8000, help="listen port (default 8000)")
+    parser.add_argument("--timeout", type=int, default=None, help="upstream timeout in seconds (default 120)")
+    args = parser.parse_args()
+    if args.timeout:
+        TIMEOUT = args.timeout
+
+    addr = "0.0.0.0"
+    port = args.port
 
     s = ThreadedServer(addr, port, ZenProxyLocal)
     s.zen_url = f"https://{ZEN_HOST}{ZEN_PATH}"
