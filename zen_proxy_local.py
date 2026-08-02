@@ -58,11 +58,20 @@ def _make_session(family):
 
 
 def set_socket_timeout(resp, timeout):
-    try:
-        raw = resp.raw._original_response.fp.raw._sock
-        raw.settimeout(timeout)
-    except Exception:
-        pass
+    for getter in (
+        lambda: resp.raw._original_response.fp.raw._sock,
+        lambda: resp.raw._fp.fp.raw._sock,
+        lambda: resp.raw._fp.raw._sock,
+        lambda: resp.raw.connection.sock,
+    ):
+        try:
+            sock = getter()
+            if sock is not None:
+                sock.settimeout(timeout)
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def ipv6_available(timeout=3):
@@ -117,7 +126,7 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
         self._log(f"-> {method} {path}")
 
         auth = self.headers.get("Authorization", "")
-        headers = {"Authorization": auth}
+        headers = {"Authorization": auth, "Connection": "close"}
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length) if content_length else b""
         is_stream = False
@@ -180,7 +189,12 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
                 self.send_header("Connection", "keep-alive")
                 self._cors()
                 self.end_headers()
-                for chunk in resp.iter_content(chunk_size=None):
+                deadline = time.time() + TIMEOUT
+                for chunk in resp.iter_content(chunk_size=16384):
+                    if time.time() > deadline:
+                        self._log(f"{fam} stream deadline exceeded")
+                        resp.close()
+                        return
                     if chunk:
                         try:
                             self.wfile.write(chunk)
@@ -188,19 +202,23 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
                         except (BrokenPipeError, OSError):
                             self._log("client disconnected")
                             break
+                resp.close()
                 self._log("stream done")
                 return
 
             except requests.exceptions.ConnectionError:
                 self._log(f"{fam} ConnectionError")
+                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except requests.exceptions.ReadTimeout:
                 self._log(f"{fam} ReadTimeout")
+                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except OSError:
                 self._log(f"{fam} OSError")
+                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except Exception as e:
