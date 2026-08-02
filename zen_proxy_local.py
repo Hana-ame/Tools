@@ -208,17 +208,14 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
 
             except requests.exceptions.ConnectionError:
                 self._log(f"{fam} ConnectionError")
-                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except requests.exceptions.ReadTimeout:
                 self._log(f"{fam} ReadTimeout")
-                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except OSError:
                 self._log(f"{fam} OSError")
-                self.server.cooldown[fam] = time.time() + 30
                 if resp:
                     resp.close()
             except Exception as e:
