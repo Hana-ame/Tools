@@ -133,7 +133,7 @@ class ZenProxyLocal(http.server.BaseHTTPRequestHandler):
             body_str = ""
 
         limit_error = None
-        for fam, session in [("v4", self.server.session_v4), ("v6", self.server.session_v6)]:
+        for fam, session in [("v6", self.server.session_v6), ("v4", self.server.session_v4)]:
             if session is None:
                 continue
             if self.server.cooldown.get(fam, 0) > time.time():

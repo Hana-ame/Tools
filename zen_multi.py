@@ -1,6 +1,8 @@
 import datetime
 import http.server
 import json
+import os
+import signal
 import socketserver
 import sys
 import threading
@@ -277,6 +279,10 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 if __name__ == "__main__":
     host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 8443
+
+    signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    if os.name == "posix" and hasattr(signal, "SIGUSR1"):
+        signal.signal(signal.SIGUSR1, signal.SIG_IGN)
 
     MultiZen.sources = {u["name"]: Source(u["name"], u["base"]) for u in UPSTREAMS}
     print("Zen multi proxy sources: " + ", ".join(MultiZen.sources))
