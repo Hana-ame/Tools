@@ -10,7 +10,7 @@ from requests.adapters import HTTPAdapter
 
 TIMEOUT = 120
 CONNECT_TIMEOUT = 10
-POOL_SIZE = 20
+POOL_SIZE = 64
 FREE_LIMIT_ERR = "FreeUsageLimitError"
 COOLDOWN_SHORT = 60
 BASE_MODEL = "deepseek-v4-flash-free"
@@ -49,6 +49,22 @@ def next_utc_midnight():
     now = datetime.datetime.now(datetime.timezone.utc)
     tomorrow = now + datetime.timedelta(days=1)
     return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+
+def _stream_socket(resp):
+    for getter in (
+        lambda: resp.raw._original_response.fp.raw._sock,
+        lambda: resp.raw._fp.fp.raw._sock,
+        lambda: resp.raw._fp.raw._sock,
+        lambda: resp.raw.connection.sock,
+    ):
+        try:
+            s = getter()
+            if s is not None:
+                return s
+        except Exception:
+            continue
+    return None
 
 
 class Source:
@@ -129,6 +145,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             forced = header_src
         limit_error = None
         last_exc = None
+        deadline = None
         for name in self._order(forced):
             src = self.sources[name]
             now = time.time()
@@ -143,11 +160,12 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
                 )
                 if is_stream and resp.status_code == 200:
-                    try:
-                        raw = resp.raw._original_response.fp.raw._sock
-                        raw.settimeout(TIMEOUT)
-                    except Exception:
-                        pass
+                    sock = _stream_socket(resp)
+                    if sock is not None:
+                        sock.settimeout(TIMEOUT)
+                    else:
+                        self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
+                    deadline = time.time() + TIMEOUT
 
                 if resp.status_code == 200 and is_stream:
                     pass
@@ -174,14 +192,20 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 self._cors()
                 self.end_headers()
                 started = True
-                for chunk in resp.iter_content(chunk_size=None):
+                for chunk in resp.iter_content(chunk_size=16384):
+                    if deadline is not None and time.time() > deadline:
+                        self._log(f"{name}: stream deadline exceeded, aborting")
+                        resp.close()
+                        self.close_connection = True
+                        return
                     if chunk:
                         try:
                             self.wfile.write(chunk)
                             self.wfile.flush()
                         except (BrokenPipeError, OSError):
                             self._log("client disconnected")
-                            break
+                            return
+                resp.close()
                 self._log(f"{name}: done (source={name})")
                 return
 
