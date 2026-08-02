@@ -2,10 +2,10 @@ import datetime
 import http.server
 import json
 import os
+import random
 import signal
 import socketserver
 import sys
-import threading
 import time
 import requests
 from requests.adapters import HTTPAdapter
@@ -42,9 +42,6 @@ def resolve_model(model):
         if src in ORDER:
             return src, BASE_MODEL
     return None, model
-
-_lock = threading.Lock()
-_rotate = 0
 
 
 def next_utc_midnight():
@@ -111,15 +108,13 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             self._log("client disconnected during send")
 
     def _order(self, forced):
-        global _rotate
-        names = list(ORDER)
-        if forced and forced in self.sources:
-            order = [forced] + [n for n in names if n != forced]
-            return order
-        with _lock:
-            _rotate = (_rotate + 1) % len(names)
-            start = _rotate
-        return names[start:] + names[:start]
+        order = list(ORDER)
+        if forced and forced in order:
+            order.remove(forced)
+            random.shuffle(order)
+            return [forced] + order
+        random.shuffle(order)
+        return order
 
     def _proxy(self, method, path, want_status=False):
         self._log(f"-> {method} {path}")
