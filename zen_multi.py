@@ -7,6 +7,7 @@ import random
 import signal
 import socketserver
 import sys
+import threading
 import time
 import requests
 from requests.adapters import HTTPAdapter
@@ -18,6 +19,10 @@ FREE_LIMIT_ERR = "FreeUsageLimitError"
 COOLDOWN_SHORT = 60
 BASE_MODEL = "deepseek-v4-flash-free"
 MODEL_PREFIX = "deepseek-v4-flash"
+INF_MODEL = "deepseek-v4-flash-inf"
+INF_TOOL = "bash"
+INF_TOOL_ARG = '{"command":"echo inf_loop_probe"}'
+INF_ROUNDS = 25
 
 UPSTREAMS = [
     {"name": "bwh", "base": "https://bwh.moonchan.xyz:8443"},
@@ -27,9 +32,13 @@ UPSTREAMS = [
 
 ORDER = ["bwh", "vps", "cloudcone"]
 
+_inf_lock = threading.Lock()
+_inf_count = 0
+
 
 def source_models():
     models = [{"id": BASE_MODEL, "name": f"DeepSeek V4 Flash (auto)"}]
+    models.append({"id": INF_MODEL, "name": "DeepSeek V4 Flash (inf loop)"})
     models += [
         {"id": f"{MODEL_PREFIX}-{name}", "name": f"DeepSeek V4 Flash ({name})"}
         for name in ORDER
@@ -38,6 +47,8 @@ def source_models():
 
 
 def resolve_model(model):
+    if model == INF_MODEL:
+        return None, BASE_MODEL
     if model and model != BASE_MODEL and model.startswith(MODEL_PREFIX + "-"):
         src = model[len(MODEL_PREFIX) + 1:]
         if src in ORDER:
@@ -129,6 +140,33 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         random.shuffle(order)
         return order
 
+    def _inf_inject(self):
+        global _inf_count
+        with _inf_lock:
+            if _inf_count >= INF_ROUNDS:
+                return False
+            count = _inf_count + 1
+            _inf_count = count
+        call_id = f"call_inf_{count}"
+        inject = (
+            f'data: {{"id":"inf","object":"chat.completion.chunk","created":0,'
+            f'"model":"{BASE_MODEL}","choices":[{{"index":0,"delta":{{"tool_calls":['
+            f'{{"index":0,"id":"{call_id}","type":"function",'
+            f'"function":{{"name":"{INF_TOOL}","arguments":"{INF_TOOL_ARG}"}}}}'
+            f']}},"finish_reason":null}}]}}\n\n'
+            f'data: {{"id":"inf","object":"chat.completion.chunk","created":0,'
+            f'"model":"{BASE_MODEL}","choices":[{{"index":0,"delta":{{}},'
+            f'"finish_reason":"tool_calls"}}]}}\n\n'
+            f"data: [DONE]\n\n"
+        ).encode()
+        try:
+            self.wfile.write(inject)
+            self.wfile.flush()
+        except (BrokenPipeError, OSError):
+            self._log("client disconnected")
+        self._log(f"injected tool_call ({count}/{INF_ROUNDS})")
+        return True
+
     def _proxy(self, method, path, want_status=False):
         self._log(f"-> {method} {path}")
         auth = self.headers.get("Authorization", "")
@@ -137,8 +175,10 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         body = self.rfile.read(content_length) if content_length else b""
         is_stream = False
         forced = None
+        is_inf = False
         if body:
             payload = json.loads(body)
+            is_inf = (payload.get("model") or BASE_MODEL) == INF_MODEL
             forced, model = resolve_model(payload.get("model") or BASE_MODEL)
             payload["model"] = model
             if "max_tokens" not in payload or payload["max_tokens"] > 65536:
@@ -224,6 +264,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 self._cors()
                 self.end_headers()
                 started = True
+                saw_tool = False
+                injected = False
+                pending_done = False
                 for chunk in itertools.chain(chain, rest):
                     if deadline is not None and time.time() > deadline:
                         self._log(f"{name}: stream deadline exceeded, aborting")
@@ -234,12 +277,21 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         if is_stream and _chunk_is_error(chunk):
                             self._log(f"{name}: mid-stream error event dropped")
                             continue
+                        if is_stream and b"tool_calls" in chunk:
+                            saw_tool = True
+                        if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
+                            pending_done = True
+                            continue
                         try:
                             self.wfile.write(chunk)
                             self.wfile.flush()
                         except (BrokenPipeError, OSError):
                             self._log("client disconnected")
                             return
+                        if pending_done:
+                            pending_done = False
+                            if is_inf and not saw_tool:
+                                self._inf_inject()
                 resp.close()
                 self._log(f"{name}: done (source={name})")
                 return
