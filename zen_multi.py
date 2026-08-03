@@ -95,13 +95,16 @@ class Source:
     def __init__(self, name, base):
         self.name = name
         self.base = base
-        self.session = requests.Session()
-        self.session.trust_env = False
-        adapter = HTTPAdapter(pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE)
-        self.session.mount("https://", adapter)
         self.cooldown_until = 0.0
         self.last_err = ""
         self.reqs = 0
+
+    def new_session(self):
+        s = requests.Session()
+        s.trust_env = False
+        adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1)
+        s.mount("https://", adapter)
+        return s
 
 
 class MultiZen(http.server.BaseHTTPRequestHandler):
@@ -222,9 +225,10 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     continue
                 resp = None
                 started = False
+                sess = src.new_session()
                 try:
                     url = src.base + ("/chat/completions" if body else "/v1/models")
-                    resp = src.session.request(
+                    resp = sess.request(
                         method, url, data=body_str, headers=headers,
                         stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
                     )
@@ -352,6 +356,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         self.close_connection = True
                         return
                     last_exc = e
+                finally:
+                    sess.close()
             if attempt < MAX_RETRIES - 1:
                 time.sleep(1)
 
