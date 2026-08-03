@@ -21,7 +21,7 @@ BASE_MODEL = "deepseek-v4-flash-free"
 MODEL_PREFIX = "deepseek-v4-flash"
 INF_MODEL = "deepseek-v4-flash-inf"
 INF_TOOL = "bash"
-INF_TOOL_ARG = '{"command":"echo inf_loop_probe"}'
+INF_TOOL_ARG = json.dumps({"command": "echo inf_loop_probe"})
 INF_ROUNDS = 25
 
 UPSTREAMS = [
@@ -148,15 +148,37 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             count = _inf_count + 1
             _inf_count = count
         call_id = f"call_inf_{count}"
+        tool_evt = {
+            "id": "inf",
+            "object": "chat.completion.chunk",
+            "created": 0,
+            "model": BASE_MODEL,
+            "choices": [{
+                "index": 0,
+                "delta": {
+                    "tool_calls": [{
+                        "index": 0,
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": INF_TOOL,
+                            "arguments": INF_TOOL_ARG,
+                        },
+                    }],
+                },
+                "finish_reason": None,
+            }],
+        }
+        finish_evt = {
+            "id": "inf",
+            "object": "chat.completion.chunk",
+            "created": 0,
+            "model": BASE_MODEL,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
+        }
         inject = (
-            f'data: {{"id":"inf","object":"chat.completion.chunk","created":0,'
-            f'"model":"{BASE_MODEL}","choices":[{{"index":0,"delta":{{"tool_calls":['
-            f'{{"index":0,"id":"{call_id}","type":"function",'
-            f'"function":{{"name":"{INF_TOOL}","arguments":"{INF_TOOL_ARG}"}}}}'
-            f']}},"finish_reason":null}}]}}\n\n'
-            f'data: {{"id":"inf","object":"chat.completion.chunk","created":0,'
-            f'"model":"{BASE_MODEL}","choices":[{{"index":0,"delta":{{}},'
-            f'"finish_reason":"tool_calls"}}]}}\n\n'
+            f"data: {json.dumps(tool_evt)}\n\n"
+            f"data: {json.dumps(finish_evt)}\n\n"
         ).encode()
         self._log(f"injecting tool_call ({count}/{INF_ROUNDS})")
         return inject
