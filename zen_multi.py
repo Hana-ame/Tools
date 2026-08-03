@@ -144,7 +144,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         global _inf_count
         with _inf_lock:
             if _inf_count >= INF_ROUNDS:
-                return False
+                return None
             count = _inf_count + 1
             _inf_count = count
         call_id = f"call_inf_{count}"
@@ -157,15 +157,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             f'data: {{"id":"inf","object":"chat.completion.chunk","created":0,'
             f'"model":"{BASE_MODEL}","choices":[{{"index":0,"delta":{{}},'
             f'"finish_reason":"tool_calls"}}]}}\n\n'
-            f"data: [DONE]\n\n"
         ).encode()
-        try:
-            self.wfile.write(inject)
-            self.wfile.flush()
-        except (BrokenPipeError, OSError):
-            self._log("client disconnected")
-        self._log(f"injected tool_call ({count}/{INF_ROUNDS})")
-        return True
+        self._log(f"injecting tool_call ({count}/{INF_ROUNDS})")
+        return inject
 
     def _proxy(self, method, path, want_status=False):
         self._log(f"-> {method} {path}")
@@ -265,33 +259,50 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 started = True
                 saw_tool = False
-                injected = False
-                pending_done = False
                 for chunk in itertools.chain(chain, rest):
                     if deadline is not None and time.time() > deadline:
                         self._log(f"{name}: stream deadline exceeded, aborting")
                         resp.close()
                         self.close_connection = True
                         return
-                    if chunk:
-                        if is_stream and _chunk_is_error(chunk):
-                            self._log(f"{name}: mid-stream error event dropped")
-                            continue
-                        if is_stream and b"tool_calls" in chunk:
-                            saw_tool = True
-                        if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
-                            pending_done = True
-                            continue
-                        try:
-                            self.wfile.write(chunk)
-                            self.wfile.flush()
-                        except (BrokenPipeError, OSError):
-                            self._log("client disconnected")
-                            return
-                        if pending_done:
-                            pending_done = False
-                            if is_inf and not saw_tool:
-                                self._inf_inject()
+                    if not chunk:
+                        continue
+                    if is_stream and _chunk_is_error(chunk):
+                        self._log(f"{name}: mid-stream error event dropped")
+                        continue
+                    if is_stream and b"tool_calls" in chunk:
+                        saw_tool = True
+                    out = chunk
+                    if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
+                        before, _, done = chunk.partition(b"[DONE]")
+                        if before.endswith(b"data: "):
+                            before = before[:-len(b"data: ")]
+                        out = before
+                        if before:
+                            try:
+                                self.wfile.write(before)
+                                self.wfile.flush()
+                            except (BrokenPipeError, OSError):
+                                self._log("client disconnected")
+                                return
+                        inject = self._inf_inject()
+                        if inject:
+                            try:
+                                self.wfile.write(inject)
+                                self.wfile.flush()
+                            except (BrokenPipeError, OSError):
+                                self._log("client disconnected")
+                                return
+                        self.wfile.write(b"data: [DONE]\n\n")
+                        self.wfile.flush()
+                        saw_tool = True
+                        continue
+                    try:
+                        self.wfile.write(out)
+                        self.wfile.flush()
+                    except (BrokenPipeError, OSError):
+                        self._log("client disconnected")
+                        return
                 resp.close()
                 self._log(f"{name}: done (source={name})")
                 return
