@@ -17,6 +17,7 @@ CONNECT_TIMEOUT = 10
 POOL_SIZE = 64
 FREE_LIMIT_ERR = "FreeUsageLimitError"
 COOLDOWN_SHORT = 60
+MAX_RETRIES = 3
 BASE_MODEL = "deepseek-v4-flash-free"
 MODEL_PREFIX = "deepseek-v4-flash"
 INF_MODEL = "deepseek-v4-flash-inf"
@@ -212,150 +213,154 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         limit_error = None
         last_exc = None
         deadline = None
-        for name in self._order(forced):
-            src = self.sources[name]
-            now = time.time()
-            if src.cooldown_until > now:
-                continue
-            resp = None
-            started = False
-            try:
-                url = src.base + ("/chat/completions" if body else "/v1/models")
-                resp = src.session.request(
-                    method, url, data=body_str, headers=headers,
-                    stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
-                )
-                if is_stream and resp.status_code == 200:
-                    sock = _stream_socket(resp)
-                    if sock is not None:
-                        sock.settimeout(TIMEOUT)
+        for attempt in range(MAX_RETRIES):
+            self._log(f"attempt {attempt + 1}/{MAX_RETRIES}")
+            for name in self._order(forced):
+                src = self.sources[name]
+                now = time.time()
+                if src.cooldown_until > now:
+                    continue
+                resp = None
+                started = False
+                try:
+                    url = src.base + ("/chat/completions" if body else "/v1/models")
+                    resp = src.session.request(
+                        method, url, data=body_str, headers=headers,
+                        stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
+                    )
+                    if is_stream and resp.status_code == 200:
+                        sock = _stream_socket(resp)
+                        if sock is not None:
+                            sock.settimeout(TIMEOUT)
+                        else:
+                            self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
+                        deadline = time.time() + TIMEOUT
+
+                    if resp.status_code != 200:
+                        data = resp.json()
+                        if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
+                            self._log(f"{name}: FreeUsageLimitError (cooldown to midnight)")
+                            src.cooldown_until = next_utc_midnight()
+                            src.last_err = "FreeUsageLimitError"
+                            limit_error = data
+                            resp.close()
+                            continue
+                        self._log(f"{name}: HTTP {resp.status_code} -> try next source")
+                        src.last_err = f"HTTP {resp.status_code}"
+                        resp.close()
+                        continue
+
+                    src.reqs += 1
+                    src.last_err = ""
+                    if want_status:
+                        resp.close()
+                        continue
+
+                    if is_stream:
+                        it = resp.iter_content(chunk_size=16384)
+                        peek = []
+                        for _ in range(20):
+                            try:
+                                peek.append(next(it))
+                            except StopIteration:
+                                break
+                        if any(_chunk_is_error(c) for c in peek):
+                            self._log(f"{name}: SSE error event, try next source")
+                            src.last_err = "SSE error"
+                            resp.close()
+                            continue
+                        chain = peek
+                        rest = it
                     else:
-                        self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
-                    deadline = time.time() + TIMEOUT
+                        chain = [resp.content]
+                        rest = iter([])
 
-                if resp.status_code != 200:
-                    data = resp.json()
-                    if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
-                        self._log(f"{name}: FreeUsageLimitError (cooldown to midnight)")
-                        src.cooldown_until = next_utc_midnight()
-                        src.last_err = "FreeUsageLimitError"
-                        limit_error = data
-                        resp.close()
-                        continue
-                    self._log(f"{name}: HTTP {resp.status_code} -> try next source")
-                    src.last_err = f"HTTP {resp.status_code}"
-                    resp.close()
-                    continue
-
-                src.reqs += 1
-                src.last_err = ""
-                if want_status:
-                    resp.close()
-                    continue
-
-                if is_stream:
-                    it = resp.iter_content(chunk_size=16384)
-                    peek = []
-                    for _ in range(20):
+                    self.send_response(resp.status_code)
+                    self.send_header(
+                        "Content-Type",
+                        "text/event-stream" if (is_stream and resp.status_code == 200) else "application/json",
+                    )
+                    self._cors()
+                    self.end_headers()
+                    started = True
+                    saw_tool = False
+                    for chunk in itertools.chain(chain, rest):
+                        if deadline is not None and time.time() > deadline:
+                            self._log(f"{name}: stream deadline exceeded, aborting")
+                            resp.close()
+                            self.close_connection = True
+                            return
+                        if not chunk:
+                            continue
+                        if is_stream and _chunk_is_error(chunk):
+                            self._log(f"{name}: mid-stream error event dropped")
+                            continue
+                        if is_stream and b"tool_calls" in chunk:
+                            saw_tool = True
+                        out = chunk
+                        if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
+                            before, _, done = chunk.partition(b"[DONE]")
+                            if before.endswith(b"data: "):
+                                before = before[:-len(b"data: ")]
+                            out = before
+                            if before:
+                                try:
+                                    self.wfile.write(before)
+                                    self.wfile.flush()
+                                except (BrokenPipeError, OSError):
+                                    self._log("client disconnected")
+                                    return
+                            inject = self._inf_inject()
+                            if inject:
+                                try:
+                                    self.wfile.write(inject)
+                                    self.wfile.flush()
+                                except (BrokenPipeError, OSError):
+                                    self._log("client disconnected")
+                                    return
+                            self.wfile.write(b"data: [DONE]\n\n")
+                            self.wfile.flush()
+                            saw_tool = True
+                            continue
                         try:
-                            peek.append(next(it))
-                        except StopIteration:
-                            break
-                    if any(_chunk_is_error(c) for c in peek):
-                        self._log(f"{name}: SSE error event, try next source")
-                        src.last_err = "SSE error"
-                        resp.close()
-                        continue
-                    chain = peek
-                    rest = it
-                else:
-                    chain = [resp.content]
-                    rest = iter([])
+                            self.wfile.write(out)
+                            self.wfile.flush()
+                        except (BrokenPipeError, OSError):
+                            self._log("client disconnected")
+                            return
+                    resp.close()
+                    self._log(f"{name}: done (source={name})")
+                    return
 
-                self.send_response(resp.status_code)
-                self.send_header(
-                    "Content-Type",
-                    "text/event-stream" if (is_stream and resp.status_code == 200) else "application/json",
-                )
-                self._cors()
-                self.end_headers()
-                started = True
-                saw_tool = False
-                for chunk in itertools.chain(chain, rest):
-                    if deadline is not None and time.time() > deadline:
-                        self._log(f"{name}: stream deadline exceeded, aborting")
+                except requests.exceptions.RequestException as e:
+                    self._log(f"{name}: {type(e).__name__}")
+                    src.cooldown_until = time.time() + COOLDOWN_SHORT
+                    src.last_err = type(e).__name__
+                    if resp:
                         resp.close()
+                    if started:
                         self.close_connection = True
                         return
-                    if not chunk:
-                        continue
-                    if is_stream and _chunk_is_error(chunk):
-                        self._log(f"{name}: mid-stream error event dropped")
-                        continue
-                    if is_stream and b"tool_calls" in chunk:
-                        saw_tool = True
-                    out = chunk
-                    if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
-                        before, _, done = chunk.partition(b"[DONE]")
-                        if before.endswith(b"data: "):
-                            before = before[:-len(b"data: ")]
-                        out = before
-                        if before:
-                            try:
-                                self.wfile.write(before)
-                                self.wfile.flush()
-                            except (BrokenPipeError, OSError):
-                                self._log("client disconnected")
-                                return
-                        inject = self._inf_inject()
-                        if inject:
-                            try:
-                                self.wfile.write(inject)
-                                self.wfile.flush()
-                            except (BrokenPipeError, OSError):
-                                self._log("client disconnected")
-                                return
-                        self.wfile.write(b"data: [DONE]\n\n")
-                        self.wfile.flush()
-                        saw_tool = True
-                        continue
-                    try:
-                        self.wfile.write(out)
-                        self.wfile.flush()
-                    except (BrokenPipeError, OSError):
-                        self._log("client disconnected")
+                    last_exc = e
+                except Exception as e:
+                    self._log(f"{name}: unexpected {e}")
+                    src.cooldown_until = time.time() + COOLDOWN_SHORT
+                    src.last_err = f"unexpected: {e}"
+                    if resp:
+                        resp.close()
+                    if started:
+                        self.close_connection = True
                         return
-                resp.close()
-                self._log(f"{name}: done (source={name})")
-                return
-
-            except requests.exceptions.RequestException as e:
-                self._log(f"{name}: {type(e).__name__}")
-                src.cooldown_until = time.time() + COOLDOWN_SHORT
-                src.last_err = type(e).__name__
-                if resp:
-                    resp.close()
-                if started:
-                    self.close_connection = True
-                    return
-                last_exc = e
-            except Exception as e:
-                self._log(f"{name}: unexpected {e}")
-                src.cooldown_until = time.time() + COOLDOWN_SHORT
-                src.last_err = f"unexpected: {e}"
-                if resp:
-                    resp.close()
-                if started:
-                    self.close_connection = True
-                    return
-                last_exc = e
+                    last_exc = e
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(1)
 
         if want_status:
             return
         if limit_error:
             return self._send(429, limit_error)
         if last_exc:
-            self._log(f"all sources failed: {last_exc}")
+            self._log(f"all sources failed after {MAX_RETRIES} attempts: {last_exc}")
         self._send(500, {"error": "所有上游源均不可用，请稍后重试"})
 
     def _status(self):
