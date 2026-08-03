@@ -186,7 +186,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
     def _proxy(self, method, path, want_status=False):
         self._log(f"-> {method} {path}")
         auth = self.headers.get("Authorization", "")
-        headers = {"Authorization": auth}
+        headers = {"Authorization": auth, "Connection": "close"}
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length) if content_length else b""
         is_stream = False
