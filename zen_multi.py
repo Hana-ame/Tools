@@ -235,7 +235,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             return self._send(429, limit_error)
         if last_exc:
             self._log(f"all sources failed: {last_exc}")
-        self._send(429, {"error": "the request queue is full"})
+        self._send(500, {"error": "所有上游源均不可用，请稍后重试"})
 
     def _status(self):
         rows = []
