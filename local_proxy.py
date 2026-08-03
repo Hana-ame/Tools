@@ -64,6 +64,7 @@ class LocalProxy(http.server.BaseHTTPRequestHandler):
         headers = {k: v for k, v in self.headers.items() if k.lower() in (
             "authorization", "content-type"
         )}
+        headers["Connection"] = "close"
 
         is_stream = False
         if body:
@@ -94,35 +95,35 @@ class LocalProxy(http.server.BaseHTTPRequestHandler):
                         resp.close()
                         break
 
-                if is_stream:
+                    if is_stream:
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self.send_header("Cache-Control", "no-cache")
+                        self.send_header("Connection", "keep-alive")
+                        self._cors()
+                        self.end_headers()
+                        for chunk in resp.iter_content(chunk_size=None):
+                            if chunk:
+                                try:
+                                    self.wfile.write(chunk)
+                                    self.wfile.flush()
+                                except OSError:
+                                    break
+                        self._log(f"{host} stream done")
+                        return
+
                     self.send_response(200)
-                    self.send_header("Content-Type", "text/event-stream")
-                    self.send_header("Cache-Control", "no-cache")
-                    self.send_header("Connection", "keep-alive")
+                    self.send_header("Content-Type", "application/json")
                     self._cors()
                     self.end_headers()
-                    for chunk in resp.iter_content(chunk_size=None):
-                        if chunk:
-                            try:
-                                self.wfile.write(chunk)
-                                self.wfile.flush()
-                            except OSError:
-                                break
-                    self._log(f"{host} stream done")
+                    self.wfile.write(resp.content)
+                    self._log(f"{host} 200")
                     return
 
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self._cors()
-                self.end_headers()
-                self.wfile.write(resp.content)
-                self._log(f"{host} 200")
-                return
-
-            except requests.exceptions.RequestException as e:
-                self._log(f"{host} error: {e}")
-                last_error = str(e)
-                continue
+                except requests.exceptions.RequestException as e:
+                    self._log(f"{host} error: {e}")
+                    last_error = str(e)
+                    continue
 
         self._send(503, {"error": f"All backends failed: {last_error}"})
 

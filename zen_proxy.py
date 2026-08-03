@@ -114,7 +114,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
             sv.banlist.incr(client_ip)
 
         auth = self.headers.get("Authorization", "")
-        headers = {"Authorization": f"Bearer {ZEN_API_KEY}"}
+        headers = {"Authorization": f"Bearer {ZEN_API_KEY}", "Connection": "close"}
         content_length = int(self.headers.get("Content-Length", 0))
         self._log(
             f"req: ua={self.headers.get('User-Agent', '')!r} "
