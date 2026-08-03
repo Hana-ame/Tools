@@ -164,9 +164,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
                     deadline = time.time() + TIMEOUT
 
-                if resp.status_code == 200 and is_stream:
-                    pass
-                elif not is_stream or resp.status_code != 200:
+                if resp.status_code != 200:
                     data = resp.json()
                     if data.get("error", {}).get("type") == FREE_LIMIT_ERR:
                         self._log(f"{name}: FreeUsageLimitError (cooldown to midnight)")
@@ -175,6 +173,10 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         limit_error = data
                         resp.close()
                         continue
+                    self._log(f"{name}: HTTP {resp.status_code} -> try next source")
+                    src.last_err = f"HTTP {resp.status_code}"
+                    resp.close()
+                    continue
 
                 src.reqs += 1
                 src.last_err = ""
@@ -231,8 +233,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             return
         if limit_error:
             return self._send(429, limit_error)
-        msg = last_exc and f"All sources failed: {last_exc}" or "All sources exhausted"
-        self._send(503, {"error": msg})
+        if last_exc:
+            self._log(f"all sources failed: {last_exc}")
+        self._send(429, {"error": "the request queue is full"})
 
     def _status(self):
         rows = []
