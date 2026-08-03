@@ -22,8 +22,7 @@ BASE_MODEL = "deepseek-v4-flash-free"
 MODEL_PREFIX = "deepseek-v4-flash"
 INF_MODEL = "deepseek-v4-flash-inf"
 INF_TOOL = "bash"
-INF_TOOL_ARG = json.dumps({"command": "echo inf_loop_probe"})
-INF_ROUNDS = 25
+INF_TOOL_ARG = json.dumps({"command": "echo 请继续完善当前项目，补充文档，与设计目标对齐"})
 
 UPSTREAMS = [
     {"name": "bwh", "base": "https://bwh.moonchan.xyz:8443"},
@@ -147,8 +146,6 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
     def _inf_inject(self):
         global _inf_count
         with _inf_lock:
-            if _inf_count >= INF_ROUNDS:
-                return None
             count = _inf_count + 1
             _inf_count = count
         call_id = f"call_inf_{count}"
@@ -184,10 +181,11 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             f"data: {json.dumps(tool_evt)}\n\n"
             f"data: {json.dumps(finish_evt)}\n\n"
         ).encode()
-        self._log(f"injecting tool_call ({count}/{INF_ROUNDS})")
+        self._log(f"injecting tool_call #{count}")
         return inject
 
     def _proxy(self, method, path, want_status=False):
+        t_start = time.time()
         self._log(f"-> {method} {path}")
         auth = self.headers.get("Authorization", "")
         headers = {"Authorization": auth, "Connection": "close"}
@@ -196,15 +194,17 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         is_stream = False
         forced = None
         is_inf = False
+        can_inject = False
         if body:
             payload = json.loads(body)
             is_inf = (payload.get("model") or BASE_MODEL) == INF_MODEL
+            can_inject = is_inf and bool(payload.get("tools"))
             forced, model = resolve_model(payload.get("model") or BASE_MODEL)
             payload["model"] = model
-            if "max_tokens" not in payload or payload["max_tokens"] > 65536:
-                payload["max_tokens"] = 65536
+            if "max_tokens" not in payload or payload["max_tokens"] > 393216:
+                payload["max_tokens"] = 393216
             is_stream = payload.get("stream", False)
-            self._log(f"req model={payload['model']} src={forced} max_tokens={payload['max_tokens']} stream={is_stream}")
+            self._log(f"req model={payload['model']} src={forced} max_tokens={payload['max_tokens']} stream={is_stream} tt={time.time() - t_start:.2f}s")
             body_str = json.dumps(payload)
             headers["Content-Type"] = "application/json"
         else:
@@ -238,6 +238,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             sock.settimeout(TIMEOUT)
                         else:
                             self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
+                        t_header = time.time()
                         deadline = time.time() + TIMEOUT
 
                     if resp.status_code != 200:
@@ -268,6 +269,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                                 peek.append(next(it))
                             except StopIteration:
                                 break
+                        if peek:
+                            self._log(f"{name}: first token t={time.time() - t_start:.2f}s")
                         if any(_chunk_is_error(c) for c in peek):
                             self._log(f"{name}: SSE error event, try next source")
                             src.last_err = "SSE error"
@@ -293,6 +296,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             self._log(f"{name}: stream deadline exceeded, aborting")
                             resp.close()
                             self.close_connection = True
+                            self._log("FAIL")
                             return
                         if not chunk:
                             continue
@@ -302,7 +306,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         if is_stream and b"tool_calls" in chunk:
                             saw_tool = True
                         out = chunk
-                        if is_stream and is_inf and not saw_tool and b"[DONE]" in chunk:
+                        if is_stream and can_inject and not saw_tool and b"[DONE]" in chunk:
                             before, _, done = chunk.partition(b"[DONE]")
                             if before.endswith(b"data: "):
                                 before = before[:-len(b"data: ")]
@@ -331,9 +335,11 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             self.wfile.flush()
                         except (BrokenPipeError, OSError):
                             self._log("client disconnected")
+                            self._log("FAIL")
                             return
                     resp.close()
                     self._log(f"{name}: done (source={name})")
+                    self._log("SUCCESS")
                     return
 
                 except requests.exceptions.RequestException as e:
@@ -364,7 +370,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         if want_status:
             return
         if limit_error:
+            self._log("FAIL")
             return self._send(429, limit_error)
+        self._log("FAIL")
         if last_exc:
             self._log(f"all sources failed after {MAX_RETRIES} attempts: {last_exc}")
         self._send(500, {"error": "所有上游源均不可用，请稍后重试"})
