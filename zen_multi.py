@@ -1,5 +1,6 @@
 import datetime
 import http.server
+import itertools
 import json
 import os
 import random
@@ -64,6 +65,18 @@ def _stream_socket(resp):
         except Exception:
             continue
     return None
+
+
+def _chunk_is_error(chunk):
+    if not chunk:
+        return False
+    text = chunk.decode("utf-8", "ignore")
+    low = text.lower()
+    if '"error"' in text or "error type" in low:
+        return True
+    if "request queue is full" in low or "freeusagelimit" in low:
+        return True
+    return False
 
 
 class Source:
@@ -183,6 +196,26 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 if want_status:
                     resp.close()
                     continue
+
+                if is_stream:
+                    it = resp.iter_content(chunk_size=16384)
+                    peek = []
+                    for _ in range(20):
+                        try:
+                            peek.append(next(it))
+                        except StopIteration:
+                            break
+                    if any(_chunk_is_error(c) for c in peek):
+                        self._log(f"{name}: SSE error event, try next source")
+                        src.last_err = "SSE error"
+                        resp.close()
+                        continue
+                    chain = peek
+                    rest = it
+                else:
+                    chain = [resp.content]
+                    rest = iter([])
+
                 self.send_response(resp.status_code)
                 self.send_header(
                     "Content-Type",
@@ -191,13 +224,16 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 self._cors()
                 self.end_headers()
                 started = True
-                for chunk in resp.iter_content(chunk_size=16384):
+                for chunk in itertools.chain(chain, rest):
                     if deadline is not None and time.time() > deadline:
                         self._log(f"{name}: stream deadline exceeded, aborting")
                         resp.close()
                         self.close_connection = True
                         return
                     if chunk:
+                        if is_stream and _chunk_is_error(chunk):
+                            self._log(f"{name}: mid-stream error event dropped")
+                            continue
                         try:
                             self.wfile.write(chunk)
                             self.wfile.flush()
