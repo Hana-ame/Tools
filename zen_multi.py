@@ -78,15 +78,35 @@ def _stream_socket(resp):
     return None
 
 
-def _chunk_is_error(chunk):
-    if not chunk:
-        return False
-    text = chunk.decode("utf-8", "ignore")
-    low = text.lower()
-    if '"error"' in text or "error type" in low:
-        return True
-    if "request queue is full" in low or "freeusagelimit" in low:
-        return True
+def _next_sse_event(buf):
+    """Pop the first complete SSE event (trailing \\n\\n excluded) from buf.
+
+    Returns (ev, rest). If no complete event is available, returns (None, buf).
+    """
+    i2 = buf.find(b"\n\n")
+    i4 = buf.find(b"\r\n\r\n")
+    if i4 != -1 and (i2 == -1 or i4 < i2):
+        return buf[:i4], buf[i4 + 4:]
+    if i2 != -1:
+        return buf[:i2], buf[i2 + 2:]
+    return None, buf
+
+
+def _event_has_error(ev):
+    """True only when a complete SSE event carries a genuine error payload.
+
+    Parses the `data:` JSON and inspects a top-level `error` key, so model
+    output that merely mentions the word "error" is never mistaken for one.
+    """
+    for line in ev.split(b"\n"):
+        if not line.startswith(b"data: "):
+            continue
+        try:
+            obj = json.loads(line[len(b"data: "):].decode("utf-8", "ignore"))
+        except Exception:
+            continue
+        if isinstance(obj, dict) and "error" in obj:
+            return True
     return False
 
 
@@ -263,20 +283,33 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
 
                     if is_stream:
                         it = resp.iter_content(chunk_size=16384)
-                        peek = []
+                        pre = b""
                         for _ in range(20):
                             try:
-                                peek.append(next(it))
+                                c = next(it)
                             except StopIteration:
                                 break
-                        if peek:
+                            if c:
+                                pre += c
+                            if b"\n\n" in pre:
+                                break
+                        if pre:
                             self._log(f"{name}: first token t={time.time() - t_start:.2f}s")
-                        if any(_chunk_is_error(c) for c in peek):
+                        err = False
+                        buf = pre
+                        while True:
+                            ev, buf = _next_sse_event(buf)
+                            if ev is None:
+                                break
+                            if _event_has_error(ev):
+                                err = True
+                                break
+                        if err:
                             self._log(f"{name}: SSE error event, try next source")
                             src.last_err = "SSE error"
                             resp.close()
                             continue
-                        chain = peek
+                        chain = [pre] if pre else []
                         rest = it
                     else:
                         chain = [resp.content]
@@ -291,6 +324,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     started = True
                     saw_tool = False
+                    buf = b""
                     for chunk in itertools.chain(chain, rest):
                         if deadline is not None and time.time() > deadline:
                             self._log(f"{name}: stream deadline exceeded, aborting")
@@ -300,38 +334,45 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             return
                         if not chunk:
                             continue
-                        if is_stream and _chunk_is_error(chunk):
-                            self._log(f"{name}: mid-stream error event dropped")
-                            continue
-                        if is_stream and b"tool_calls" in chunk:
-                            saw_tool = True
-                        out = chunk
-                        if is_stream and can_inject and not saw_tool and b"[DONE]" in chunk:
-                            before, _, done = chunk.partition(b"[DONE]")
-                            if before.endswith(b"data: "):
-                                before = before[:-len(b"data: ")]
-                            out = before
-                            if before:
-                                try:
-                                    self.wfile.write(before)
-                                    self.wfile.flush()
-                                except (BrokenPipeError, OSError):
-                                    self._log("client disconnected")
-                                    return
-                            inject = self._inf_inject()
-                            if inject:
-                                try:
-                                    self.wfile.write(inject)
-                                    self.wfile.flush()
-                                except (BrokenPipeError, OSError):
-                                    self._log("client disconnected")
-                                    return
-                            self.wfile.write(b"data: [DONE]\n\n")
-                            self.wfile.flush()
-                            saw_tool = True
-                            continue
+                        if is_stream:
+                            buf += chunk
+                        else:
+                            buf = chunk
+                        while True:
+                            if is_stream:
+                                ev, buf = _next_sse_event(buf)
+                                if ev is None:
+                                    break
+                            else:
+                                ev, buf = buf, b""
+                            if is_stream and _event_has_error(ev):
+                                self._log(f"{name}: mid-stream error event dropped")
+                                continue
+                            if is_stream and b'"tool_calls"' in ev:
+                                saw_tool = True
+                            if is_stream and can_inject and not saw_tool and b"data: [DONE]" in ev:
+                                inject = self._inf_inject()
+                                if inject:
+                                    try:
+                                        self.wfile.write(inject)
+                                        self.wfile.flush()
+                                    except (BrokenPipeError, OSError):
+                                        self._log("client disconnected")
+                                        return
+                                saw_tool = True
+                            out = ev + (b"\n\n" if is_stream else b"")
+                            try:
+                                self.wfile.write(out)
+                                self.wfile.flush()
+                            except (BrokenPipeError, OSError):
+                                self._log("client disconnected")
+                                self._log("FAIL")
+                                return
+                            if not is_stream:
+                                break
+                    if is_stream and buf:
                         try:
-                            self.wfile.write(out)
+                            self.wfile.write(buf)
                             self.wfile.flush()
                         except (BrokenPipeError, OSError):
                             self._log("client disconnected")
