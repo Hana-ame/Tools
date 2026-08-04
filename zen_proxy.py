@@ -16,6 +16,7 @@ ZEN_PATH = "/zen/v1"
 ZEN_API_KEY = "public"
 TIMEOUT = 120
 CONNECT_TIMEOUT = 10
+REQUEST_TIMEOUT = 300
 CLEANUP_INTERVAL = 300
 MAX_IDLE = 3600
 MAX_REQS_PER_CLIENT = 200
@@ -389,7 +390,7 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
     def get_request(self):
         sock, addr = self.socket.accept()
-        sock.settimeout(TIMEOUT)
+        sock.settimeout(REQUEST_TIMEOUT)
         if self._ssl_ctx:
             try:
                 sock = self._ssl_ctx.wrap_socket(sock, server_side=True)

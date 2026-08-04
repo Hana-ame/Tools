@@ -27,14 +27,10 @@ for srv in "${SERVERS[@]}"; do
 
     bash ~/script/ssh/$srv.sh "cat > /root/zen_proxy.py" < /mnt/d/WorkPlace/Tools/zen_proxy.py
 
-    echo "$SERVICE" | sed "s|PORT|$PORT|g; s|CERT|$CERT|g; s|KEY|$KEY|g" | \
-        bash ~/script/ssh/$srv.sh "cat > /etc/systemd/system/zen.service" 
+echo "$SERVICE" | sed "s|PORT|$PORT|g; s|CERT|$CERT|g; s|KEY|$KEY|g" | \
+        bash ~/script/ssh/$srv.sh "cat > /etc/systemd/system/zen.service"
 
-    bash ~/script/ssh/$srv.sh "
-        systemctl daemon-reload
-        systemctl enable zen
-        systemctl restart zen
-    "
+    bash ~/script/ssh/$srv.sh "systemctl daemon-reload && systemctl enable zen && systemctl restart zen"
 
     bash ~/script/ssh/$srv.sh "journalctl -u zen --no-pager -n 2"
     echo ""
