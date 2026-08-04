@@ -1,12 +1,10 @@
-// Local Proxy in Go — Ollama-compatible (11434) proxy that talks to
-// opencode.ai/zen/v1 DIRECTLY (dual-stack v6/v4 failover), no dependency on
-// the bwh/vps/cloudcone servers. Replaces zen_proxy_local.py.
+// Local Proxy in Go — pure forwarder. Ollama-compatible (11434) endpoint that
+// simply relays to opencode.ai/zen/v1 (dual-stack v6/v4 failover), nothing else.
 package main
 
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -123,45 +121,7 @@ type proxy struct {
 	clientV4 *http.Client
 	clientV6 *http.Client
 
-	sniHost string
-	v4URL   string // https://<v4-ip>:443
-	v6URL   string // https://[<v6-ip>]:443
-}
-
-// resolveOnce resolves host to one v4 and one v6 IP at startup via public DNS,
-// bypassing the system resolver (which may point at an unavailable ::1:53).
-// Requests then dial the IP directly instead of hitting the resolver.
-func resolveOnce(host string) (v4, v6 string) {
-	for _, dns := range []string{"1.1.1.1:53", "8.8.8.8:53", "223.5.5.5:53", "114.114.114.114:53"} {
-		r := &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{Timeout: 5 * time.Second}
-				return d.DialContext(ctx, "udp", dns)
-			},
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		addrs, err := r.LookupIPAddr(ctx, host)
-		cancel()
-		if err != nil || len(addrs) == 0 {
-			continue
-		}
-		for _, a := range addrs {
-			if a.IP.To4() != nil {
-				if v4 == "" {
-					v4 = a.IP.String()
-				}
-			} else if a.IP.To16() != nil {
-				if v6 == "" {
-					v6 = a.IP.String() // bare, bracket only when building URLs
-				}
-			}
-		}
-		log.Printf("resolved %s via %s -> v4=%s v6=%s", host, dns, v4, v6)
-		return v4, v6
-	}
-	log.Printf("resolve %s failed on all public DNS", host)
-	return "", ""
+	mode string // "", "v4", or "v6"
 }
 
 func (p *proxy) inCooldown(fam string, now time.Time) bool {
@@ -216,7 +176,14 @@ func (p *proxy) handle(w http.ResponseWriter, r *http.Request, method string) {
 	var lastErrBody any
 	limitErr := any(nil)
 
-	for _, fam := range []string{"v6", "v4"} {
+	stacks := []string{"v6", "v4"}
+	switch p.mode {
+	case "v4":
+		stacks = []string{"v4"}
+	case "v6":
+		stacks = []string{"v6"}
+	}
+	for _, fam := range stacks {
 		if p.inCooldown(fam, time.Now()) {
 			continue
 		}
@@ -228,16 +195,11 @@ func (p *proxy) handle(w http.ResponseWriter, r *http.Request, method string) {
 		if len(body) == 0 {
 			path = "/models"
 		}
-		base := p.v6URL
-		if fam == "v4" {
-			base = p.v4URL
-		}
-		req, err := http.NewRequest(method, base+zenPath+path, strings.NewReader(bodyStr))
+		req, err := http.NewRequest(method, "https://"+zenHost+zenPath+path, strings.NewReader(bodyStr))
 		if err != nil {
 			continue
 		}
 		req.Header.Set("Content-Type", "application/json")
-		// Pass through the client's Authorization (if any) like zen_proxy_local.py.
 		if a := r.Header.Get("Authorization"); a != "" {
 			req.Header.Set("Authorization", a)
 		}
@@ -426,14 +388,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// makeClient dials the resolved IP directly (no per-request DNS), using the
-// hostname only for TLS SNI.
-func makeClient(endpoint, sniHost string) *http.Client {
+func makeClient(family string) *http.Client {
+	dialer := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{ServerName: sniHost},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			d := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
-			return d.DialContext(ctx, "tcp", endpoint)
+			return dialer.DialContext(ctx, family, addr)
 		},
 		ResponseHeaderTimeout: connectTimeout,
 		IdleConnTimeout:       90 * time.Second,
@@ -447,23 +406,24 @@ func makeClient(endpoint, sniHost string) *http.Client {
 func main() {
 	host := "127.0.0.1"
 	port := 11434
+	mode := ""
 	if len(os.Args) > 1 {
 		host = os.Args[1]
 	}
 	if len(os.Args) > 2 {
 		fmt.Sscanf(os.Args[2], "%d", &port)
 	}
-
-	v4, v6 := resolveOnce(zenHost)
-	p := &proxy{
-		clientV4: makeClient(net.JoinHostPort(v4, "443"), zenHost),
-		clientV6: makeClient(net.JoinHostPort(v6, "443"), zenHost),
-		sniHost:  zenHost,
-		v4URL:    "https://" + v4,
-		v6URL:    "https://[" + v6 + "]",
+	if len(os.Args) > 3 {
+		mode = os.Args[3]
 	}
-	if v4 == "" && v6 == "" {
-		log.Fatalf("could not resolve %s via public DNS", zenHost)
+	if mode != "v4" && mode != "v6" {
+		mode = ""
+	}
+
+	p := &proxy{
+		clientV4: makeClient("tcp4"),
+		clientV6: makeClient("tcp6"),
+		mode:     mode,
 	}
 
 	mux := http.NewServeMux()
@@ -490,7 +450,7 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(200)
-		w.Write([]byte("Local proxy (direct opencode.ai) running\n"))
+		w.Write([]byte("Local proxy running\n"))
 	})
 
 	srv := &http.Server{
@@ -498,7 +458,10 @@ func main() {
 		Handler:           mux,
 		ReadHeaderTimeout: 15 * time.Second,
 	}
-	log.Printf("Local proxy on http://%s:%d/v1/chat/completions (direct -> opencode.ai, dual-stack)", host, port)
+	log.Printf("Local proxy on http://%s:%d/v1/chat/completions (forward -> opencode.ai)", host, port)
+	if mode != "" {
+		log.Printf("IP stack forced: %s", mode)
+	}
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
