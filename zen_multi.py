@@ -23,8 +23,9 @@ BASE_MODEL = "deepseek-v4-flash-free"
 MODEL_PREFIX = "deepseek-v4-flash"
 INF_MODEL = "deepseek-v4-flash-inf"
 INF_TOOL = "bash"
-INF_TOOL_ARG = json.dumps({"command": "echo 请继续完善当前项目，补充文档，与设计目标对齐"})
+INF_TOOL_ARG = json.dumps({"command": "echo 请继续完善当前项目，补充文档，与设计目标对齐；如果没有需要继续做的工作了，请执行 sleep 1800"})
 INF_IDLE_ARG = json.dumps({"command": "echo 继续"})
+INF_SLEEP_ARG = json.dumps({"command": "sleep 1800"})
 
 UPSTREAMS = [
     {"name": "bwh", "base": "https://bwh.moonchan.xyz:8443"},
@@ -310,6 +311,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     continue
                 resp = None
                 started = False
+                injected = False
                 sess = src.new_session()
                 try:
                     url = src.base + ("/chat/completions" if body else "/v1/models")
@@ -388,7 +390,6 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     started = True
                     saw_tool = False
-                    injected = False
                     buf = b""
                     last_activity = time.time()
                     for chunk in itertools.chain(chain, rest):
