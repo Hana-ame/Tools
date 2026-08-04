@@ -391,6 +391,9 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func makeClient(family string) *http.Client {
 	dialer := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
 	tr := &http.Transport{
+		// Use HTTP(S)_PROXY env if set (e.g. HTTPS_PROXY=http://127.0.0.1:10809).
+		// The proxy resolves the domain, so a broken local resolver never matters.
+		Proxy: http.ProxyFromEnvironment,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, family, addr)
 		},
