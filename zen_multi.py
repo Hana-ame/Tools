@@ -92,6 +92,70 @@ def _next_sse_event(buf):
     return None, buf
 
 
+def _event_has_tool_call(ev):
+    """True only when the SSE event actually carries a real tool_call delta.
+
+    Reasons over the parsed `data:` JSON instead of doing a raw substring scan,
+    so model text that merely mentions "tool_calls" never suppresses injection.
+    """
+    for line in ev.split(b"\n"):
+        if not line.startswith(b"data: "):
+            continue
+        try:
+            obj = json.loads(line[len(b"data: "):].decode("utf-8", "ignore"))
+        except Exception:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        for ch in obj.get("choices") or []:
+            delta = ch.get("delta") or {}
+            if delta.get("tool_calls"):
+                return True
+    return False
+
+
+def _event_json(ev):
+    """Parse the first `data:` payload of an SSE event; None on failure."""
+    for line in ev.split(b"\n"):
+        if not line.startswith(b"data: "):
+            continue
+        try:
+            return json.loads(line[len(b"data: "):].decode("utf-8", "ignore"))
+        except Exception:
+            continue
+    return None
+
+
+def _event_finish_reason(ev):
+    obj = _event_json(ev)
+    if not isinstance(obj, dict):
+        return None
+    for ch in obj.get("choices") or []:
+        fr = ch.get("finish_reason")
+        if fr is not None:
+            return fr
+    return None
+
+
+def _neutralize_finish(ev):
+    """Return the event bytes with finish_reason cleared to null.
+
+    Used before injecting a tool_call so the client keeps reading the stream
+    instead of settling on the upstream's terminal `stop`.
+    """
+    obj = _event_json(ev)
+    if not isinstance(obj, dict):
+        return ev
+    found = False
+    for ch in obj.get("choices") or []:
+        if "finish_reason" in ch:
+            found = found or ch["finish_reason"] is not None
+            ch["finish_reason"] = None
+    if not found:
+        return ev
+    return json.dumps(obj, ensure_ascii=False).encode()
+
+
 def _event_has_error(ev):
     """True only when a complete SSE event carries a genuine error payload.
 
@@ -235,7 +299,6 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             forced = header_src
         limit_error = None
         last_exc = None
-        deadline = None
         for attempt in range(MAX_RETRIES):
             self._log(f"attempt {attempt + 1}/{MAX_RETRIES}")
             for name in self._order(forced):
@@ -258,8 +321,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             sock.settimeout(TIMEOUT)
                         else:
                             self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
-                        t_header = time.time()
-                        deadline = time.time() + TIMEOUT
+                        last_activity = time.time()
 
                     if resp.status_code != 200:
                         data = resp.json()
@@ -324,10 +386,12 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     started = True
                     saw_tool = False
+                    injected = False
                     buf = b""
+                    last_activity = time.time()
                     for chunk in itertools.chain(chain, rest):
-                        if deadline is not None and time.time() > deadline:
-                            self._log(f"{name}: stream deadline exceeded, aborting")
+                        if is_stream and last_activity is not None and time.time() - last_activity > TIMEOUT:
+                            self._log(f"{name}: stream idle {TIMEOUT}s, aborting")
                             resp.close()
                             self.close_connection = True
                             self._log("FAIL")
@@ -336,6 +400,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             continue
                         if is_stream:
                             buf += chunk
+                            last_activity = time.time()
                         else:
                             buf = chunk
                         while True:
@@ -348,18 +413,38 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             if is_stream and _event_has_error(ev):
                                 self._log(f"{name}: mid-stream error event dropped")
                                 continue
-                            if is_stream and b'"tool_calls"' in ev:
+                            if is_stream and _event_has_tool_call(ev):
                                 saw_tool = True
-                            if is_stream and can_inject and not saw_tool and b"data: [DONE]" in ev:
-                                inject = self._inf_inject()
-                                if inject:
+                            if is_stream and can_inject and not saw_tool and not injected:
+                                fr = _event_finish_reason(ev)
+                                if fr is not None and fr != "tool_calls":
+                                    out = b"data: " + _neutralize_finish(ev) + b"\n\n"
                                     try:
-                                        self.wfile.write(inject)
+                                        self.wfile.write(out)
                                         self.wfile.flush()
                                     except (BrokenPipeError, OSError):
                                         self._log("client disconnected")
                                         return
-                                saw_tool = True
+                                    inject = self._inf_inject()
+                                    if inject:
+                                        try:
+                                            self.wfile.write(inject)
+                                            self.wfile.flush()
+                                        except (BrokenPipeError, OSError):
+                                            self._log("client disconnected")
+                                            return
+                                    injected = True
+                                    continue
+                                if b"data: [DONE]" in ev:
+                                    inject = self._inf_inject()
+                                    if inject:
+                                        try:
+                                            self.wfile.write(inject)
+                                            self.wfile.flush()
+                                        except (BrokenPipeError, OSError):
+                                            self._log("client disconnected")
+                                            return
+                                    injected = True
                             out = ev + (b"\n\n" if is_stream else b"")
                             try:
                                 self.wfile.write(out)
@@ -370,6 +455,18 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                                 return
                             if not is_stream:
                                 break
+                    if is_stream and can_inject and not saw_tool and not injected:
+                        self._log(f"{name}: stream ended without [DONE] and no tool_call, injecting at EOF")
+                        inject = self._inf_inject()
+                        if inject:
+                            try:
+                                self.wfile.write(inject)
+                                self.wfile.flush()
+                            except (BrokenPipeError, OSError):
+                                self._log("client disconnected")
+                                self._log("FAIL")
+                                return
+                        injected = True
                     if is_stream and buf:
                         try:
                             self.wfile.write(buf)
