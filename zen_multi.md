@@ -1,7 +1,7 @@
 # zen_multi.py — 多源轮转代理（bwh / vps / cloudcone）
 
 本机代理，监听 `127.0.0.1:8443`，把 `/chat/completions` 转发到三个上游
-（bwh/vps/cloudcone.moonchan.xyz:8443），自动失败切换、重试、冷却。
+（bwh/vps/c.moonchan.xyz:8443），自动失败切换、重试、冷却。
 
 ## 设计目标
 

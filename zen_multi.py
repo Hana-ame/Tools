@@ -13,7 +13,8 @@ import requests
 from requests.adapters import HTTPAdapter
 
 TIMEOUT = 120
-IDLE_TIMEOUT = 300
+STALL_TIMEOUT = 30
+HEADER_TIMEOUT = 30
 CONNECT_TIMEOUT = 10
 POOL_SIZE = 64
 FREE_LIMIT_ERR = "FreeUsageLimitError"
@@ -30,7 +31,7 @@ INF_SLEEP_ARG = json.dumps({"command": "sleep 1800"})
 UPSTREAMS = [
     {"name": "bwh", "base": "https://bwh.moonchan.xyz:8443"},
     {"name": "vps", "base": "https://vps.moonchan.xyz:8443"},
-    {"name": "cloudcone", "base": "https://cloudcone.moonchan.xyz:8443"},
+    {"name": "cloudcone", "base": "https://c.moonchan.xyz:8443"},
 ]
 
 ORDER = ["bwh", "vps", "cloudcone"]
@@ -65,20 +66,65 @@ def next_utc_midnight():
     return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
-def _stream_socket(resp):
+def _timed_next(iterable, timeout):
+    """Return (kind, value) from next(iterable), bounded by `timeout` seconds.
+
+    kind: "chunk" (value is the chunk), "stop" (StopIteration),
+          "err" (value is the exception), "timeout" (no value).
+    Runs next() in a daemon thread so a dead upstream socket can never block
+    the request handler forever.
+    """
+    result = []
+    ready = threading.Event()
+
+    def worker():
+        try:
+            result.append(("chunk", next(iterable)))
+        except StopIteration:
+            result.append(("stop", None))
+        except Exception as e:
+            result.append(("err", e))
+        finally:
+            ready.set()
+
+    threading.Thread(target=worker, daemon=True).start()
+    if not ready.wait(timeout):
+        return ("timeout", None)
+    return result[0]
+
+
+def _close_resp(resp):
+    """Close an upstream response without draining a still-open SSE stream.
+
+    `resp.close()` can block forever when the upstream keeps sending keep-alive
+    data (http.client tries to drain the connection). We instead close the
+    underlying SSL socket directly and drop the connection from the pool; the
+    per-request `requests.Session` is closed right after in `_proxy`'s finally.
+    """
     for getter in (
         lambda: resp.raw._original_response.fp.raw._sock,
         lambda: resp.raw._fp.fp.raw._sock,
         lambda: resp.raw._fp.raw._sock,
-        lambda: resp.raw.connection.sock,
     ):
         try:
             s = getter()
             if s is not None:
-                return s
+                s.close()
+                break
         except Exception:
             continue
-    return None
+    try:
+        conn = resp.raw.connection
+        if conn is not None:
+            conn.close()
+    except Exception:
+        pass
+
+
+def _has_real_sse(buf):
+    """True when a buffer/event carries real SSE data (`data:` or `event:`),
+    as opposed to pure keep-alive comment lines (`: ...`)."""
+    return b"data:" in buf or b"event:" in buf
 
 
 def _next_sse_event(buf):
@@ -178,9 +224,10 @@ def _event_has_error(ev):
 
 
 class Source:
-    def __init__(self, name, base):
+    def __init__(self, name, base, proxy=None):
         self.name = name
         self.base = base
+        self.proxy = proxy
         self.cooldown_until = 0.0
         self.last_err = ""
         self.reqs = 0
@@ -188,6 +235,8 @@ class Source:
     def new_session(self):
         s = requests.Session()
         s.trust_env = False
+        if self.proxy:
+            s.proxies = {"https": self.proxy, "http": self.proxy}
         adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1)
         s.mount("https://", adapter)
         return s
@@ -288,8 +337,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
             can_inject = is_inf and bool(payload.get("tools"))
             forced, model = resolve_model(payload.get("model") or BASE_MODEL)
             payload["model"] = model
-            if "max_tokens" not in payload or payload["max_tokens"] > 393216:
-                payload["max_tokens"] = 393216
+            if "max_tokens" not in payload or payload["max_tokens"] > 65536:
+                payload["max_tokens"] = 65536
             is_stream = payload.get("stream", False)
             self._log(f"req model={payload['model']} src={forced} max_tokens={payload['max_tokens']} stream={is_stream} tt={time.time() - t_start:.2f}s")
             body_str = json.dumps(payload)
@@ -315,17 +364,14 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                 sess = src.new_session()
                 try:
                     url = src.base + ("/chat/completions" if body else "/v1/models")
+                    self._log(f"{name}: connecting...")
                     resp = sess.request(
                         method, url, data=body_str, headers=headers,
-                        stream=is_stream, timeout=(CONNECT_TIMEOUT, IDLE_TIMEOUT)
+                        stream=is_stream, timeout=(CONNECT_TIMEOUT, HEADER_TIMEOUT)
                     )
+                    self._log(f"{name}: connected status={resp.status_code}")
                     if is_stream and resp.status_code == 200:
-                        sock = _stream_socket(resp)
-                        if sock is not None:
-                            sock.settimeout(IDLE_TIMEOUT)
-                        else:
-                            self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
-                        last_activity = time.time()
+                        pass
 
                     if resp.status_code != 200:
                         data = resp.json()
@@ -334,31 +380,42 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             src.cooldown_until = next_utc_midnight()
                             src.last_err = "FreeUsageLimitError"
                             limit_error = data
-                            resp.close()
+                            _close_resp(resp)
                             continue
                         self._log(f"{name}: HTTP {resp.status_code} -> try next source")
                         src.last_err = f"HTTP {resp.status_code}"
-                        resp.close()
+                        _close_resp(resp)
                         continue
 
                     src.reqs += 1
                     src.last_err = ""
                     if want_status:
-                        resp.close()
+                        _close_resp(resp)
                         continue
 
                     if is_stream:
                         it = resp.iter_content(chunk_size=16384)
                         pre = b""
-                        for _ in range(20):
-                            try:
-                                c = next(it)
-                            except StopIteration:
+                        t_pre = time.time()
+                        while time.time() - t_pre < STALL_TIMEOUT and not _has_real_sse(pre):
+                            kind, val = _timed_next(it, STALL_TIMEOUT - (time.time() - t_pre))
+                            if kind == "timeout":
                                 break
-                            if c:
-                                pre += c
-                            if b"\n\n" in pre:
+                            if kind == "stop":
                                 break
+                            if kind == "err":
+                                self._log(f"{name}: pre-read error: {type(val).__name__} - {val}")
+                                src.last_err = type(val).__name__
+                                _close_resp(resp)
+                                continue
+                            if val:
+                                pre += val
+                        if not _has_real_sse(pre):
+                            self._log(f"{name}: no real data in {STALL_TIMEOUT:.0f}s, try next source")
+                            src.last_err = "first token stall"
+                            src.cooldown_until = time.time() + COOLDOWN_SHORT
+                            _close_resp(resp)
+                            continue
                         if pre:
                             self._log(f"{name}: first token t={time.time() - t_start:.2f}s")
                         err = False
@@ -373,7 +430,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         if err:
                             self._log(f"{name}: SSE error event, try next source")
                             src.last_err = "SSE error"
-                            resp.close()
+                            src.cooldown_until = time.time() + COOLDOWN_SHORT
+                            _close_resp(resp)
                             continue
                         chain = [pre] if pre else []
                         rest = it
@@ -391,12 +449,13 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     started = True
                     saw_tool = False
                     buf = b""
-                    last_activity = time.time()
-                    for chunk in itertools.chain(chain, rest):
-                        if is_stream and last_activity is not None and time.time() - last_activity > IDLE_TIMEOUT:
-                            self._log(f"{name}: stream idle {IDLE_TIMEOUT}s")
-                            resp.close()
-                            if can_inject and not injected:
+                    last_real = time.time()
+                    iterable = itertools.chain(chain, rest)
+                    while True:
+                        if is_stream and time.time() - last_real > STALL_TIMEOUT:
+                            self._log(f"{name}: stream idle {STALL_TIMEOUT:.0f}s (no real data)")
+                            _close_resp(resp)
+                            if is_stream and not injected:
                                 inject = self._inf_inject(INF_IDLE_ARG)
                                 if inject:
                                     try:
@@ -414,11 +473,23 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             self.close_connection = True
                             self._log("FAIL")
                             return
+                        try:
+                            kind, val = _timed_next(iterable, STALL_TIMEOUT)
+                        except StopIteration:
+                            break
+                        if kind == "timeout":
+                            continue
+                        if kind == "stop":
+                            break
+                        if kind == "err":
+                            if isinstance(val, BaseException):
+                                raise val
+                            raise RuntimeError(f"upstream read failed: {val}")
+                        chunk = val
                         if not chunk:
                             continue
                         if is_stream:
                             buf += chunk
-                            last_activity = time.time()
                         else:
                             buf = chunk
                         while True:
@@ -428,6 +499,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                                     break
                             else:
                                 ev, buf = buf, b""
+                            if is_stream and not _has_real_sse(ev):
+                                continue
                             if is_stream and _event_has_error(ev):
                                 self._log(f"{name}: mid-stream error event dropped")
                                 continue
@@ -471,6 +544,8 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                                 self._log("client disconnected")
                                 self._log("FAIL")
                                 return
+                            if is_stream:
+                                last_real = time.time()
                             if not is_stream:
                                 break
                     if is_stream and can_inject and not saw_tool and not injected:
@@ -493,7 +568,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                             self._log("client disconnected")
                             self._log("FAIL")
                             return
-                    resp.close()
+                    _close_resp(resp)
                     self._log(f"{name}: done (source={name})")
                     self._log("SUCCESS")
                     return
@@ -503,9 +578,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     src.cooldown_until = time.time() + COOLDOWN_SHORT
                     src.last_err = type(e).__name__
                     if resp:
-                        resp.close()
+                        _close_resp(resp)
                     if started:
-                        if can_inject and not injected and is_stream:
+                        if is_stream and not injected:
                             try:
                                 inject = self._inf_inject(INF_IDLE_ARG)
                                 if inject:
@@ -525,9 +600,9 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     src.cooldown_until = time.time() + COOLDOWN_SHORT
                     src.last_err = f"unexpected: {e}"
                     if resp:
-                        resp.close()
+                        _close_resp(resp)
                     if started:
-                        if can_inject and not injected and is_stream:
+                        if is_stream and not injected:
                             try:
                                 inject = self._inf_inject(INF_IDLE_ARG)
                                 if inject:
@@ -602,7 +677,7 @@ if __name__ == "__main__":
     if os.name == "posix" and hasattr(signal, "SIGUSR1"):
         signal.signal(signal.SIGUSR1, signal.SIG_IGN)
 
-    MultiZen.sources = {u["name"]: Source(u["name"], u["base"]) for u in UPSTREAMS}
+    MultiZen.sources = {u["name"]: Source(u["name"], u["base"], u.get("proxy")) for u in UPSTREAMS}
     print("Zen multi proxy sources: " + ", ".join(MultiZen.sources))
     print("Models: " + ", ".join(m["id"] for m in source_models()))
     ThreadedServer((host, port), MultiZen).serve_forever()
