@@ -1,6 +1,7 @@
 import datetime
 import http.server
 import json
+import queue
 import socket
 import ssl
 import socketserver
@@ -16,6 +17,8 @@ ZEN_PATH = "/zen/v1"
 ZEN_API_KEY = "public"
 TIMEOUT = 120
 CONNECT_TIMEOUT = 10
+STALL_TIMEOUT = 30
+TOOL_STALL_TIMEOUT = 180
 CLEANUP_INTERVAL = 300
 MAX_IDLE = 3600
 MAX_REQS_PER_CLIENT = 200
@@ -67,6 +70,96 @@ def set_socket_timeout(resp, timeout):
     try:
         raw = resp.raw._original_response.fp.raw._sock
         raw.settimeout(timeout)
+    except Exception:
+        pass
+
+
+def _has_real_sse(buf):
+    """True when a buffer/event carries real SSE data (`data:` or `event:`),
+    as opposed to pure keep-alive comment lines (`: ...`)."""
+    return b"data:" in buf or b"event:" in buf
+
+
+def _event_has_tool_call(ev):
+    """True only when the SSE event actually carries a real tool_call delta."""
+    for line in ev.split(b"\n"):
+        if not line.startswith(b"data: "):
+            continue
+        try:
+            obj = json.loads(line[len(b"data: "):].decode("utf-8", "ignore"))
+        except Exception:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        for ch in obj.get("choices") or []:
+            delta = ch.get("delta") or {}
+            if delta.get("tool_calls"):
+                return True
+    return False
+
+
+_STOP = object()
+_ERR = object()
+
+
+class _ThreadedIter:
+    """Iterable consumed by a single persistent daemon worker thread.
+
+    Consumers wait on a queue with a timeout; the worker never races the
+    generator the way _timed_next did (which could hit "generator already
+    executing" when a timed-out call looped again on the same iterable).
+    """
+
+    def __init__(self, it):
+        self._q = queue.Queue()
+        self._err = None
+
+        def run():
+            try:
+                for chunk in it:
+                    self._q.put(chunk)
+                self._q.put(_STOP)
+            except BaseException as e:
+                self._err = e
+                self._q.put(_ERR)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def next(self, timeout):
+        try:
+            item = self._q.get(timeout=timeout)
+        except queue.Empty:
+            return ("timeout", None)
+        if item is _STOP:
+            return ("stop", None)
+        if item is _ERR:
+            return ("err", self._err)
+        return ("chunk", item)
+
+
+def _close_resp(resp):
+    """Close an upstream response without draining a still-open SSE stream.
+
+    `resp.close()` can block forever when the upstream keeps sending keep-alive
+    data (http.client tries to drain the connection). Close the underlying SSL
+    socket first so every close returns immediately.
+    """
+    for getter in (
+        lambda: resp.raw._original_response.fp.raw._sock,
+        lambda: resp.raw._fp.fp.raw._sock,
+        lambda: resp.raw._fp.raw._sock,
+    ):
+        try:
+            s = getter()
+            if s is not None:
+                s.close()
+                break
+        except Exception:
+            continue
+    try:
+        conn = resp.raw.connection
+        if conn is not None:
+            conn.close()
     except Exception:
         pass
 
@@ -170,7 +263,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
         last_err_body = None
         headers_sent = False
 
-        for fam, session in [("v4", sv.session_v4), ("v6", sv.session_v6)]:
+        for fam, session in [("v6", sv.session_v6), ("v4", sv.session_v4)]:
             if sv.cooldown.get(fam, 0) > time.time():
                 continue
 
@@ -180,7 +273,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                 t0 = time.time()
                 resp = session.request(
                     method, url, data=body_str, headers=headers,
-                    stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
+                    stream=is_stream, timeout=(CONNECT_TIMEOUT, STALL_TIMEOUT)
                 )
                 tt = time.time() - t0
                 self._log(f"{fam} upstream {resp.status_code} in {tt:.2f}s")
@@ -202,7 +295,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                         limit_error = data
                         sv.cooldown[fam] = next_utc_midnight()
                         if resp:
-                            resp.close()
+                            _close_resp(resp)
                         continue
                     if resp.status_code != 200:
                         err = data.get("error") if isinstance(data, dict) else None
@@ -220,7 +313,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                         last_err_body = data or {"error": {"message": last_error}}
                         self._log(f"{fam} upstream {resp.status_code} error: {last_error}")
                         if resp:
-                            resp.close()
+                            _close_resp(resp)
                         continue
 
                 if not is_stream:
@@ -236,10 +329,32 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                         self._log("client disconnected during send")
                     finally:
                         if resp:
-                            resp.close()
+                            _close_resp(resp)
                     return
 
                 try:
+                    ti = _ThreadedIter(resp.iter_content(chunk_size=None))
+                    pre = b""
+                    t_pre = time.time()
+                    while time.time() - t_pre < STALL_TIMEOUT and not _has_real_sse(pre):
+                        kind, val = ti.next(STALL_TIMEOUT - (time.time() - t_pre))
+                        if kind == "timeout":
+                            break
+                        if kind == "stop":
+                            break
+                        if kind == "err":
+                            self._log(f"{fam} pre-read error: {type(val).__name__} - {val}")
+                            break
+                        if val:
+                            pre += val
+                    if not _has_real_sse(pre):
+                        self._log(f"{fam} no real data in {STALL_TIMEOUT:.0f}s, try other stack")
+                        if resp:
+                            _close_resp(resp)
+                        continue
+                    first_chunk = time.time()
+                    total = len(pre)
+                    self._log(f"{fam} first real data +{first_chunk - t0:.2f}s")
                     self.send_response(200)
                     self.send_header("Content-Type", "text/event-stream")
                     self.send_header("Cache-Control", "no-cache")
@@ -247,28 +362,61 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
                     self._cors()
                     self.end_headers()
                     headers_sent = True
-                    first_chunk = None
-                    total = 0
-                    for chunk in resp.iter_content(chunk_size=None):
-                        if chunk:
-                            if first_chunk is None:
-                                first_chunk = time.time()
-                                self._log(f"{fam} first byte +{first_chunk - t0:.2f}s")
-                            total += len(chunk)
-                            self.wfile.write(chunk)
+                    last_real = time.time()
+                    buf = pre
+                    saw_tool = False
+                    while True:
+                        stall = TOOL_STALL_TIMEOUT if saw_tool else STALL_TIMEOUT
+                        if time.time() - last_real > stall:
+                            self._log(f"{fam} stream stalled (no real data {stall:.0f}s, saw_tool={saw_tool}), closing")
+                            if not saw_tool:
+                                try:
+                                    self.wfile.write(b'data: {"error": {"message": "upstream stalled", "type": "UpstreamStall"}}\n\ndata: [DONE]\n\n')
+                                    self.wfile.flush()
+                                except (BrokenPipeError, OSError):
+                                    pass
+                            break
+                        kind, val = ti.next(stall - (time.time() - last_real))
+                        if kind == "timeout":
+                            continue
+                        if kind == "stop":
+                            break
+                        if kind == "err":
+                            self._log(f"{fam} mid-stream error: {type(val).__name__} - {val}")
+                            break
+                        chunk = val
+                        if not chunk:
+                            continue
+                        buf += chunk
+                        while True:
+                            i2 = buf.find(b"\n\n")
+                            i4 = buf.find(b"\r\n\r\n")
+                            if i4 != -1 and (i2 == -1 or i4 < i2):
+                                ev, buf = buf[:i4], buf[i4 + 4:]
+                            elif i2 != -1:
+                                ev, buf = buf[:i2], buf[i2 + 2:]
+                            else:
+                                break
+                            if not _has_real_sse(ev):
+                                continue
+                            if _event_has_tool_call(ev):
+                                saw_tool = True
+                            last_real = time.time()
+                            total += len(ev) + 2
+                            self.wfile.write(ev + b"\n\n")
                             self.wfile.flush()
-                    self._log(f"{fam} stream done ({total} bytes, ttft={first_chunk - t0 if first_chunk is not None else -1:.2f}s, total={time.time() - t0:.2f}s)")
+                    self._log(f"{fam} stream done ({total} bytes, ttft={first_chunk - t0:.2f}s, total={time.time() - t0:.2f}s)")
                 except (BrokenPipeError, OSError):
                     self._log(f"client disconnected mid-stream ({total} bytes, {time.time() - t0:.2f}s)")
                 finally:
                     if resp:
-                        resp.close()
+                        _close_resp(resp)
                 return
 
             except Exception as e:
                 self._log(f"{fam} error: {type(e).__name__} - {e}")
                 if resp:
-                    resp.close()
+                    _close_resp(resp)
                 if headers_sent:
                     return
 
