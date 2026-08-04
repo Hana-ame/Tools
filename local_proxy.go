@@ -433,8 +433,9 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func makeClient(endpoint, sniHost string) *http.Client {
 	tr := &http.Transport{
-		// Dial the resolved IP directly (no per-request DNS), hostname only for SNI.
-		TLSClientConfig: &tls.Config{ServerName: sniHost},
+		// Dial the resolved IP directly (no per-request DNS). Skip cert verify
+		// like curl -k (IP dial makes some chains fail even with SNI).
+		TLSClientConfig: &tls.Config{ServerName: sniHost, InsecureSkipVerify: true},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			d := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
 			return d.DialContext(ctx, "tcp", endpoint)
