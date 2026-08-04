@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,7 +122,44 @@ type proxy struct {
 	clientV4 *http.Client
 	clientV6 *http.Client
 
-	mode string // "", "v4", or "v6"
+	mode  string // "", "v4", or "v6"
+	v4URL string
+	v6URL string
+}
+
+// resolveOnce resolves host via public DNS, bypassing the system resolver
+// (Termux may point at an unreachable ::1:53).
+func resolveOnce(host string) (v4, v6 string) {
+	for _, dns := range []string{"1.1.1.1:53", "8.8.8.8:53", "223.5.5.5:53", "114.114.114.114:53"} {
+		r := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{Timeout: 5 * time.Second}
+				return d.DialContext(ctx, "udp", dns)
+			},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		addrs, err := r.LookupIPAddr(ctx, host)
+		cancel()
+		if err != nil || len(addrs) == 0 {
+			continue
+		}
+		for _, a := range addrs {
+			if a.IP.To4() != nil {
+				if v4 == "" {
+					v4 = a.IP.String()
+				}
+			} else if a.IP.To16() != nil {
+				if v6 == "" {
+					v6 = a.IP.String()
+				}
+			}
+		}
+		log.Printf("resolved %s via %s -> v4=%s v6=%s", host, dns, v4, v6)
+		return v4, v6
+	}
+	log.Printf("resolve %s failed on all public DNS", host)
+	return "", ""
 }
 
 func (p *proxy) inCooldown(fam string, now time.Time) bool {
@@ -195,10 +233,15 @@ func (p *proxy) handle(w http.ResponseWriter, r *http.Request, method string) {
 		if len(body) == 0 {
 			path = "/models"
 		}
-		req, err := http.NewRequest(method, "https://"+zenHost+zenPath+path, strings.NewReader(bodyStr))
+		base := p.v6URL
+		if fam == "v4" {
+			base = p.v4URL
+		}
+		req, err := http.NewRequest(method, base+zenPath+path, strings.NewReader(bodyStr))
 		if err != nil {
 			continue
 		}
+		req.Host = zenHost // keep Host header = domain even though we dial the IP
 		req.Header.Set("Content-Type", "application/json")
 		if a := r.Header.Get("Authorization"); a != "" {
 			req.Header.Set("Authorization", a)
@@ -388,14 +431,13 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func makeClient(family string) *http.Client {
-	dialer := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
+func makeClient(endpoint, sniHost string) *http.Client {
 	tr := &http.Transport{
-		// Use HTTP(S)_PROXY env if set (e.g. HTTPS_PROXY=http://127.0.0.1:10809).
-		// The proxy resolves the domain, so a broken local resolver never matters.
-		Proxy: http.ProxyFromEnvironment,
+		// Dial the resolved IP directly (no per-request DNS), hostname only for SNI.
+		TLSClientConfig: &tls.Config{ServerName: sniHost},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, family, addr)
+			d := &net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}
+			return d.DialContext(ctx, "tcp", endpoint)
 		},
 		ResponseHeaderTimeout: connectTimeout,
 		IdleConnTimeout:       90 * time.Second,
@@ -423,10 +465,19 @@ func main() {
 		mode = ""
 	}
 
+	v4, v6 := resolveOnce(zenHost)
+	if mode == "v4" && v4 == "" || mode == "v6" && v6 == "" {
+		log.Fatalf("no %s address for %s", mode, zenHost)
+	}
 	p := &proxy{
-		clientV4: makeClient("tcp4"),
-		clientV6: makeClient("tcp6"),
+		clientV4: makeClient(net.JoinHostPort(v4, "443"), zenHost),
+		clientV6: makeClient(net.JoinHostPort(v6, "443"), zenHost),
 		mode:     mode,
+		v4URL:    "https://" + v4,
+		v6URL:    "https://[" + v6 + "]",
+	}
+	if v4 == "" && v6 == "" {
+		log.Fatalf("could not resolve %s via public DNS", zenHost)
 	}
 
 	mux := http.NewServeMux()
