@@ -2,8 +2,8 @@
 set -e
 
 SERVERS=("bwh" "vps" "cloudcone")
-CERT="/root/.acme.sh/*.d.moonchan.xyz_ecc/fullchain.cer"
-KEY="/root/.acme.sh/*.d.moonchan.xyz_ecc/*.d.moonchan.xyz.key"
+CERT="/root/.acme.sh/*.moonchan.xyz_ecc/fullchain.cer"
+KEY="/root/.acme.sh/*.moonchan.xyz_ecc/*.moonchan.xyz.key"
 PORT=8443
 
 SERVICE=$(cat <<'SERVICEEOF'

@@ -16,7 +16,6 @@ ZEN_PATH = "/zen/v1"
 ZEN_API_KEY = "public"
 TIMEOUT = 120
 CONNECT_TIMEOUT = 10
-REQUEST_TIMEOUT = 300
 CLEANUP_INTERVAL = 300
 MAX_IDLE = 3600
 MAX_REQS_PER_CLIENT = 200
@@ -115,7 +114,7 @@ class ZenProxy(http.server.BaseHTTPRequestHandler):
             sv.banlist.incr(client_ip)
 
         auth = self.headers.get("Authorization", "")
-        headers = {"Authorization": f"Bearer {ZEN_API_KEY}", "Connection": "close"}
+        headers = {"Authorization": f"Bearer {ZEN_API_KEY}"}
         content_length = int(self.headers.get("Content-Length", 0))
         self._log(
             f"req: ua={self.headers.get('User-Agent', '')!r} "
@@ -390,7 +389,7 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
     def get_request(self):
         sock, addr = self.socket.accept()
-        sock.settimeout(REQUEST_TIMEOUT)
+        sock.settimeout(TIMEOUT)
         if self._ssl_ctx:
             try:
                 sock = self._ssl_ctx.wrap_socket(sock, server_side=True)
