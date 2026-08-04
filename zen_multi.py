@@ -13,6 +13,7 @@ import requests
 from requests.adapters import HTTPAdapter
 
 TIMEOUT = 120
+IDLE_TIMEOUT = 300
 CONNECT_TIMEOUT = 10
 POOL_SIZE = 64
 FREE_LIMIT_ERR = "FreeUsageLimitError"
@@ -23,6 +24,7 @@ MODEL_PREFIX = "deepseek-v4-flash"
 INF_MODEL = "deepseek-v4-flash-inf"
 INF_TOOL = "bash"
 INF_TOOL_ARG = json.dumps({"command": "echo 请继续完善当前项目，补充文档，与设计目标对齐"})
+INF_IDLE_ARG = json.dumps({"command": "echo 继续"})
 
 UPSTREAMS = [
     {"name": "bwh", "base": "https://bwh.moonchan.xyz:8443"},
@@ -227,7 +229,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
         random.shuffle(order)
         return order
 
-    def _inf_inject(self):
+    def _inf_inject(self, tool_arg=INF_TOOL_ARG):
         global _inf_count
         with _inf_lock:
             count = _inf_count + 1
@@ -247,7 +249,7 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                         "type": "function",
                         "function": {
                             "name": INF_TOOL,
-                            "arguments": INF_TOOL_ARG,
+                            "arguments": tool_arg,
                         },
                     }],
                 },
@@ -313,12 +315,12 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     url = src.base + ("/chat/completions" if body else "/v1/models")
                     resp = sess.request(
                         method, url, data=body_str, headers=headers,
-                        stream=is_stream, timeout=(CONNECT_TIMEOUT, TIMEOUT)
+                        stream=is_stream, timeout=(CONNECT_TIMEOUT, IDLE_TIMEOUT)
                     )
                     if is_stream and resp.status_code == 200:
                         sock = _stream_socket(resp)
                         if sock is not None:
-                            sock.settimeout(TIMEOUT)
+                            sock.settimeout(IDLE_TIMEOUT)
                         else:
                             self._log(f"{name}: WARN could not resolve stream socket, using urllib3 default")
                         last_activity = time.time()
@@ -390,9 +392,24 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     buf = b""
                     last_activity = time.time()
                     for chunk in itertools.chain(chain, rest):
-                        if is_stream and last_activity is not None and time.time() - last_activity > TIMEOUT:
-                            self._log(f"{name}: stream idle {TIMEOUT}s, aborting")
+                        if is_stream and last_activity is not None and time.time() - last_activity > IDLE_TIMEOUT:
+                            self._log(f"{name}: stream idle {IDLE_TIMEOUT}s")
                             resp.close()
+                            if can_inject and not injected:
+                                inject = self._inf_inject(INF_IDLE_ARG)
+                                if inject:
+                                    try:
+                                        self.wfile.write(inject)
+                                        self.wfile.flush()
+                                        self.wfile.write(b"data: [DONE]\n\n")
+                                        self.wfile.flush()
+                                    except (BrokenPipeError, OSError):
+                                        self._log("client disconnected")
+                                        self._log("FAIL")
+                                        return
+                                injected = True
+                                self._log("SUCCESS (idle-timeout inject)")
+                                return
                             self.close_connection = True
                             self._log("FAIL")
                             return
@@ -487,6 +504,18 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     if resp:
                         resp.close()
                     if started:
+                        if can_inject and not injected and is_stream:
+                            try:
+                                inject = self._inf_inject(INF_IDLE_ARG)
+                                if inject:
+                                    self.wfile.write(inject)
+                                    self.wfile.flush()
+                                    self.wfile.write(b"data: [DONE]\n\n")
+                                    self.wfile.flush()
+                                    self._log("SUCCESS (exception inject)")
+                                    return
+                            except (BrokenPipeError, OSError):
+                                pass
                         self.close_connection = True
                         return
                     last_exc = e
@@ -497,6 +526,18 @@ class MultiZen(http.server.BaseHTTPRequestHandler):
                     if resp:
                         resp.close()
                     if started:
+                        if can_inject and not injected and is_stream:
+                            try:
+                                inject = self._inf_inject(INF_IDLE_ARG)
+                                if inject:
+                                    self.wfile.write(inject)
+                                    self.wfile.flush()
+                                    self.wfile.write(b"data: [DONE]\n\n")
+                                    self.wfile.flush()
+                                    self._log("SUCCESS (exception inject)")
+                                    return
+                            except (BrokenPipeError, OSError):
+                                pass
                         self.close_connection = True
                         return
                     last_exc = e
