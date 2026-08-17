@@ -9,6 +9,8 @@ systemctl start sshd
 
 sleep 15;
 
+# twitter-pic: 一键拉起 twitter.bin + python 服务 (caller.py / deamon.py)
+bash ~/script/bwh/start-twitter.sh
 
 # # exhentai
 # # 1. Shallow clone the master branch into a temporary folder
