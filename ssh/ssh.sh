@@ -4,5 +4,5 @@ ssh \
 	-o ServerAliveCountMax=124 \
 	-o TCPKeepAlive=yes \
 	-o IPQoS=throughput \
-	$@
+	"$@"
 
