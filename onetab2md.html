@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OneTab → Markdown</title>
+    <!-- 与 md-viewer.html / gzip-viewer.html 一致，用 marked CDN 渲染 markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -60,9 +62,15 @@
         #preview {
             margin-top: 16px; display: none;
         }
-        #preview textarea {
-            height: 300px; background: #f8fafc;
+        .md-body {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px;
+            padding: 20px 24px; overflow-x: auto;
         }
+        .md-body img {
+            max-width: 100%; border-radius: 8px; display: block; margin: 8px 0;
+        }
+        .md-body h1 { font-size: 1.2rem; margin: 0 0 12px; }
+        .md-body a { color: #3b82f6; word-break: break-all; }
         .badge { font-size: 0.7rem; background: #e2e8f0; padding: 2px 8px; border-radius: 20px; color: #334155; }
         footer { font-size: 0.7rem; text-align: center; padding: 16px 32px 20px; color: #5b6e8c; border-top: 1px solid #edf2f7; }
         .toast {
@@ -102,7 +110,7 @@
             <span class="badge">代理: proxy.moonchan.xyz</span>
         </div>
         <div id="preview">
-            <textarea id="output" readonly></textarea>
+            <div id="mdBody" class="md-body"></div>
         </div>
     </div>
     <footer>新浪图片自动添加 referer · B站图片仅代理无 referer · 点击复制即用</footer>
@@ -142,8 +150,8 @@
     function process() {
         const status = document.getElementById('status');
         const input = document.getElementById('input');
-        const output = document.getElementById('output');
         const preview = document.getElementById('preview');
+        const mdBody = document.getElementById('mdBody');
         const raw = input.value.trim();
 
         if (!raw) { status.innerHTML = '⚠️ 请粘贴内容'; return; }
@@ -167,7 +175,12 @@
         if (!count) { status.innerHTML = '❌ 未检测到有效链接'; return; }
 
         lastMd = md;
-        output.value = md;
+        // 预览直接渲染 md → html（raw 代码不再展示）；图片由 marked 输出为 <img>，可点击查看原图
+        try {
+            mdBody.innerHTML = marked.parse(md);
+        } catch (e) {
+            mdBody.innerHTML = `<pre style="margin:0;white-space:pre-wrap;">${md.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m]))}</pre>`;
+        }
         preview.style.display = 'block';
         status.innerHTML = `✅ 共 ${count} 项 | 文件名: ${pickFilename(lines)}.md`;
     }
@@ -186,7 +199,7 @@
 
     function clearAll() {
         document.getElementById('input').value = '';
-        document.getElementById('output').value = '';
+        document.getElementById('mdBody').innerHTML = '';
         document.getElementById('preview').style.display = 'none';
         document.getElementById('status').innerHTML = '⚡ 等待操作';
         lastMd = '';
