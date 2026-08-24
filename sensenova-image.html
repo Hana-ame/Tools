@@ -144,6 +144,9 @@
             <p>U1.5 Lite · U1 Fast — 文生图 / 图片编辑</p>
         </div>
         <div class="content">
+            <div style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:14px;padding:10px 14px;font-size:0.78rem;color:#92400e;line-height:1.7;margin-bottom:16px">
+                ⚠️ 官方接口未放行浏览器跨域预检（OPTIONS 返回 404），<b>直连必被 CORS 拦截</b>。请先在下方「高级设置」把 Base URL 改为<b>本地反向代理</b>地址使用；代理需透传 Authorization 头并为响应补 Access-Control-Allow-Origin。
+            </div>
             <!-- 接口配置 -->
             <label class="field-label" for="apiKey">API Key</label>
             <input type="password" id="apiKey" placeholder="SenseNova API Key（仅保存在本浏览器）" autocomplete="off">
@@ -152,7 +155,7 @@
                 <summary>高级设置（接口地址 / 代理）</summary>
                 <label class="field-label" for="baseUrl" style="margin-top:10px">API Base URL</label>
                 <input type="text" id="baseUrl" value="https://token.sensenova.cn" spellcheck="false">
-                <div class="hint">浏览器直连若遇 CORS 拦截，可将其改为本地反代地址，如 http://127.0.0.1:PORT</div>
+                <div class="hint">实测直连 https://token.sensenova.cn 会被 CORS 预检拦截（OPTIONS 404），请改为本地反代地址，如 http://127.0.0.1:PORT（需补 Access-Control-Allow-Origin 响应头）</div>
             </details>
 
             <!-- 模式 -->
@@ -214,7 +217,7 @@
                 </select>
 
                 <label class="field-label" for="respFormat">返回方式 response_format</label>
-                <select id="respFormat">
+                <select id="respFormat" onchange="refreshHints()">
                     <option value="b64_json">b64_json（Base64 内嵌，不怕链接过期）</option>
                     <option value="url">url（临时链接）</option>
                 </select>
@@ -307,6 +310,10 @@ window.addEventListener("paste", e => {
 
 /* ================= 模式 / 模型切换 ================= */
 function switchMode(m) {
+    if (m === "edit" && isFast()) {
+        showStatus("error", "⚠️ sensenova-u1-fast 为信息图专用模型，不支持图片编辑（不支持图像输入），请切换回 sensenova-u1.5-lite");
+        return;
+    }
     mode = m;
     $("tabGen").classList.toggle("active", m === "gen");
     $("tabEdit").classList.toggle("active", m === "edit");
@@ -445,6 +452,7 @@ function buildPayload() {
     const payload = { model, prompt, n: 1, watermark: $("watermark").checked };
 
     if (mode === "edit") {
+        if (isFast()) throw new Error("sensenova-u1-fast 不支持图片编辑，请切换为 sensenova-u1.5-lite");
         if (!refImages.length) throw new Error("图片编辑至少需要一张参考图片");
         payload.images = refImages.map(im => ({ image_url: im.dataUrl }));
         payload.response_format = $("respFormat").value;
