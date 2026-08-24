@@ -144,8 +144,8 @@
             <p>U1.5 Lite · U1 Fast — 文生图 / 图片编辑</p>
         </div>
         <div class="content">
-            <div style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:14px;padding:10px 14px;font-size:0.78rem;color:#92400e;line-height:1.7;margin-bottom:16px">
-                ⚠️ 官方接口未放行浏览器跨域预检（OPTIONS 返回 404），<b>直连必被 CORS 拦截</b>。请先在下方「高级设置」把 Base URL 改为<b>本地反向代理</b>地址使用；代理需透传 Authorization 头并为响应补 Access-Control-Allow-Origin。
+            <div style="background:#ecfdf5;border-left:4px solid #10b981;border-radius:14px;padding:10px 14px;font-size:0.78rem;color:#065f46;line-height:1.7;margin-bottom:16px">
+                ✅ 默认经 <b>sensenova.l.moonchan.xyz</b> 反代转发（官方接口未放行浏览器跨域预检，直连会被 CORS 拦截）。该端点补齐 <code>Access-Control-Allow-*</code> 头并透传 Authorization；也可在「高级设置」换成自建反代。
             </div>
             <!-- 接口配置 -->
             <label class="field-label" for="apiKey">API Key</label>
@@ -154,8 +154,8 @@
             <details class="adv">
                 <summary>高级设置（接口地址 / 代理）</summary>
                 <label class="field-label" for="baseUrl" style="margin-top:10px">API Base URL</label>
-                <input type="text" id="baseUrl" value="https://token.sensenova.cn" spellcheck="false">
-                <div class="hint">实测直连 https://token.sensenova.cn 会被 CORS 预检拦截（OPTIONS 404），请改为本地反代地址，如 http://127.0.0.1:PORT（需补 Access-Control-Allow-Origin 响应头）</div>
+                <input type="text" id="baseUrl" value="https://sensenova.l.moonchan.xyz" spellcheck="false">
+                <div class="hint">默认走 moonchan 反代（官方直连会被 CORS 预检拦截）；自建反代需补 Access-Control-Allow-Origin 响应头</div>
             </details>
 
             <!-- 模式 -->
@@ -470,7 +470,7 @@ function buildPayload() {
 }
 
 function endpoint() {
-    let base = $("baseUrl").value.trim().replace(/\/+$/, "") || "https://token.sensenova.cn";
+    let base = $("baseUrl").value.trim().replace(/\/+$/, "") || "https://sensenova.l.moonchan.xyz";
     return base + (mode === "edit" ? "/v1/images/edits" : "/v1/images/generations");
 }
 
