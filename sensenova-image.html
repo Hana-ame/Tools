@@ -382,8 +382,11 @@ const SAMPLES = {
 };
 function fillSample(key) {
     $("prompt").value = SAMPLES[key];
-    if (key === "snow" && mode !== "edit") switchMode("edit");
-    else if (key === "otter" && mode !== "gen") switchMode("gen");
+    if (key === "snow") {
+        // 编辑示例: 若当前是 U1 Fast (不支持图像输入), 先切回 U1.5 Lite 再进编辑模式
+        if (isFast()) { $("model").value = "sensenova-u1.5-lite"; onModelChange(); }
+        if (mode !== "edit") switchMode("edit");
+    } else if (key === "otter" && mode !== "gen") switchMode("gen");
 }
 
 /* ================= 参考图管理 ================= */
@@ -496,14 +499,18 @@ async function run() {
     busy = true;
     $("goBtn").disabled = true;
     const t0 = performance.now();
+    const timeoutMs = window.__REQ_TIMEOUT_MS || 180000; // 同步生图接口请求超时, 可由测试覆盖
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     const what = mode === "edit" ? "图片编辑中" : "生成中";
-    showStatus("loading", `<span class="spinner"></span>${what}…（模型 ${payload.model}，尺寸 ${payload.size}，同步接口可能需要数十秒）`);
+    showStatus("loading", `<span class="spinner"></span>${what}…（模型 ${payload.model}，尺寸 ${payload.size}，同步接口可能需数十秒，>${Math.round(timeoutMs / 1000)}s 自动超时）`);
 
     try {
         const resp = await fetch(endpoint(), {
             method: "POST",
             headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
             body: JSON.stringify(payload),
+            signal: ctrl.signal,
         });
         const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
         const text = await resp.text();
@@ -516,12 +523,15 @@ async function run() {
         }
         handleResult(json, payload, elapsed);
     } catch (err) {
-        if (err instanceof TypeError && /fetch|network/i.test(err.message)) {
+        if (err?.name === "AbortError") {
+            showStatus("error", "❌ 请求超时（> " + Math.round(timeoutMs / 1000) + "s），上游可能卡住。可重试；持续超时请检查 Base URL 与网络。");
+        } else if (err instanceof TypeError && /fetch|network/i.test(err.message)) {
             showStatus("error", "❌ 网络请求失败（可能是浏览器 CORS 限制或网络不通）。<br>解决：把「高级设置 → API Base URL」改为本地反向代理地址后重试。<br><code>" + escapeHtml(err.message) + "</code>");
         } else {
             showStatus("error", "❌ " + escapeHtml(String(err.message || err)).replace(/\n/g, "<br>"));
         }
     } finally {
+        clearTimeout(timer);
         busy = false;
         $("goBtn").disabled = false;
     }
