@@ -32,12 +32,12 @@ rm -rf temp-repo
 timeout 180 python3 ~/script/download_asset.py --repo Hana-ame/api-pack --dest api-pack-new.tmp && mv -f api-pack-new.tmp api-pack-new && chmod +x api-pack-new
 nohup ./api-pack-new > ./nohup.out 2>&1 &
 
-# twitter-pic: 注意 asset 要选 twitter-linux-amd64, 默认 pattern(linux-amd64) 会误下 gallery
-cd ~/twitter
-python3 ~/script/download_asset.py --repo Hana-ame/twitter-pic-go --pattern twitter-linux-amd64 --dest twitter.bin && chmod +x twitter.bin;
-nohup ./twitter.bin --addr=127.25.9.21:8080 > nohup.out 2>&1  &
-nohup py caller.py > nohup.out 2>&1  &
-nohup py deamon.py > nohup.out 2>&1 &
+# twitter-pic: vps 不提供 twitter 能力(由 bwh 承担), 保持注释
+#cd ~/twitter
+#python3 ~/script/download_asset.py --repo Hana-ame/twitter-pic-go --pattern twitter-linux-amd64 --dest twitter.bin && chmod +x twitter.bin;
+#nohup ./twitter.bin --addr=127.25.9.21:8080 > nohup.out 2>&1  &
+#nohup py caller.py > nohup.out 2>&1  &
+#nohup py deamon.py > nohup.out 2>&1 &
 
 # azure
 cd ~;
