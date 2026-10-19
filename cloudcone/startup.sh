@@ -60,6 +60,13 @@ if [ -f azure/refresh_token ]; then
   cd ~
 fi
 
+
+# chatto（systemd 管，开机从 GH 抓最新版并重启）
+if [ -x /root/script/cloudcone/update-chatto.sh ]; then
+  bash /root/script/cloudcone/update-chatto.sh
+else
+  echo "chatto update 脚本缺失, 用现有 systemd 服务: $(date)"
+fi
 cd ~/script/ && timeout 120 git pull;
 
 cd /etc/nginx && GIT_MERGE_AUTOEDIT=no timeout 120 git merge -X theirs origin/cloudcone --quiet
