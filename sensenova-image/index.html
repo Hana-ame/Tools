@@ -143,6 +143,10 @@
 
         details.adv summary { cursor: pointer; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-top: 10px; user-select: none; }
     </style>
+    <meta name="theme-color" content="#be185d">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 <div class="wrap">
@@ -647,6 +651,13 @@ function escapeHtml(s) {
 initStorage();
 onModelChange();
 switchMode("gen");
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>

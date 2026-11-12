@@ -45,6 +45,10 @@
         .toast.show { opacity: 1; }
         .meta { font-size: 0.8rem; color: #64748b; margin-top: 8px; }
     </style>
+    <meta name="theme-color" content="#b45309">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 <div class="container">
@@ -142,6 +146,13 @@ function clearAll() {
     document.getElementById('output').value = '';
     document.getElementById('meta').textContent = '';
 }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>

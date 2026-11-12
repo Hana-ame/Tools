@@ -330,6 +330,10 @@
             .params-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <meta name="theme-color" content="#16a34a">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 <div class="app">
@@ -445,5 +449,12 @@
 <script src="conv.js"></script>
 <script src="api.js"></script>
 <script src="index.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>

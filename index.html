@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools</title>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
     <style>
         * { box-sizing: border-box; margin: 0; }
         body {
@@ -38,27 +43,27 @@
     <h1>🧰 Tools</h1>
     <p>浏览器小工具合集</p>
     <div class="list">
-        <a href="onetab2md.html">
+        <a href="onetab2md/">
             <span class="icon">📄</span>
             <span class="name">OneTab → Markdown<span class="desc"><br>粘贴链接列表，生成 Markdown 图片语法并复制</span></span>
         </a>
-        <a href="gzip-viewer.html">
+        <a href="gzip-viewer/">
             <span class="icon">📦</span>
             <span class="name">Gzip 预览器<span class="desc"><br>在线解压 .gz 文件并查看内容，支持代码高亮</span></span>
         </a>
-        <a href="md-viewer.html">
+        <a href="md-viewer/">
             <span class="icon">📝</span>
             <span class="name">Markdown 预览器<span class="desc"><br>加载远程 .md 文件并渲染，支持代码高亮</span></span>
         </a>
-        <a href="json2article.html">
+        <a href="json2article/">
             <span class="icon">📖</span>
             <span class="name">JSON → 文章<span class="desc"><br>提取 API messages 中的 assistant 回复拼成完整文章</span></span>
         </a>
-        <a href="sensenova-image.html">
+        <a href="sensenova-image/">
             <span class="icon">🎨</span>
             <span class="name">SenseNova 生图<span class="desc"><br>U1.5 Lite / U1 Fast 文生图与图片编辑</span></span>
         </a>
-        <a href="clipboard-ip-detector.html">
+        <a href="clipboard-ip-detector/">
             <span class="icon">🌐</span>
             <span class="name">剪贴板 IP 检测器<span class="desc"><br>读取系统剪贴板，提取 IPv4/IPv6 并查询 ipinfo.io 归属</span></span>
         </a>
@@ -68,5 +73,12 @@
         </a>
     </div>
 </div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>

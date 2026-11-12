@@ -117,6 +117,10 @@
         
         @media (max-width: 600px) { .btn-group button { font-size: 13px; min-width: 80px; padding: 10px 0; } }
     </style>
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 
@@ -259,6 +263,13 @@
         const u = p.get('url');
         if (u) { urlInput.value = u; fetchMd(u); }
     })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>
